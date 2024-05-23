@@ -1,0 +1,165 @@
+import React, { useEffect, useRef, memo } from 'react';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useStore } from './store';
+
+function PlaneMesh({ sphereRefs, positionY, instancedMeshRef }) {
+  const { raycaster, mouse, camera, size } = useThree();
+  const meshRef = useRef();
+  const circleRef = useRef(); // Reference to the circle mesh
+  const setTarget = useStore((state) => state.setTarget);
+  const setLookAt = useStore((state) => state.setLookAt);
+
+  useEffect(() => {
+    let isMouseDown = false;
+    let isDragging = false;
+    let mouseMoved = false;
+
+    const onMouseDown = (event) => {
+      isMouseDown = true;
+      isDragging = false;
+      mouseMoved = false;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(
+        [
+          meshRef.current,
+          instancedMeshRef.current,
+          ...sphereRefs.current,
+        ].filter(Boolean)
+      );
+      if (intersects.length > 0) {
+        // Set the position of the circleRef to the intersection point
+        circleRef.current.position.copy(intersects[0].point);
+        // Raise the circle slightly above the plane
+        circleRef.current.position.y += 0.01;
+        // Make the circle visible
+        circleRef.current.visible = true;
+      } else {
+        // Hide the circle when the mouse is not over the plane
+        circleRef.current.visible = false;
+      }
+    };
+
+    const onMouseUp = (event) => {
+      isMouseDown = false;
+      if (!mouseMoved) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(
+          [
+            meshRef.current,
+            instancedMeshRef.current,
+            ...sphereRefs.current,
+          ].filter(Boolean)
+        );
+
+        // Sort the intersects array so that any intersected sphere comes first
+        intersects.sort((a, b) => {
+          if (a.object === instancedMeshRef.current) {
+            return -1;
+          } else if (b.object === instancedMeshRef.current) {
+            return 1;
+          } else {
+            return 0;
+          }
+        });
+
+        if (intersects.length > 0) {
+          const { x, y, z } = intersects[0].point;
+          const instanceId = intersects[0].instanceId;
+
+          if (instanceId !== undefined) {
+            // If a sphere was clicked, move the camera close to the sphere
+            // setTarget({ x: x, y: y + 200, z: z });
+            // setLookAt({ x, y, z });
+            const instanceMatrix = new THREE.Matrix4();
+            instancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
+            const instancePosition = new THREE.Vector3().setFromMatrixPosition(
+              instanceMatrix
+            );
+
+            // Update the target and lookAt values based on the position of the clicked instance
+            setTarget({
+              x: instancePosition.x + 550,
+              y: instancePosition.y + 250,
+              z: instancePosition.z + 550,
+            });
+            setLookAt(instancePosition);
+            console.log('A sphere was clicked');
+          } else {
+            // If the plane was clicked, move the camera to the clicked point
+            setTarget({ x: x + 300, y: y + 150, z: z + 300 });
+            setLookAt({ x: x, y: y, z: z });
+          }
+        }
+      }
+      isDragging = false;
+    };
+
+    const onMouseMove = (event) => {
+      // The following code will only execute when the mouse button is down
+      if (isMouseDown) {
+        mouseMoved = true;
+        isDragging = true;
+        const movementX =
+          event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+        const movementY =
+          event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+        // Change the rotation based on the mouse movement
+        const rotation = useStore.getState().rotation;
+        rotation.y -= movementX * 0.002;
+        rotation.x -= movementY * 0.002;
+
+        // Store the updated rotation back in the state
+        useStore.getState().setRotation(rotation);
+      }
+    };
+
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mousemove', onMouseMove);
+
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [raycaster, mouse, camera, setTarget, setLookAt, size, sphereRefs]);
+
+  const meshes = Array(5)
+    .fill()
+    .map((_, i) => (
+      <mesh
+        key={i}
+        ref={meshRef}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, positionY, 0]}
+      >
+        <planeGeometry attach="geometry" args={[100000, 100000]} />
+        <meshStandardMaterial
+          attach="material"
+          color="red"
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    ));
+
+  return (
+    <>
+      {meshes}
+      {/* Add a new mesh for the circle */}
+      <mesh ref={circleRef} visible={false} rotation={[Math.PI / 2, 0, 0]}>
+        <circleGeometry attach="geometry" args={[2, 64]} />
+        <meshBasicMaterial
+          attach="material"
+          color="red"
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </>
+  );
+}
+
+export default memo(PlaneMesh);
