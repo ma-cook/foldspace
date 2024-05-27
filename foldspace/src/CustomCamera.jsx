@@ -34,7 +34,7 @@ export default function CustomCamera() {
       defaultCamera={true}
       fov={70}
       near={0.1}
-      far={25000} // Increase this value
+      far={1000} // Increase this value
       position={[0, 0, 0]}
     >
       <OrbitControls

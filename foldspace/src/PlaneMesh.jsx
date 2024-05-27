@@ -8,6 +8,8 @@ function PlaneMesh({
   positionY,
   instancedMeshRef,
   redInstancedMeshRef,
+  greenInstancedMeshRef,
+  blueInstancedMeshRef,
 }) {
   const { raycaster, mouse, camera, size } = useThree();
   const meshRef = useRef();
@@ -29,7 +31,9 @@ function PlaneMesh({
         [
           meshRef.current,
           instancedMeshRef.current,
-          redInstancedMeshRef.current, // Include redInstancedMeshRef
+          redInstancedMeshRef.current,
+          greenInstancedMeshRef.current, // Include greenInstancedMeshRef
+          blueInstancedMeshRef.current, // Include redInstancedMeshRef
           ...sphereRefs.current,
         ].filter(Boolean)
       );
@@ -54,7 +58,9 @@ function PlaneMesh({
           [
             meshRef.current,
             instancedMeshRef.current,
-            redInstancedMeshRef.current, // Include redInstancedMeshRef
+            redInstancedMeshRef.current,
+            greenInstancedMeshRef.current, // Include greenInstancedMeshRef
+            blueInstancedMeshRef.current, // Include redInstancedMeshRef
             ...sphereRefs.current,
           ].filter(Boolean)
         );
@@ -86,6 +92,20 @@ function PlaneMesh({
                 instanceMatrix
               );
               console.log('A red sphere was clicked');
+            } else if (intersects[0].object === greenInstancedMeshRef.current) {
+              // Check if the green sphere was clicked
+              greenInstancedMeshRef.current.getMatrixAt(
+                instanceId,
+                instanceMatrix
+              );
+              console.log('A green sphere was clicked');
+            } else if (intersects[0].object === blueInstancedMeshRef.current) {
+              // Check if the blue sphere was clicked
+              blueInstancedMeshRef.current.getMatrixAt(
+                instanceId,
+                instanceMatrix
+              );
+              console.log('A blue sphere was clicked');
             }
 
             const instancePosition = new THREE.Vector3().setFromMatrixPosition(
