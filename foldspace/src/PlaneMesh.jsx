@@ -3,7 +3,12 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
 
-function PlaneMesh({ sphereRefs, positionY, instancedMeshRef }) {
+function PlaneMesh({
+  sphereRefs,
+  positionY,
+  instancedMeshRef,
+  redInstancedMeshRef,
+}) {
   const { raycaster, mouse, camera, size } = useThree();
   const meshRef = useRef();
   const circleRef = useRef(); // Reference to the circle mesh
@@ -24,6 +29,7 @@ function PlaneMesh({ sphereRefs, positionY, instancedMeshRef }) {
         [
           meshRef.current,
           instancedMeshRef.current,
+          redInstancedMeshRef.current, // Include redInstancedMeshRef
           ...sphereRefs.current,
         ].filter(Boolean)
       );
@@ -48,6 +54,7 @@ function PlaneMesh({ sphereRefs, positionY, instancedMeshRef }) {
           [
             meshRef.current,
             instancedMeshRef.current,
+            redInstancedMeshRef.current, // Include redInstancedMeshRef
             ...sphereRefs.current,
           ].filter(Boolean)
         );
@@ -68,25 +75,30 @@ function PlaneMesh({ sphereRefs, positionY, instancedMeshRef }) {
           const instanceId = intersects[0].instanceId;
 
           if (instanceId !== undefined) {
-            // If a sphere was clicked, move the camera close to the sphere
-            // setTarget({ x: x, y: y + 200, z: z });
-            // setLookAt({ x, y, z });
             const instanceMatrix = new THREE.Matrix4();
-            instancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
+
+            if (intersects[0].object === instancedMeshRef.current) {
+              instancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
+              console.log('A yellow sphere was clicked');
+            } else if (intersects[0].object === redInstancedMeshRef.current) {
+              redInstancedMeshRef.current.getMatrixAt(
+                instanceId,
+                instanceMatrix
+              );
+              console.log('A red sphere was clicked');
+            }
+
             const instancePosition = new THREE.Vector3().setFromMatrixPosition(
               instanceMatrix
             );
 
-            // Update the target and lookAt values based on the position of the clicked instance
             setTarget({
               x: instancePosition.x + 550,
               y: instancePosition.y + 250,
               z: instancePosition.z + 550,
             });
             setLookAt(instancePosition);
-            console.log('A sphere was clicked');
           } else {
-            // If the plane was clicked, move the camera to the clicked point
             setTarget({ x: x + 300, y: y + 150, z: z + 300 });
             setLookAt({ x: x, y: y, z: z });
           }

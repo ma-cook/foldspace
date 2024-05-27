@@ -9,26 +9,29 @@ import PlaneMesh from './PlaneMesh';
 import CustomCamera from './CustomCamera';
 
 const sphereGeometry = new THREE.SphereGeometry(30, 20, 20);
-const sphereMaterial = new THREE.MeshStandardMaterial({ color: 'white' });
+const sphereMaterial = new THREE.MeshStandardMaterial({ color: 'yellow' });
+const redSphereMaterial = new THREE.MeshStandardMaterial({ color: 'red' });
 
-const Sphere = React.forwardRef(({ positions }, ref) => {
-  useEffect(() => {
-    const mesh = ref.current;
-    positions.forEach((position, index) => {
-      mesh.setMatrixAt(index, new THREE.Matrix4().setPosition(position));
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.count = positions.length; // Set the count to the total number of instances
-  }, [positions]);
+const Sphere = React.forwardRef(
+  ({ positions, material = sphereMaterial }, ref) => {
+    useEffect(() => {
+      const mesh = ref.current;
+      positions.forEach((position, index) => {
+        mesh.setMatrixAt(index, new THREE.Matrix4().setPosition(position));
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.count = positions.length; // Set the count to the total number of instances
+    }, [positions]);
 
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[sphereGeometry, sphereMaterial, positions.length]}
-      scale={[1, 1, 1]} // Adjust this value for the smaller spheres
-    />
-  );
-});
+    return (
+      <instancedMesh
+        ref={ref}
+        args={[sphereGeometry, material, positions.length]}
+        scale={[1, 1, 1]} // Adjust this value for the smaller spheres
+      />
+    );
+  }
+);
 
 const MemoizedSphere = memo(Sphere);
 
@@ -40,6 +43,7 @@ function App() {
   const spheresPerPlane = Math.floor(totalSpheres / planes);
   const sphereRefs = useRef([]);
   const instancedMeshRef = useRef();
+  const redInstancedMeshRef = useRef();
 
   const handleMoveUp = useCallback(() => {
     useStore
@@ -83,15 +87,23 @@ function App() {
           )
         ) {
           planePositions.push(newPosition);
-          // Add a smaller sphere 100 units away on the x-axis
-          const smallerSpherePosition = new THREE.Vector3(x + 100, i * 2500, z);
-          planePositions.push(smallerSpherePosition);
+          // Remove the line that pushes the smaller sphere position
         }
       }
       return planePositions;
     });
 
   const flattenedPositions = positions.flat();
+
+  const redSpherePositions = flattenedPositions.map((position) => {
+    const offset = 100 + Math.random() * 50; // Random offset between 100 and 150
+    const angle = Math.random() * 2 * Math.PI; // Random angle
+    return new THREE.Vector3(
+      position.x + offset * Math.cos(angle),
+      position.y,
+      position.z + offset * Math.sin(angle)
+    );
+  });
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -106,10 +118,20 @@ function App() {
             <group key={i}>
               <PlaneMesh
                 sphereRefs={sphereRefs}
-                instancedMeshRef={instancedMeshRef} // Pass the same ref to PlaneMesh
+                instancedMeshRef={instancedMeshRef}
+                redInstancedMeshRef={redInstancedMeshRef} // Pass the same ref to PlaneMesh
                 positionY={i * 2500 - 1}
               />
-              <Sphere ref={instancedMeshRef} positions={flattenedPositions} />
+              <MemoizedSphere
+                ref={instancedMeshRef}
+                positions={flattenedPositions}
+                material={sphereMaterial}
+              />
+              <MemoizedSphere
+                ref={redInstancedMeshRef}
+                positions={redSpherePositions}
+                material={redSphereMaterial}
+              />
             </group>
           );
         })}
