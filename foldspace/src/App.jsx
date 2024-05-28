@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useRef, memo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  Suspense,
+} from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { cullInstance } from './Culling';
+
 import * as THREE from 'three';
-import { PerspectiveCamera } from '@react-three/drei';
-import { OrbitControls } from '@react-three/drei';
+
+import { Stats, useProgress, Html } from '@react-three/drei';
 import { useStore } from './store';
 import PlaneMesh from './PlaneMesh';
 import CustomCamera from './CustomCamera';
@@ -14,14 +20,20 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   getSpherePositions,
+  purpleSphereMaterial,
 } from './SphereData';
+
+function Loader() {
+  const { progress } = useProgress();
+  return <Html center>{progress} % loaded</Html>;
+}
 
 function App() {
   const setCameraPosition = useStore((state) => state.setCameraPosition);
   const defaultPosition = useStore((state) => state.defaultPosition);
   const positions = useStore((state) => state.positions);
   const setPositions = useStore((state) => state.setPositions);
-  const totalSpheres = 5000;
+  const totalSpheres = 1000;
   const planes = 5;
   const spheresPerPlane = Math.floor(totalSpheres / planes);
   const sphereRefs = useRef([]);
@@ -29,6 +41,7 @@ function App() {
   const redInstancedMeshRef = useRef();
   const greenInstancedMeshRef = useRef();
   const blueInstancedMeshRef = useRef();
+  const purpleInstancedMeshRef = useRef();
   const handleMoveUp = useCallback(() => {
     useStore
       .getState()
@@ -56,15 +69,15 @@ function App() {
       .map((_, i) => {
         const planePositions = [];
         while (planePositions.length < spheresPerPlane) {
-          const radius = Math.sqrt(Math.random()) * 300000;
+          const radius = Math.sqrt(Math.random()) * 250000;
           const angle = Math.random() * 2 * Math.PI;
           const x = radius * Math.cos(angle);
           const z = radius * Math.sin(angle);
-          const newPosition = new THREE.Vector3(x, i * 2500, z);
+          const newPosition = new THREE.Vector3(x, i * 2000, z);
 
           if (
             planePositions.every(
-              (position) => position.distanceTo(newPosition) >= 3000
+              (position) => position.distanceTo(newPosition) >= 2200
             )
           ) {
             planePositions.push(newPosition);
@@ -76,9 +89,16 @@ function App() {
     setPositions(newPositions);
   }, []);
 
-  const flattenedPositions = positions.flat();
-  const { redSpherePositions, greenSpherePositions, blueSpherePositions } =
-    getSpherePositions(flattenedPositions);
+  const flattenedPositions = useMemo(() => positions.flat(), [positions]);
+  const {
+    redSpherePositions,
+    greenSpherePositions,
+    blueSpherePositions,
+    purpleSpherePositions,
+  } = useMemo(
+    () => getSpherePositions(flattenedPositions),
+    [flattenedPositions]
+  );
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -86,46 +106,56 @@ function App() {
         <button onClick={handleMoveUp}>Move Up</button>
         <button onClick={handleMoveDown}>Move Down</button>
       </div>
-      <Canvas frameloop="demand">
-        <ambientLight />
-        {positions.map((planePositions, i) => {
-          return (
-            <group key={i}>
-              <PlaneMesh
-                sphereRefs={sphereRefs}
-                instancedMeshRef={instancedMeshRef}
-                redInstancedMeshRef={redInstancedMeshRef}
-                greenInstancedMeshRef={greenInstancedMeshRef} // This should be greenInstancedMeshRef
-                blueInstancedMeshRef={blueInstancedMeshRef} // This should be blueInstancedMeshRef
-                positionY={i * 2500 - 1}
-              />
-              <MemoizedSphere
-                ref={instancedMeshRef}
-                positions={flattenedPositions}
-                material={sphereMaterial}
-              />
-              <MemoizedSphere
-                ref={redInstancedMeshRef}
-                positions={redSpherePositions}
-                material={redSphereMaterial}
-                scale={[0.5, 0.5, 0.5]}
-              />
-              <MemoizedSphere
-                ref={greenInstancedMeshRef}
-                positions={greenSpherePositions}
-                material={greenSphereMaterial}
-                scale={[0.5, 0.5, 0.5]}
-              />
-              <MemoizedSphere
-                ref={blueInstancedMeshRef}
-                positions={blueSpherePositions}
-                material={blueSphereMaterial}
-                scale={[0.5, 0.5, 0.5]}
-              />
-            </group>
-          );
-        })}
-        <CustomCamera />
+      <Canvas>
+        <Suspense fallback={<Loader />}>
+          <Stats />
+          <ambientLight />
+          {positions.map((planePositions, i) => {
+            return (
+              <group key={i}>
+                <PlaneMesh
+                  sphereRefs={sphereRefs}
+                  instancedMeshRef={instancedMeshRef}
+                  redInstancedMeshRef={redInstancedMeshRef}
+                  greenInstancedMeshRef={greenInstancedMeshRef} // This should be greenInstancedMeshRef
+                  blueInstancedMeshRef={blueInstancedMeshRef} // This should be blueInstancedMeshRef
+                  purpleInstancedMeshRef={purpleInstancedMeshRef}
+                  positionY={i * 2500 - 1}
+                />
+                <MemoizedSphere
+                  ref={instancedMeshRef}
+                  positions={flattenedPositions}
+                  material={sphereMaterial}
+                />
+                <MemoizedSphere
+                  ref={redInstancedMeshRef}
+                  positions={redSpherePositions}
+                  material={redSphereMaterial}
+                  scale={[0.2, 0.2, 0.2]}
+                />
+                <MemoizedSphere
+                  ref={greenInstancedMeshRef}
+                  positions={greenSpherePositions}
+                  material={greenSphereMaterial}
+                  scale={[0.2, 0.2, 0.2]}
+                />
+                <MemoizedSphere
+                  ref={blueInstancedMeshRef}
+                  positions={blueSpherePositions}
+                  material={blueSphereMaterial}
+                  scale={[0.2, 0.2, 0.2]}
+                />
+                <MemoizedSphere
+                  ref={purpleInstancedMeshRef}
+                  positions={purpleSpherePositions}
+                  material={purpleSphereMaterial}
+                  scale={[0.35, 0.35, 0.35]}
+                />
+              </group>
+            );
+          })}
+          <CustomCamera />
+        </Suspense>
       </Canvas>
     </div>
   );

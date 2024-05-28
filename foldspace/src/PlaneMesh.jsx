@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useCallback } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
@@ -10,19 +10,20 @@ function PlaneMesh({
   redInstancedMeshRef,
   greenInstancedMeshRef,
   blueInstancedMeshRef,
+  purpleInstancedMeshRef,
 }) {
   const { raycaster, mouse, camera, size } = useThree();
   const meshRef = useRef();
   const circleRef = useRef(); // Reference to the circle mesh
   const setTarget = useStore((state) => state.setTarget);
   const setLookAt = useStore((state) => state.setLookAt);
+  let isMouseDown = false;
 
-  useEffect(() => {
-    let isMouseDown = false;
-    let isDragging = false;
-    let mouseMoved = false;
+  let isDragging = false;
+  let mouseMoved = false;
 
-    const onMouseDown = (event) => {
+  const onMouseDown = useCallback(
+    (event) => {
       isMouseDown = true;
       isDragging = false;
       mouseMoved = false;
@@ -34,6 +35,7 @@ function PlaneMesh({
           redInstancedMeshRef.current,
           greenInstancedMeshRef.current, // Include greenInstancedMeshRef
           blueInstancedMeshRef.current, // Include redInstancedMeshRef
+          purpleInstancedMeshRef.current,
           ...sphereRefs.current,
         ].filter(Boolean)
       );
@@ -48,9 +50,12 @@ function PlaneMesh({
         // Hide the circle when the mouse is not over the plane
         circleRef.current.visible = false;
       }
-    };
+    },
+    [raycaster, mouse, camera]
+  );
 
-    const onMouseUp = (event) => {
+  const onMouseUp = useCallback(
+    (event) => {
       isMouseDown = false;
       if (!mouseMoved) {
         raycaster.setFromCamera(mouse, camera);
@@ -61,6 +66,7 @@ function PlaneMesh({
             redInstancedMeshRef.current,
             greenInstancedMeshRef.current, // Include greenInstancedMeshRef
             blueInstancedMeshRef.current, // Include redInstancedMeshRef
+            purpleInstancedMeshRef.current,
             ...sphereRefs.current,
           ].filter(Boolean)
         );
@@ -125,8 +131,11 @@ function PlaneMesh({
         }
       }
       isDragging = false;
-    };
+    },
+    [raycaster, mouse, camera, setTarget, setLookAt]
+  );
 
+  useEffect(() => {
     const onMouseMove = (event) => {
       // The following code will only execute when the mouse button is down
       if (isMouseDown) {
