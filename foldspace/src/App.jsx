@@ -50,10 +50,6 @@ function App() {
       );
   }, [defaultPosition, setCameraPosition]);
 
-  const setSphereRef = useCallback((el, i, j) => {
-    sphereRefs.current[i * spheresPerPlane + j] = el;
-  }, []);
-
   useEffect(() => {
     const newPositions = Array(planes)
       .fill(0)

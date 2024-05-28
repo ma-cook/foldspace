@@ -7,7 +7,8 @@ export const useStore = create((set) => ({
   lookAt: new THREE.Vector3(),
   rotation: new THREE.Euler(),
   currentPlaneIndex: 0,
-  positions: [], // new state variable
+  positions: [],
+  cameraPosition: [0, 50, 100], // new state variable
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
     set((state) => ({
@@ -22,9 +23,9 @@ export const useStore = create((set) => ({
     set((state) => ({
       rotation: new THREE.Euler(x, y, z),
     })),
-  setCameraPosition: ({ x, y, z }) =>
+  setCameraPosition: (x, y, z) =>
     set((state) => ({
-      defaultPosition: new THREE.Vector3(x, y, z),
+      cameraPosition: [x, y, z], // update the array
     })),
-  setPositions: (newPositions) => set(() => ({ positions: newPositions })), // new setter function
+  setPositions: (newPositions) => set(() => ({ positions: newPositions })),
 }));
