@@ -119,13 +119,13 @@ function PlaneMesh({
             );
 
             setTarget({
-              x: instancePosition.x + 550,
-              y: instancePosition.y + 250,
-              z: instancePosition.z + 550,
+              x: instancePosition.x + 50,
+              y: instancePosition.y + 150,
+              z: instancePosition.z + 50,
             });
             setLookAt(instancePosition);
           } else {
-            setTarget({ x: x + 300, y: y + 150, z: z + 300 });
+            setTarget({ x: x + 50, y: y + 100, z: z + 50 });
             setLookAt({ x: x, y: y, z: z });
           }
         }
@@ -176,7 +176,7 @@ function PlaneMesh({
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, positionY, 0]}
       >
-        <planeGeometry attach="geometry" args={[100000, 100000]} />
+        <planeGeometry attach="geometry" args={[10000, 10000]} />
         <meshStandardMaterial
           attach="material"
           color="red"

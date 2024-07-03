@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const sphereGeometry = new THREE.SphereGeometry(30, 20, 20);
+const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
 
 const Sphere = React.forwardRef(
   ({ positions, material, scale = [1, 1, 1] }, ref) => {

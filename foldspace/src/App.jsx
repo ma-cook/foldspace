@@ -23,6 +23,32 @@ import {
   purpleSphereMaterial,
 } from './SphereData';
 
+class MeshPool {
+  constructor(meshConstructor, initialSize) {
+    this.pool = [];
+    this.meshConstructor = meshConstructor;
+    for (let i = 0; i < initialSize; i++) {
+      this.pool.push(this.createMesh());
+    }
+  }
+
+  createMesh() {
+    // Assuming meshConstructor is a function that creates a new THREE.Mesh instance
+    return this.meshConstructor();
+  }
+
+  get() {
+    if (this.pool.length > 0) {
+      return this.pool.pop();
+    }
+    return this.createMesh();
+  }
+
+  release(mesh) {
+    this.pool.push(mesh);
+  }
+}
+
 function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress} % loaded</Html>;
@@ -31,12 +57,12 @@ function Loader() {
 function App() {
   const setCameraPosition = useStore((state) => state.setCameraPosition);
   const defaultPosition = useStore((state) => state.defaultPosition);
-  const positions = useStore((state) => state.positions);
+  const positions = useStore((state) => state.positions) || [];
   const setPositions = useStore((state) => state.setPositions);
-  const totalSpheres = 1000;
-  const planes = 5;
+  const totalSpheres = 10000;
+  const planes = 10;
   const spheresPerPlane = Math.floor(totalSpheres / planes);
-  const sphereRefs = useRef([]);
+  const sphereRefs = useRef(Array(totalSpheres).fill(null));
   const instancedMeshRef = useRef();
   const redInstancedMeshRef = useRef();
   const greenInstancedMeshRef = useRef();
@@ -64,29 +90,113 @@ function App() {
   }, [defaultPosition, setCameraPosition]);
 
   useEffect(() => {
-    const newPositions = Array(planes)
-      .fill(0)
-      .map((_, i) => {
-        const planePositions = [];
-        while (planePositions.length < spheresPerPlane) {
-          const radius = Math.sqrt(Math.random()) * 250000;
-          const angle = Math.random() * 2 * Math.PI;
-          const x = radius * Math.cos(angle);
-          const z = radius * Math.sin(angle);
-          const newPosition = new THREE.Vector3(x, i * 2000, z);
+    // Function to fetch positions from the server
+    const fetchPositionsFromServer = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/get-sphere-data');
+        if (!response.ok) throw new Error('Failed to fetch sphere data');
+        const data = await response.json();
+        // Assuming the server response format is an object with keys like plane_0, plane_1, etc.
+        const positionsArray = Object.keys(data.positions).map((key) => {
+          return data.positions[key].map(
+            (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+          );
+        });
+        return positionsArray; // Return the array of arrays of THREE.Vector3 objects
+      } catch (error) {
+        console.error('Error fetching positions from server:', error);
+        return null;
+      }
+    };
 
-          if (
-            planePositions.every(
-              (position) => position.distanceTo(newPosition) >= 2200
+    // Function to save positions to the server
+    const savePositionsToServer = async (positions) => {
+      try {
+        // Transform the nested arrays into an object with keys
+        const positionsObject = positions.reduce(
+          (acc, planePositions, index) => {
+            acc[`plane_${index}`] = planePositions.map(({ x, y, z }) => ({
+              x,
+              y,
+              z,
+            }));
+            return acc;
+          },
+          {}
+        );
+
+        const response = await fetch('http://localhost:5000/save-sphere-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ positions: positionsObject }),
+        });
+        if (!response.ok) throw new Error('Failed to save sphere data');
+        console.log('Positions saved to server');
+      } catch (error) {
+        console.error('Error saving positions to server:', error);
+      }
+    };
+
+    // Attempt to fetch positions from the server first
+    fetchPositionsFromServer().then((serverPositions) => {
+      if (serverPositions) {
+        // If positions are fetched successfully, use them
+        setPositions(
+          serverPositions.map((planePositions) =>
+            planePositions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z))
+          )
+        );
+      } else {
+        // Generate new positions if none are fetched from the server
+        const newPositions = Array(planes)
+          .fill(0)
+          .map((_, i) => {
+            const planePositions = [];
+            while (planePositions.length < spheresPerPlane) {
+              const radius = Math.sqrt(Math.random()) * 50000;
+              const angle = Math.random() * 2 * Math.PI;
+              const x = radius * Math.cos(angle);
+              const z = radius * Math.sin(angle);
+              const newPosition = new THREE.Vector3(x, i * 1000, z);
+
+              if (
+                planePositions.every(
+                  (position) => position.distanceTo(newPosition) >= 1200
+                )
+              ) {
+                planePositions.push(newPosition);
+              }
+            }
+            return planePositions;
+          });
+
+        const cameraPosition = new THREE.Vector3(
+          defaultPosition.x,
+          defaultPosition.y,
+          defaultPosition.z
+        );
+        const positionsWithin10000 = newPositions
+          .map((planePositions) =>
+            planePositions.filter(
+              (position) => position.distanceTo(cameraPosition) <= 10000
             )
-          ) {
-            planePositions.push(newPosition);
-          }
-        }
-        return planePositions;
-      });
+          )
+          .filter((planePositions) => planePositions.length > 0);
 
-    setPositions(newPositions);
+        // Convert THREE.Vector3 objects to plain objects for saving
+        const positionsToSave = positionsWithin10000.map((planePositions) =>
+          planePositions.map(({ x, y, z }) => ({ x, y, z }))
+        );
+
+        // Save the newly generated positions to the server
+        savePositionsToServer(positionsToSave);
+
+        // Update the state with the new positions
+        setPositions(positionsWithin10000);
+      }
+    });
   }, []);
 
   const flattenedPositions = useMemo(() => positions.flat(), [positions]);
@@ -106,7 +216,7 @@ function App() {
         <button onClick={handleMoveUp}>Move Up</button>
         <button onClick={handleMoveDown}>Move Down</button>
       </div>
-      <Canvas>
+      <Canvas frameloop="onDemand">
         <Suspense fallback={<Loader />}>
           <Stats />
           <ambientLight />

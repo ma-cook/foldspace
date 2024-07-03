@@ -9,6 +9,8 @@ export const useStore = create((set) => ({
   currentPlaneIndex: 0,
   positions: [],
   cameraPosition: [0, 50, 100], // new state variable
+  sphereRefs: null,
+  setSphereRefs: (refs) => set({ sphereRefs: refs }),
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
     set((state) => ({

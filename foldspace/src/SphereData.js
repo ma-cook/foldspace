@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const sphereMaterial = new THREE.MeshPhongMaterial({
+export const sphereMaterial = new THREE.MeshStandardMaterial({
   color: 'yellow',
 });
 export const redSphereMaterial = new THREE.MeshStandardMaterial({
@@ -18,7 +18,7 @@ export const purpleSphereMaterial = new THREE.MeshStandardMaterial({
 
 export const getSpherePositions = (flattenedPositions) => {
   const redSpherePositions = flattenedPositions.map((position) => {
-    const offset = 200 + Math.random() * 50; // Random offset between 100 and 150
+    const offset = 70 + Math.random() * 50; // Random offset between 100 and 150
     const angle = Math.random() * 2 * Math.PI; // Random angle
     return new THREE.Vector3(
       position.x + offset * Math.cos(angle),
@@ -28,7 +28,7 @@ export const getSpherePositions = (flattenedPositions) => {
   });
 
   const greenSpherePositions = flattenedPositions.map((position) => {
-    const offset = 300 + Math.random() * 50; // Random offset between 200 and 250
+    const offset = 140 + Math.random() * 50; // Random offset between 200 and 250
     const angle = Math.random() * 2 * Math.PI; // Random angle
     return new THREE.Vector3(
       position.x + offset * Math.cos(angle),
@@ -38,7 +38,7 @@ export const getSpherePositions = (flattenedPositions) => {
   });
 
   const blueSpherePositions = flattenedPositions.map((position) => {
-    const offset = 400 + Math.random() * 50; // Random offset between 300 and 350
+    const offset = 210 + Math.random() * 50; // Random offset between 300 and 350
     const angle = Math.random() * 2 * Math.PI; // Random angle
     return new THREE.Vector3(
       position.x + offset * Math.cos(angle),
@@ -48,7 +48,7 @@ export const getSpherePositions = (flattenedPositions) => {
   });
 
   const purpleSpherePositions = flattenedPositions.map((position) => {
-    const offset = 400 + Math.random() * 50; // Random offset between 300 and 350
+    const offset = 300 + Math.random() * 50; // Random offset between 300 and 350
     const angle = Math.random() * 2 * Math.PI; // Random angle
     return new THREE.Vector3(
       position.x + offset * Math.cos(angle),
