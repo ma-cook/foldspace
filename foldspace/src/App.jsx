@@ -44,27 +44,6 @@ function App() {
   const blueInstancedMeshRef = useRef();
   const purpleInstancedMeshRef = useRef();
 
-  const handleMoveUp = useCallback(() => {
-    useStore
-      .getState()
-      .setCurrentPlaneIndex(
-        (useStore.getState().currentPlaneIndex + 1) % planes
-      );
-  }, [defaultPosition, setCameraPosition]);
-
-  const handleMoveDown = useCallback(() => {
-    setCameraPosition({
-      x: defaultPosition.x,
-      y: defaultPosition.y - 650,
-      z: defaultPosition.z,
-    });
-    useStore
-      .getState()
-      .setCurrentPlaneIndex(
-        (useStore.getState().currentPlaneIndex - 1 + planes) % planes
-      );
-  }, [defaultPosition, setCameraPosition]);
-
   useEffect(() => {
     // Function to fetch positions from the server
     const fetchPositionsFromServer = async () => {
@@ -189,8 +168,8 @@ function App() {
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <div style={{ position: 'absolute', zIndex: 1 }}>
-        <button onClick={handleMoveUp}>Move Up</button>
-        <button onClick={handleMoveDown}>Move Down</button>
+        {/* <button onClick={handleMoveUp}>Move Up</button>
+        <button onClick={handleMoveDown}>Move Down</button> */}
       </div>
       <Canvas frameloop="onDemand">
         <Suspense fallback={<Loader />}>

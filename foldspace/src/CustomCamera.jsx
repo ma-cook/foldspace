@@ -17,7 +17,7 @@ const CustomCamera = () => {
 
   // Update the camera's position and lookAt when vec or lookAt changes
   useEffect(() => {
-    camera.far = 8000; // Update the far property
+    camera.far = 12000; // Update the far property
     camera.updateProjectionMatrix(); // Update the camera's projection matrix
 
     if (vec) {

@@ -21,14 +21,17 @@ const PlaneMesh = React.forwardRef(
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
-    let isMouseDown = false;
-
+    const isMouseDown = useRef(false);
+    const lastMoveTimestamp = useRef(Date.now());
     let isDragging = false;
     let mouseMoved = false;
 
+    let startPos = { x: 0, y: 0 };
+    const moveThreshold = 1; // Adjust based on sensitivity to movement
+
     const onMouseDown = useCallback(
       (event) => {
-        isMouseDown = true;
+        isMouseDown.current = true;
         isDragging = false;
         mouseMoved = false;
         raycaster.setFromCamera(mouse, camera);
@@ -60,8 +63,13 @@ const PlaneMesh = React.forwardRef(
 
     const onMouseUp = useCallback(
       (event) => {
-        isMouseDown = false;
-        if (!mouseMoved) {
+        isMouseDown.current = false;
+        if (!mouseMoved && !isDragging) {
+          const currentTime = Date.now();
+          if (currentTime - lastMoveTimestamp.current < 200) {
+            // If less than 100ms have passed since the last onMouseMove, return early
+            return;
+          }
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(
             [
@@ -130,12 +138,12 @@ const PlaneMesh = React.forwardRef(
 
               setTarget({
                 x: instancePosition.x + 50,
-                y: instancePosition.y + 150,
-                z: instancePosition.z + 50,
+                y: instancePosition.y + 120,
+                z: instancePosition.z + 100,
               });
               setLookAt(instancePosition);
             } else {
-              setTarget({ x: x + 50, y: y + 100, z: z + 50 });
+              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
               setLookAt({ x: x, y: y, z: z });
             }
           }
@@ -148,13 +156,20 @@ const PlaneMesh = React.forwardRef(
     useEffect(() => {
       const onMouseMove = (event) => {
         // The following code will only execute when the mouse button is down
-        if (isMouseDown) {
-          mouseMoved = true;
-          isDragging = true;
+        if (isMouseDown.current) {
+          const currentTime = Date.now();
+          lastMoveTimestamp.current = currentTime;
           const movementX =
             event.movementX || event.mozMovementX || event.webkitMovementX || 0;
           const movementY =
             event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+          if (
+            Math.abs(movementX) > moveThreshold ||
+            Math.abs(movementY) > moveThreshold
+          ) {
+            mouseMoved = true;
+            isDragging = true;
+          }
 
           // Change the rotation based on the mouse movement
           const rotation = useStore.getState().rotation;
@@ -175,7 +190,17 @@ const PlaneMesh = React.forwardRef(
         document.removeEventListener('mouseup', onMouseUp);
         document.removeEventListener('mousemove', onMouseMove);
       };
-    }, [raycaster, mouse, camera, setTarget, setLookAt, size, sphereRefs]);
+    }, [
+      raycaster,
+      mouse,
+      camera,
+      setTarget,
+      setLookAt,
+      size,
+      sphereRefs,
+      onMouseDown,
+      onMouseUp,
+    ]);
 
     const meshes = Array(5)
       .fill()
