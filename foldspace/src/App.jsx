@@ -22,32 +22,7 @@ import {
   getSpherePositions,
   purpleSphereMaterial,
 } from './SphereData';
-
-class MeshPool {
-  constructor(meshConstructor, initialSize) {
-    this.pool = [];
-    this.meshConstructor = meshConstructor;
-    for (let i = 0; i < initialSize; i++) {
-      this.pool.push(this.createMesh());
-    }
-  }
-
-  createMesh() {
-    // Assuming meshConstructor is a function that creates a new THREE.Mesh instance
-    return this.meshConstructor();
-  }
-
-  get() {
-    if (this.pool.length > 0) {
-      return this.pool.pop();
-    }
-    return this.createMesh();
-  }
-
-  release(mesh) {
-    this.pool.push(mesh);
-  }
-}
+import SphereRenderer from './sphereRenderer'; // Assuming SphereRenderer is in the same directory
 
 function Loader() {
   const { progress } = useProgress();
@@ -60,7 +35,7 @@ function App() {
   const positions = useStore((state) => state.positions) || [];
   const setPositions = useStore((state) => state.setPositions);
   const totalSpheres = 10000;
-  const planes = 10;
+  const planes = 6;
   const spheresPerPlane = Math.floor(totalSpheres / planes);
   const sphereRefs = useRef(Array(totalSpheres).fill(null));
   const instancedMeshRef = useRef();
@@ -68,6 +43,7 @@ function App() {
   const greenInstancedMeshRef = useRef();
   const blueInstancedMeshRef = useRef();
   const purpleInstancedMeshRef = useRef();
+
   const handleMoveUp = useCallback(() => {
     useStore
       .getState()
@@ -220,50 +196,7 @@ function App() {
         <Suspense fallback={<Loader />}>
           <Stats />
           <ambientLight />
-          {positions.map((planePositions, i) => {
-            return (
-              <group key={i}>
-                <PlaneMesh
-                  sphereRefs={sphereRefs}
-                  instancedMeshRef={instancedMeshRef}
-                  redInstancedMeshRef={redInstancedMeshRef}
-                  greenInstancedMeshRef={greenInstancedMeshRef} // This should be greenInstancedMeshRef
-                  blueInstancedMeshRef={blueInstancedMeshRef} // This should be blueInstancedMeshRef
-                  purpleInstancedMeshRef={purpleInstancedMeshRef}
-                  positionY={i * 2500 - 1}
-                />
-                <MemoizedSphere
-                  ref={instancedMeshRef}
-                  positions={flattenedPositions}
-                  material={sphereMaterial}
-                />
-                <MemoizedSphere
-                  ref={redInstancedMeshRef}
-                  positions={redSpherePositions}
-                  material={redSphereMaterial}
-                  scale={[0.2, 0.2, 0.2]}
-                />
-                <MemoizedSphere
-                  ref={greenInstancedMeshRef}
-                  positions={greenSpherePositions}
-                  material={greenSphereMaterial}
-                  scale={[0.2, 0.2, 0.2]}
-                />
-                <MemoizedSphere
-                  ref={blueInstancedMeshRef}
-                  positions={blueSpherePositions}
-                  material={blueSphereMaterial}
-                  scale={[0.2, 0.2, 0.2]}
-                />
-                <MemoizedSphere
-                  ref={purpleInstancedMeshRef}
-                  positions={purpleSpherePositions}
-                  material={purpleSphereMaterial}
-                  scale={[0.35, 0.35, 0.35]}
-                />
-              </group>
-            );
-          })}
+          <SphereRenderer flattenedPositions={flattenedPositions} />
           <CustomCamera />
         </Suspense>
       </Canvas>
