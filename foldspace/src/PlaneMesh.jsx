@@ -35,6 +35,7 @@ const PlaneMesh = React.forwardRef(
         isDragging = false;
         mouseMoved = false;
         raycaster.setFromCamera(mouse, camera);
+        lastMoveTimestamp.current = Date.now();
         const intersects = raycaster.intersectObjects(
           [
             meshRef.current,
@@ -65,11 +66,17 @@ const PlaneMesh = React.forwardRef(
       (event) => {
         isMouseDown.current = false;
         if (!mouseMoved && !isDragging) {
+          const mouseDownDuration = Date.now() - lastMoveTimestamp.current; // Calculate how long the mouse was held down
           const currentTime = Date.now();
-          if (currentTime - lastMoveTimestamp.current < 200) {
-            // If less than 100ms have passed since the last onMouseMove, return early
-            return;
+          if (currentTime - lastMoveTimestamp.current < 30) {
+            // Check if the mouse was held down for more than 1 second
+            return; // Do not execute the rest of the onMouseUp logic
+          } else if (mouseDownDuration > 100) {
+            // Check if the mouse was held down for more than 1 second
+            isMouseDown.current = false;
+            return; // Do not execute the rest of the onMouseUp logic
           }
+
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(
             [
