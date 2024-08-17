@@ -1,185 +1,189 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useMemo,
-  Suspense,
-} from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
-
+import React, { useRef, useEffect, useMemo, Suspense, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-
-import { Stats, useProgress, Html } from '@react-three/drei';
 import { useStore } from './store';
-import PlaneMesh from './PlaneMesh';
+
 import CustomCamera from './CustomCamera';
-import { MemoizedSphere } from './Sphere';
-import {
-  sphereMaterial,
-  redSphereMaterial,
-  greenSphereMaterial,
-  blueSphereMaterial,
-  getSpherePositions,
-  purpleSphereMaterial,
-} from './SphereData';
 import SphereRenderer from './sphereRenderer'; // Assuming SphereRenderer is in the same directory
+
+const GRID_SIZE = 10000; // Size of each grid cell
+const LOAD_DISTANCE = 50000; // Distance from the edge to trigger loading new cells
+const UNLOAD_DISTANCE = 50000; // Distance to trigger unloading cells
+
+const cellCache = {};
 
 function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress} % loaded</Html>;
 }
 
-function App() {
-  const setCameraPosition = useStore((state) => state.setCameraPosition);
-  const defaultPosition = useStore((state) => state.defaultPosition);
-  const positions = useStore((state) => state.positions) || [];
-  const setPositions = useStore((state) => state.setPositions);
-  const totalSpheres = 10000;
-  const planes = 6;
-  const spheresPerPlane = Math.floor(totalSpheres / planes);
-  const sphereRefs = useRef(Array(totalSpheres).fill(null));
-  const instancedMeshRef = useRef();
-  const redInstancedMeshRef = useRef();
-  const greenInstancedMeshRef = useRef();
-  const blueInstancedMeshRef = useRef();
-  const purpleInstancedMeshRef = useRef();
+function CellLoader({ cameraRef, loadCell, unloadCell }) {
+  const [currentCell, setCurrentCell] = useState({ x: null, z: null });
 
-  useEffect(() => {
-    // Function to fetch positions from the server
-    const fetchPositionsFromServer = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/get-sphere-data');
-        if (!response.ok) throw new Error('Failed to fetch sphere data');
-        const data = await response.json();
-        // Assuming the server response format is an object with keys like plane_0, plane_1, etc.
-        const positionsArray = Object.keys(data.positions).map((key) => {
-          return data.positions[key].map(
-            (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-          );
-        });
-        return positionsArray; // Return the array of arrays of THREE.Vector3 objects
-      } catch (error) {
-        console.error('Error fetching positions from server:', error);
-        return null;
+  useFrame(() => {
+    if (!cameraRef.current) return;
+
+    const cameraPosition = cameraRef.current.position;
+    if (!cameraPosition) return; // Add this null check
+
+    const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
+    const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
+
+    if (currentCell.x === cellX && currentCell.z === cellZ) {
+      // Current cell is already loaded, no need to reload
+      return;
+    }
+
+    setCurrentCell({ x: cellX, z: cellZ });
+
+    // Load adjacent cells if the camera is close to the edge
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const newX = cellX + dx;
+        const newZ = cellZ + dz;
+        const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
+        const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
+
+        if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
+          loadCell(newX, newZ);
+        }
       }
-    };
+    }
 
-    // Function to save positions to the server
-    const savePositionsToServer = async (positions) => {
-      try {
-        // Transform the nested arrays into an object with keys
-        const positionsObject = positions.reduce(
-          (acc, planePositions, index) => {
-            acc[`plane_${index}`] = planePositions.map(({ x, y, z }) => ({
-              x,
-              y,
-              z,
-            }));
-            return acc;
-          },
-          {}
-        );
-
-        const response = await fetch('http://localhost:5000/save-sphere-data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ positions: positionsObject }),
-        });
-        if (!response.ok) throw new Error('Failed to save sphere data');
-        console.log('Positions saved to server');
-      } catch (error) {
-        console.error('Error saving positions to server:', error);
-      }
-    };
-
-    // Attempt to fetch positions from the server first
-    fetchPositionsFromServer().then((serverPositions) => {
-      if (serverPositions) {
-        // If positions are fetched successfully, use them
-        setPositions(
-          serverPositions.map((planePositions) =>
-            planePositions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z))
-          )
-        );
-      } else {
-        // Generate new positions if none are fetched from the server
-        const newPositions = Array(planes)
-          .fill(0)
-          .map((_, i) => {
-            const planePositions = [];
-            while (planePositions.length < spheresPerPlane) {
-              const radius = Math.sqrt(Math.random()) * 50000;
-              const angle = Math.random() * 2 * Math.PI;
-              const x = radius * Math.cos(angle);
-              const z = radius * Math.sin(angle);
-              const newPosition = new THREE.Vector3(x, i * 1000, z);
-
-              if (
-                planePositions.every(
-                  (position) => position.distanceTo(newPosition) >= 1200
-                )
-              ) {
-                planePositions.push(newPosition);
-              }
-            }
-            return planePositions;
-          });
-
-        const cameraPosition = new THREE.Vector3(
-          defaultPosition.x,
-          defaultPosition.y,
-          defaultPosition.z
-        );
-        const positionsWithin10000 = newPositions
-          .map((planePositions) =>
-            planePositions.filter(
-              (position) => position.distanceTo(cameraPosition) <= 10000
-            )
-          )
-          .filter((planePositions) => planePositions.length > 0);
-
-        // Convert THREE.Vector3 objects to plain objects for saving
-        const positionsToSave = positionsWithin10000.map((planePositions) =>
-          planePositions.map(({ x, y, z }) => ({ x, y, z }))
-        );
-
-        // Save the newly generated positions to the server
-        savePositionsToServer(positionsToSave);
-
-        // Update the state with the new positions
-        setPositions(positionsWithin10000);
+    // Unload cells that are too far away
+    const loadedCells = new Set(useStore.getState().loadedCells);
+    loadedCells.forEach((cellKey) => {
+      const [x, z] = cellKey.split(',').map(Number);
+      const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
+      const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
+      if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
+        unloadCell(x, z);
       }
     });
+  });
+
+  return null;
+}
+
+function App() {
+  const defaultPosition = useStore((state) => state.defaultPosition);
+  const loadedCells = useStore((state) => state.loadedCells);
+  const positions = useStore((state) => state.positions);
+  const setLoadedCells = useStore((state) => state.setLoadedCells);
+  const setPositions = useStore((state) => state.setPositions);
+  const cameraRef = useRef();
+
+  const saveCellData = async (cellKey, positions) => {
+    try {
+      await fetch('http://localhost:5000/save-sphere-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cellKey, positions }),
+      });
+    } catch (error) {}
+  };
+
+  const loadCell = async (x, z) => {
+    const cellKey = `${x},${z}`;
+    if (loadedCells.includes(cellKey)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/get-sphere-data/${cellKey}`
+      );
+      if (response.ok) {
+        const { positions: savedPositions } = await response.json();
+        const newPositions = savedPositions.map(
+          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        );
+        cellCache[cellKey] = newPositions;
+        setPositions([...positions, ...newPositions]);
+        setLoadedCells([...loadedCells, cellKey]);
+      } else if (response.status === 404) {
+        // Generate positions for the new cell
+        const newPositions = [];
+        for (let i = 0; i < 100; i++) {
+          const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
+          const posY = Math.floor(Math.random() * 6) * 300; // Constrain posY to multiples of 300
+          const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
+          newPositions.push(new THREE.Vector3(posX, posY, posZ));
+        }
+
+        // Cache the positions for the cell
+        cellCache[cellKey] = newPositions;
+
+        setPositions([...positions, ...newPositions]);
+        setLoadedCells([...loadedCells, cellKey]);
+
+        // Save the new cell data to Firestore
+        await saveCellData(cellKey, newPositions);
+      } else {
+        console.error(
+          'Error loading cell data from Firestore:',
+          response.statusText
+        );
+      }
+    } catch (error) {
+      console.error('Error loading cell data from Firestore:', error);
+    }
+  };
+
+  const unloadCell = (x, z) => {
+    const cellKey = `${x},${z}`;
+    if (!loadedCells.includes(cellKey)) return;
+
+    // Remove positions of the cell from the state
+    const cellPositions = cellCache[cellKey];
+    if (cellPositions) {
+      setPositions((prevPositions) =>
+        prevPositions.filter((pos) => !cellPositions.includes(pos))
+      );
+    }
+    setLoadedCells((prevLoadedCells) =>
+      prevLoadedCells.filter((key) => key !== cellKey)
+    );
+  };
+
+  useEffect(() => {
+    // Load the initial cell
+    loadCell(0, 0);
   }, []);
 
-  const flattenedPositions = useMemo(() => positions.flat(), [positions]);
-  const {
-    redSpherePositions,
-    greenSpherePositions,
-    blueSpherePositions,
-    purpleSpherePositions,
-  } = useMemo(
-    () => getSpherePositions(flattenedPositions),
-    [flattenedPositions]
-  );
+  const flattenedPositions = useMemo(() => {
+    if (
+      Array.isArray(positions) &&
+      positions.length > 0 &&
+      Array.isArray(positions[0])
+    ) {
+      return positions.flat();
+    }
+    return positions;
+  }, [positions]);
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
-      <div style={{ position: 'absolute', zIndex: 1 }}>
-        {/* <button onClick={handleMoveUp}>Move Up</button>
-        <button onClick={handleMoveDown}>Move Down</button> */}
-      </div>
-      <Canvas frameloop="onDemand">
+      <Canvas>
         <Suspense fallback={<Loader />}>
-          <Stats />
           <ambientLight />
-          <SphereRenderer flattenedPositions={flattenedPositions} />
-          <CustomCamera />
+          <SphereRenderer
+            flattenedPositions={
+              Array.isArray(flattenedPositions) ? flattenedPositions : []
+            }
+          />
+          <CustomCamera ref={cameraRef} />
+          <CellLoader
+            cameraRef={cameraRef}
+            loadCell={loadCell}
+            unloadCell={unloadCell}
+          />
         </Suspense>
       </Canvas>
     </div>
   );
 }
+
 export default App;

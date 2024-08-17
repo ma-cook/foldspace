@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, forwardRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { OrbitControls } from '@react-three/drei';
 import { useStore } from './store';
 
-const CustomCamera = () => {
+const CustomCamera = forwardRef((props, ref) => {
   const vec = useStore((state) => state.vec);
   const lookAt = useStore((state) => state.lookAt);
   const defaultPosition = useStore((state) => state.defaultPosition);
@@ -17,12 +17,16 @@ const CustomCamera = () => {
 
   // Update the camera's position and lookAt when vec or lookAt changes
   useEffect(() => {
-    camera.far = 12000; // Update the far property
+    camera.far = 8000; // Update the far property
     camera.updateProjectionMatrix(); // Update the camera's projection matrix
 
     if (vec) {
       camera.position.copy(vec);
       setCameraPosition(vec.x, vec.y, vec.z); // Update the cameraPosition state
+    }
+
+    if (ref) {
+      ref.current = camera;
     }
 
     if (target) {
@@ -31,18 +35,18 @@ const CustomCamera = () => {
       controlsRef.current.update();
       setCameraPosition(target.x, target.y, target.z); // Update the cameraPosition state
     }
-  }, [vec, lookAt, target, camera]);
+  }, [vec, lookAt, target, camera, ref]);
 
   return (
     <PerspectiveCamera
       defaultCamera={true}
       fov={70}
       near={0.1}
-      far={5000}
+      far={7000}
       position={cameraPosition}
     >
       <OrbitControls
-        ref={controlsRef}
+        ref={ref || controlsRef}
         enableZoom={true}
         enablePan={true}
         enableRotate={true}
@@ -53,6 +57,6 @@ const CustomCamera = () => {
       />
     </PerspectiveCamera>
   );
-};
+});
 
 export default memo(CustomCamera);

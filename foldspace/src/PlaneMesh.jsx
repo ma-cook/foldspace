@@ -209,7 +209,7 @@ const PlaneMesh = React.forwardRef(
       onMouseUp,
     ]);
 
-    const meshes = Array(5)
+    const meshes = Array(6)
       .fill()
       .map((_, i) => (
         <mesh

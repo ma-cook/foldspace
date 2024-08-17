@@ -17,14 +17,15 @@ admin.initializeApp({
 const db = admin.firestore();
 
 app.post('/save-sphere-data', async (req, res) => {
-  const sphereData = req.body;
-  const docRef = db.collection('spheres').doc('sphereData');
-  await docRef.set(sphereData);
+  const { cellKey, positions } = req.body;
+  const docRef = db.collection('cells').doc(cellKey);
+  await docRef.set({ positions });
   res.send('Sphere data saved successfully');
 });
 
-app.get('/get-sphere-data', async (req, res) => {
-  const docRef = db.collection('spheres').doc('sphereData');
+app.get('/get-sphere-data/:cellKey', async (req, res) => {
+  const { cellKey } = req.params;
+  const docRef = db.collection('cells').doc(cellKey);
   const doc = await docRef.get();
   if (!doc.exists) {
     res.status(404).send('No sphere data found');

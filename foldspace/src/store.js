@@ -7,10 +7,12 @@ export const useStore = create((set) => ({
   lookAt: new THREE.Vector3(),
   rotation: new THREE.Euler(),
   currentPlaneIndex: 0,
-  positions: [],
+  positions: [], // Ensure positions is always an array
   cameraPosition: [0, 50, 100], // new state variable
   sphereRefs: null,
-
+  loadedCells: [], // Store as an array
+  setLoadedCells: (loadedCells) =>
+    set({ loadedCells: Array.isArray(loadedCells) ? loadedCells : [] }),
   setSphereRefs: (refs) => set({ sphereRefs: refs }),
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
@@ -30,5 +32,6 @@ export const useStore = create((set) => ({
     set((state) => ({
       cameraPosition: [x, y, z], // update the array
     })),
-  setPositions: (newPositions) => set(() => ({ positions: newPositions })),
+  setPositions: (positions) =>
+    set({ positions: Array.isArray(positions) ? positions : [] }),
 }));

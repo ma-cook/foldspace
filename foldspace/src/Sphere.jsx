@@ -10,20 +10,21 @@ const Sphere = React.forwardRef(
       const mesh = ref.current;
       positions.forEach((position, index) => {
         const matrix = new THREE.Matrix4().compose(
-          position, // position
-          new THREE.Quaternion(), // orientation
-          new THREE.Vector3(...scale) // scale
+          position,
+          new THREE.Quaternion(),
+          new THREE.Vector3(...scale)
         );
         mesh.setMatrixAt(index, matrix);
       });
       mesh.instanceMatrix.needsUpdate = true;
-      mesh.count = positions.length; // Set the count to the total number of instances
+      mesh.count = positions.length;
     }, [positions, scale]);
 
     return (
       <instancedMesh
         ref={ref}
         args={[sphereGeometry, material, positions.length]}
+        frustumCulled={false}
       />
     );
   }
