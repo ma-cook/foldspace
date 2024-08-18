@@ -1,5 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useRef, useEffect, useState } from 'react';
 import PlaneMesh from './PlaneMesh';
 import {
   sphereMaterial,
@@ -21,12 +20,16 @@ const createSphereMesh = () => {
 
 const spherePool = new SpherePool(createSphereMesh, 50);
 
-const calculateAverageY = (positions) => {
-  const totalY = positions.reduce((sum, pos) => sum + pos[1], 0);
-  return totalY / positions.length;
-};
-
 const SphereRenderer = ({ flattenedPositions }) => {
+  const [sphereData, setSphereData] = useState({
+    red: [],
+    green: [],
+    blue: [],
+    purple: [],
+  });
+
+  const previousYellowPositions = useRef(new Set());
+
   const planeMeshRefs = useRef(
     Array(6)
       .fill(null)
@@ -41,42 +44,35 @@ const SphereRenderer = ({ flattenedPositions }) => {
     central: useRef(),
   };
 
-  const sphereData = useMemo(() => {
-    if (!Array.isArray(flattenedPositions)) {
-      console.error('flattenedPositions is not an array:', flattenedPositions);
-      return [];
-    }
+  useEffect(() => {
+    const newYellowPositions = flattenedPositions.filter(
+      (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
+    );
 
-    const positions = getSpherePositions(flattenedPositions);
-    return [
-      {
-        positions: positions.redSpherePositions,
-        material: redSphereMaterial,
-        ref: sphereRefs.red,
-      },
-      {
-        positions: positions.greenSpherePositions,
-        material: greenSphereMaterial,
-        ref: sphereRefs.green,
-      },
-      {
-        positions: positions.blueSpherePositions,
-        material: blueSphereMaterial,
-        ref: sphereRefs.blue,
-      },
-      {
-        positions: positions.purpleSpherePositions,
-        material: purpleSphereMaterial,
-        ref: sphereRefs.purple,
-      },
-    ];
+    if (newYellowPositions.length > 0) {
+      const newPositions = getSpherePositions(newYellowPositions);
+      console.log('Sphere positions:', newPositions);
+
+      setSphereData((prevData) => ({
+        red: [...prevData.red, ...newPositions.redSpherePositions],
+        green: [...prevData.green, ...newPositions.greenSpherePositions],
+        blue: [...prevData.blue, ...newPositions.blueSpherePositions],
+        purple: [...prevData.purple, ...newPositions.purpleSpherePositions],
+      }));
+
+      newYellowPositions.forEach((pos) =>
+        previousYellowPositions.current.add(pos.toArray().toString())
+      );
+    }
   }, [flattenedPositions]);
 
   useEffect(() => {
+    console.log('Getting a sphere from the pool');
     const sphere = spherePool.get();
     sphere.material = redSphereMaterial;
 
     return () => {
+      console.log('Releasing a sphere back to the pool');
       spherePool.release(sphere);
     };
   }, []);
@@ -95,6 +91,7 @@ const SphereRenderer = ({ flattenedPositions }) => {
           blueInstancedMeshRef={sphereRefs.blue}
           purpleInstancedMeshRef={sphereRefs.purple}
           positionY={i * 300}
+          frustumCulled={false}
         />
       ))}
       <MemoizedSphere
@@ -102,15 +99,17 @@ const SphereRenderer = ({ flattenedPositions }) => {
         positions={Array.isArray(flattenedPositions) ? flattenedPositions : []}
         material={sphereMaterial}
         geometry={sphereGeometry}
+        frustumCulled={false}
       />
-      {sphereData.map((data, index) => (
+      {['red', 'green', 'blue', 'purple'].map((color, index) => (
         <MemoizedSphere
           key={index}
-          ref={data.ref}
-          positions={data.positions}
-          material={data.material}
+          ref={sphereRefs[color]}
+          positions={sphereData[color]}
+          material={eval(`${color}SphereMaterial`)}
           geometry={sphereGeometry}
           scale={[0.2, 0.2, 0.2]}
+          frustumCulled={false}
         />
       ))}
     </>

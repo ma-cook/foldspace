@@ -11,8 +11,18 @@ export const useStore = create((set) => ({
   cameraPosition: [0, 50, 100], // new state variable
   sphereRefs: null,
   loadedCells: [], // Store as an array
-  setLoadedCells: (loadedCells) =>
-    set({ loadedCells: Array.isArray(loadedCells) ? loadedCells : [] }),
+  setLoadedCells: (loadedCells) => {
+    set((state) => {
+      const newLoadedCells =
+        typeof loadedCells === 'function'
+          ? loadedCells(state.loadedCells)
+          : loadedCells;
+
+      return {
+        loadedCells: Array.isArray(newLoadedCells) ? newLoadedCells : [],
+      };
+    });
+  },
   setSphereRefs: (refs) => set({ sphereRefs: refs }),
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
@@ -32,6 +42,21 @@ export const useStore = create((set) => ({
     set((state) => ({
       cameraPosition: [x, y, z], // update the array
     })),
-  setPositions: (positions) =>
-    set({ positions: Array.isArray(positions) ? positions : [] }),
+  setPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.positions)
+          : positions;
+
+      // Ensure positions are unique
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      return { positions: uniquePositions };
+    });
+  },
 }));

@@ -1,4 +1,11 @@
-import React, { useRef, useEffect, useMemo, Suspense, useState } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  Suspense,
+  useState,
+  useCallback,
+} from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
@@ -6,9 +13,9 @@ import { useStore } from './store';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer'; // Assuming SphereRenderer is in the same directory
 
-const GRID_SIZE = 10000; // Size of each grid cell
-const LOAD_DISTANCE = 50000; // Distance from the edge to trigger loading new cells
-const UNLOAD_DISTANCE = 50000; // Distance to trigger unloading cells
+const GRID_SIZE = 20000; // Size of each grid cell
+const LOAD_DISTANCE = 20000; // Distance from the edge to trigger loading new cells
+const UNLOAD_DISTANCE = 20000; // Distance to trigger unloading cells
 
 const cellCache = {};
 
@@ -17,7 +24,7 @@ function Loader() {
   return <Html center>{progress} % loaded</Html>;
 }
 
-function CellLoader({ cameraRef, loadCell, unloadCell }) {
+const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [currentCell, setCurrentCell] = useState({ x: null, z: null });
 
   useFrame(() => {
@@ -52,10 +59,12 @@ function CellLoader({ cameraRef, loadCell, unloadCell }) {
 
     // Unload cells that are too far away
     const loadedCells = new Set(useStore.getState().loadedCells);
+
     loadedCells.forEach((cellKey) => {
       const [x, z] = cellKey.split(',').map(Number);
       const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
       const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
+
       if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
         unloadCell(x, z);
       }
@@ -63,7 +72,7 @@ function CellLoader({ cameraRef, loadCell, unloadCell }) {
   });
 
   return null;
-}
+});
 
 function App() {
   const defaultPosition = useStore((state) => state.defaultPosition);
@@ -72,8 +81,9 @@ function App() {
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
   const cameraRef = useRef();
+  const [loadingCells, setLoadingCells] = useState(new Set());
 
-  const saveCellData = async (cellKey, positions) => {
+  const saveCellData = useCallback(async (cellKey, positions) => {
     try {
       await fetch('http://localhost:5000/save-sphere-data', {
         method: 'POST',
@@ -82,76 +92,103 @@ function App() {
         },
         body: JSON.stringify({ cellKey, positions }),
       });
-    } catch (error) {}
-  };
-
-  const loadCell = async (x, z) => {
-    const cellKey = `${x},${z}`;
-    if (loadedCells.includes(cellKey)) {
-      return;
+    } catch (error) {
+      console.error('Error saving cell data to Firestore:', error);
     }
+  }, []);
 
-    try {
-      const response = await fetch(
-        `http://localhost:5000/get-sphere-data/${cellKey}`
-      );
-      if (response.ok) {
-        const { positions: savedPositions } = await response.json();
-        const newPositions = savedPositions.map(
-          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+  const loadCell = useCallback(
+    async (x, z) => {
+      const cellKey = `${x},${z}`;
+      if (loadedCells.includes(cellKey) || loadingCells.has(cellKey)) {
+        return;
+      }
+
+      setLoadingCells((prev) => new Set(prev).add(cellKey));
+
+      try {
+        const response = await fetch(
+          `http://localhost:5000/get-sphere-data/${cellKey}`
         );
-        cellCache[cellKey] = newPositions;
-        setPositions([...positions, ...newPositions]);
-        setLoadedCells([...loadedCells, cellKey]);
-      } else if (response.status === 404) {
-        // Generate positions for the new cell
-        const newPositions = [];
-        for (let i = 0; i < 100; i++) {
-          const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-          const posY = Math.floor(Math.random() * 6) * 300; // Constrain posY to multiples of 300
-          const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
-          newPositions.push(new THREE.Vector3(posX, posY, posZ));
+
+        if (response.ok) {
+          const { positions: savedPositions } = await response.json();
+          const newPositions = savedPositions.map(
+            (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+          );
+          cellCache[cellKey] = newPositions;
+          setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+          setLoadedCells((prevLoadedCells) => {
+            const updatedLoadedCells = [...prevLoadedCells, cellKey];
+
+            return updatedLoadedCells;
+          });
+        } else if (response.status === 404) {
+          // Generate positions for the new cell
+          const newPositions = [];
+          for (let i = 0; i < 100; i++) {
+            const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
+            const posY = Math.floor(Math.random() * 6) * 300; // Constrain posY to multiples of 300
+            const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
+            newPositions.push(new THREE.Vector3(posX, posY, posZ));
+          }
+
+          // Cache the positions for the cell
+          cellCache[cellKey] = newPositions;
+
+          setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+          setLoadedCells((prevLoadedCells) => {
+            const updatedLoadedCells = [...prevLoadedCells, cellKey];
+
+            return updatedLoadedCells;
+          });
+
+          // Save the new cell data to Firestore
+          await saveCellData(cellKey, newPositions);
+        } else {
+          console.error(
+            'Error loading cell data from Firestore:',
+            response.statusText
+          );
         }
+      } catch (error) {
+        console.error('Error loading cell data from Firestore:', error);
+      } finally {
+        setLoadingCells((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(cellKey);
+          return newSet;
+        });
+      }
+    },
+    [loadedCells, loadingCells, saveCellData, setLoadedCells, setPositions]
+  );
 
-        // Cache the positions for the cell
-        cellCache[cellKey] = newPositions;
+  const unloadCell = useCallback(
+    (x, z) => {
+      const cellKey = `${x},${z}`;
+      if (!loadedCells.includes(cellKey)) return;
 
-        setPositions([...positions, ...newPositions]);
-        setLoadedCells([...loadedCells, cellKey]);
+      console.log(`Unloading cell: ${cellKey}`);
 
-        // Save the new cell data to Firestore
-        await saveCellData(cellKey, newPositions);
-      } else {
-        console.error(
-          'Error loading cell data from Firestore:',
-          response.statusText
+      // Remove positions of the cell from the state
+      const cellPositions = cellCache[cellKey];
+      if (cellPositions) {
+        setPositions((prevPositions) =>
+          prevPositions.filter((pos) => !cellPositions.includes(pos))
         );
       }
-    } catch (error) {
-      console.error('Error loading cell data from Firestore:', error);
-    }
-  };
-
-  const unloadCell = (x, z) => {
-    const cellKey = `${x},${z}`;
-    if (!loadedCells.includes(cellKey)) return;
-
-    // Remove positions of the cell from the state
-    const cellPositions = cellCache[cellKey];
-    if (cellPositions) {
-      setPositions((prevPositions) =>
-        prevPositions.filter((pos) => !cellPositions.includes(pos))
+      setLoadedCells((prevLoadedCells) =>
+        prevLoadedCells.filter((key) => key !== cellKey)
       );
-    }
-    setLoadedCells((prevLoadedCells) =>
-      prevLoadedCells.filter((key) => key !== cellKey)
-    );
-  };
+    },
+    [loadedCells, setLoadedCells, setPositions]
+  );
 
   useEffect(() => {
     // Load the initial cell
     loadCell(0, 0);
-  }, []);
+  }, [loadCell]);
 
   const flattenedPositions = useMemo(() => {
     if (
@@ -163,6 +200,8 @@ function App() {
     }
     return positions;
   }, [positions]);
+
+  // Add console logs to debug
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
