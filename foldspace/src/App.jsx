@@ -12,6 +12,7 @@ import { useStore } from './store';
 
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer'; // Assuming SphereRenderer is in the same directory
+import PlaneMesh from './PlaneMesh'; // Import PlaneMesh
 
 const GRID_SIZE = 20000; // Size of each grid cell
 const LOAD_DISTANCE = 20000; // Distance from the edge to trigger loading new cells
@@ -52,6 +53,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
         const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
 
         if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
+          console.log(`Loading cell: ${newX},${newZ}`);
           loadCell(newX, newZ);
         }
       }
@@ -66,6 +68,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
 
       if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
+        console.log(`Unloading cell: ${x},${z}`);
         unloadCell(x, z);
       }
     });
@@ -120,15 +123,15 @@ function App() {
           setPositions((prevPositions) => [...prevPositions, ...newPositions]);
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = [...prevLoadedCells, cellKey];
-
+            console.log(`Loaded cells: ${updatedLoadedCells}`);
             return updatedLoadedCells;
           });
         } else if (response.status === 404) {
           // Generate positions for the new cell
           const newPositions = [];
-          for (let i = 0; i < 100; i++) {
+          for (let i = 0; i < 200; i++) {
             const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-            const posY = Math.floor(Math.random() * 6) * 300; // Constrain posY to multiples of 300
+            const posY = Math.floor(Math.random() * 6) * 500; // Constrain posY to multiples of 300
             const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
             newPositions.push(new THREE.Vector3(posX, posY, posZ));
           }
@@ -139,7 +142,7 @@ function App() {
           setPositions((prevPositions) => [...prevPositions, ...newPositions]);
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = [...prevLoadedCells, cellKey];
-
+            console.log(`Loaded cells: ${updatedLoadedCells}`);
             return updatedLoadedCells;
           });
 
@@ -201,8 +204,6 @@ function App() {
     return positions;
   }, [positions]);
 
-  // Add console logs to debug
-
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas>
@@ -219,6 +220,25 @@ function App() {
             loadCell={loadCell}
             unloadCell={unloadCell}
           />
+          {loadedCells.map((cellKey, index) => {
+            const [x, z] = cellKey.split(',').map(Number);
+            console.log(`Rendering PlaneMesh for cell: ${cellKey}`);
+            const positions = Array(6)
+              .fill()
+              .map((_, i) => [x * GRID_SIZE, i * 500, z * GRID_SIZE]); // Create positions for 6 planes at different heights
+            return (
+              <PlaneMesh
+                key={`${cellKey}-${index}`}
+                positions={positions} // Pass positions array
+                sphereRefs={{}} // Pass necessary refs
+                instancedMeshRef={{}} // Pass necessary refs
+                redInstancedMeshRef={{}} // Pass necessary refs
+                greenInstancedMeshRef={{}} // Pass necessary refs
+                blueInstancedMeshRef={{}} // Pass necessary refs
+                purpleInstancedMeshRef={{}} // Pass necessary refs
+              />
+            );
+          })}
         </Suspense>
       </Canvas>
     </div>

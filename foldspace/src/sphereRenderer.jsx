@@ -81,7 +81,7 @@ const SphereRenderer = ({ flattenedPositions }) => {
     <>
       {planeMeshRefs.current.map((ref, i) => (
         <PlaneMesh
-          key={i}
+          key={`plane-${i}`}
           id={i}
           ref={ref}
           sphereRefs={sphereRefs}
@@ -90,7 +90,7 @@ const SphereRenderer = ({ flattenedPositions }) => {
           greenInstancedMeshRef={sphereRefs.green}
           blueInstancedMeshRef={sphereRefs.blue}
           purpleInstancedMeshRef={sphereRefs.purple}
-          positionY={i * 300}
+          positionY={i * 500}
           frustumCulled={false}
         />
       ))}
@@ -103,7 +103,7 @@ const SphereRenderer = ({ flattenedPositions }) => {
       />
       {['red', 'green', 'blue', 'purple'].map((color, index) => (
         <MemoizedSphere
-          key={index}
+          key={`sphere-${color}-${index}`}
           ref={sphereRefs[color]}
           positions={sphereData[color]}
           material={eval(`${color}SphereMaterial`)}

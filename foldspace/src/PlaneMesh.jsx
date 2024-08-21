@@ -13,11 +13,12 @@ const PlaneMesh = React.forwardRef(
       greenInstancedMeshRef,
       blueInstancedMeshRef,
       purpleInstancedMeshRef,
+      positions = [], // Provide a default value for positions
     },
     ref
   ) => {
     const { raycaster, mouse, camera, size } = useThree();
-    const meshRef = useRef();
+    const meshRefs = useRef([]); // Array of references for each plane mesh
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
@@ -26,7 +27,6 @@ const PlaneMesh = React.forwardRef(
     let isDragging = false;
     let mouseMoved = false;
 
-    let startPos = { x: 0, y: 0 };
     const moveThreshold = 1; // Adjust based on sensitivity to movement
 
     const onMouseDown = useCallback(
@@ -38,11 +38,11 @@ const PlaneMesh = React.forwardRef(
         lastMoveTimestamp.current = Date.now();
         const intersects = raycaster.intersectObjects(
           [
-            meshRef.current,
+            ...meshRefs.current,
             instancedMeshRef.current,
             redInstancedMeshRef.current,
-            greenInstancedMeshRef.current, // Include greenInstancedMeshRef
-            blueInstancedMeshRef.current, // Include redInstancedMeshRef
+            greenInstancedMeshRef.current,
+            blueInstancedMeshRef.current,
             purpleInstancedMeshRef.current,
             ...Object.values(sphereRefs).map((ref) => ref.current),
           ].filter(Boolean)
@@ -80,7 +80,7 @@ const PlaneMesh = React.forwardRef(
           raycaster.setFromCamera(mouse, camera);
           const intersects = raycaster.intersectObjects(
             [
-              meshRef.current,
+              ...meshRefs.current,
               instancedMeshRef.current,
               redInstancedMeshRef.current,
               greenInstancedMeshRef.current, // Include greenInstancedMeshRef
@@ -209,25 +209,26 @@ const PlaneMesh = React.forwardRef(
       onMouseUp,
     ]);
 
-    const meshes = Array(6)
-      .fill()
-      .map((_, i) => (
-        <mesh
-          key={i}
-          ref={meshRef}
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, positionY, 0]}
-        >
-          <planeGeometry attach="geometry" args={[20000, 20000]} />
-          <meshStandardMaterial
-            attach="material"
-            color="red"
-            transparent
-            opacity={0}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ));
+    const meshes = positions.map((pos, i) => (
+      <mesh
+        key={i}
+        ref={(el) => {
+          meshRefs.current[i] = el;
+          if (i === 0 && ref) ref.current = el; // Forward the ref to the first mesh
+        }} // Assign each mesh its own reference
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={pos}
+      >
+        <planeGeometry attach="geometry" args={[20000, 20000]} />
+        <meshStandardMaterial
+          attach="material"
+          color="red"
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    ));
 
     return (
       <>
