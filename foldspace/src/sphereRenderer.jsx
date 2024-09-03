@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import PlaneMesh from './PlaneMesh';
 import {
   sphereMaterial,
@@ -14,11 +14,9 @@ import SpherePool from './SpherePool';
 
 const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
 
-const createSphereMesh = () => {
-  return new THREE.Mesh(sphereGeometry, sphereMaterial);
+const createSphereMesh = (material) => {
+  return new THREE.Mesh(sphereGeometry, material);
 };
-
-const spherePool = new SpherePool(createSphereMesh, 50);
 
 const SphereRenderer = ({ flattenedPositions }) => {
   const [sphereData, setSphereData] = useState({
@@ -44,6 +42,27 @@ const SphereRenderer = ({ flattenedPositions }) => {
     central: useRef(),
   };
 
+  const sphereMaterials = useMemo(
+    () => ({
+      red: redSphereMaterial,
+      green: greenSphereMaterial,
+      blue: blueSphereMaterial,
+      purple: purpleSphereMaterial,
+    }),
+    []
+  );
+
+  const spherePools = useMemo(
+    () => ({
+      default: new SpherePool(() => createSphereMesh(sphereMaterial), 50),
+      red: new SpherePool(() => createSphereMesh(redSphereMaterial), 50),
+      green: new SpherePool(() => createSphereMesh(greenSphereMaterial), 50),
+      blue: new SpherePool(() => createSphereMesh(blueSphereMaterial), 50),
+      purple: new SpherePool(() => createSphereMesh(purpleSphereMaterial), 50),
+    }),
+    []
+  );
+
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
       (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
@@ -51,7 +70,6 @@ const SphereRenderer = ({ flattenedPositions }) => {
 
     if (newYellowPositions.length > 0) {
       const newPositions = getSpherePositions(newYellowPositions);
-      console.log('Sphere positions:', newPositions);
 
       setSphereData((prevData) => ({
         red: [...prevData.red, ...newPositions.redSpherePositions],
@@ -64,16 +82,31 @@ const SphereRenderer = ({ flattenedPositions }) => {
         previousYellowPositions.current.add(pos.toArray().toString())
       );
     }
-  }, [flattenedPositions]);
 
-  useEffect(() => {
-    console.log('Getting a sphere from the pool');
-    const sphere = spherePool.get();
-    sphere.material = redSphereMaterial;
+    const spheres = ['red', 'green', 'blue', 'purple'].map((color) => {
+      const sphere = spherePools[color].get();
+      sphere.material = sphereMaterials[color];
+      return sphere;
+    });
 
     return () => {
-      console.log('Releasing a sphere back to the pool');
-      spherePool.release(sphere);
+      spheres.forEach((sphere, index) => {
+        const color = ['red', 'green', 'blue', 'purple'][index];
+        spherePools[color].release(sphere);
+      });
+    };
+  }, [flattenedPositions, sphereMaterials, spherePools]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup sphere data when component unmounts
+      setSphereData({
+        red: [],
+        green: [],
+        blue: [],
+        purple: [],
+      });
+      previousYellowPositions.current.clear();
     };
   }, []);
 
@@ -106,7 +139,7 @@ const SphereRenderer = ({ flattenedPositions }) => {
           key={`sphere-${color}-${index}`}
           ref={sphereRefs[color]}
           positions={sphereData[color]}
-          material={eval(`${color}SphereMaterial`)}
+          material={sphereMaterials[color]}
           geometry={sphereGeometry}
           scale={[0.2, 0.2, 0.2]}
           frustumCulled={false}

@@ -59,4 +59,15 @@ export const useStore = create((set) => ({
       return { positions: uniquePositions };
     });
   },
+  removePositions: (positionsToRemove) => {
+    set((state) => {
+      const positionsSet = new Set(
+        positionsToRemove.map((pos) => pos.toArray().toString())
+      );
+      const newPositions = state.positions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+      return { positions: newPositions };
+    });
+  },
 }));

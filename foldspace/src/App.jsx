@@ -9,14 +9,15 @@ import React, {
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
-
+import { Stats, useProgress, Html } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer'; // Assuming SphereRenderer is in the same directory
 import PlaneMesh from './PlaneMesh'; // Import PlaneMesh
+import { throttle } from 'lodash';
 
 const GRID_SIZE = 20000; // Size of each grid cell
 const LOAD_DISTANCE = 20000; // Distance from the edge to trigger loading new cells
-const UNLOAD_DISTANCE = 20000; // Distance to trigger unloading cells
+const UNLOAD_DISTANCE = 40000; // Distance to trigger unloading cells (increased for better performance)
 
 const cellCache = {};
 
@@ -28,61 +29,62 @@ function Loader() {
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [currentCell, setCurrentCell] = useState({ x: null, z: null });
 
-  useFrame(() => {
-    if (!cameraRef.current) return;
+  useFrame(
+    throttle(() => {
+      if (!cameraRef.current) return;
 
-    const cameraPosition = cameraRef.current.position;
-    if (!cameraPosition) return; // Add this null check
+      const cameraPosition = cameraRef.current.position;
+      if (!cameraPosition) return; // Add this null check
 
-    const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
-    const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
+      const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
+      const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
 
-    if (currentCell.x === cellX && currentCell.z === cellZ) {
-      // Current cell is already loaded, no need to reload
-      return;
-    }
+      if (currentCell.x === cellX && currentCell.z === cellZ) {
+        // Current cell is already loaded, no need to reload
+        return;
+      }
 
-    setCurrentCell({ x: cellX, z: cellZ });
+      setCurrentCell({ x: cellX, z: cellZ });
 
-    // Load adjacent cells if the camera is close to the edge
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const newX = cellX + dx;
-        const newZ = cellZ + dz;
-        const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
-        const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
+      // Load adjacent cells if the camera is close to the edge
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          const newX = cellX + dx;
+          const newZ = cellZ + dz;
+          const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
+          const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
 
-        if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
-          console.log(`Loading cell: ${newX},${newZ}`);
-          loadCell(newX, newZ);
+          if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
+            loadCell(newX, newZ);
+          }
         }
       }
-    }
 
-    // Unload cells that are too far away
-    const loadedCells = new Set(useStore.getState().loadedCells);
+      // Unload cells that are too far away
+      const loadedCells = new Set(useStore.getState().loadedCells);
 
-    loadedCells.forEach((cellKey) => {
-      const [x, z] = cellKey.split(',').map(Number);
-      const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
-      const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
+      loadedCells.forEach((cellKey) => {
+        const [x, z] = cellKey.split(',').map(Number);
+        const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
+        const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
 
-      if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
-        console.log(`Unloading cell: ${x},${z}`);
-        unloadCell(x, z);
-      }
-    });
-  });
+        if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
+          unloadCell(x, z);
+        }
+      });
+    }, 16)
+  );
 
   return null;
 });
 
-function App() {
+const App = React.memo(() => {
   const defaultPosition = useStore((state) => state.defaultPosition);
   const loadedCells = useStore((state) => state.loadedCells);
   const positions = useStore((state) => state.positions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
+  const removePositions = useStore((state) => state.removePositions);
   const cameraRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
 
@@ -123,7 +125,7 @@ function App() {
           setPositions((prevPositions) => [...prevPositions, ...newPositions]);
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = [...prevLoadedCells, cellKey];
-            console.log(`Loaded cells: ${updatedLoadedCells}`);
+
             return updatedLoadedCells;
           });
         } else if (response.status === 404) {
@@ -142,7 +144,7 @@ function App() {
           setPositions((prevPositions) => [...prevPositions, ...newPositions]);
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = [...prevLoadedCells, cellKey];
-            console.log(`Loaded cells: ${updatedLoadedCells}`);
+
             return updatedLoadedCells;
           });
 
@@ -172,20 +174,19 @@ function App() {
       const cellKey = `${x},${z}`;
       if (!loadedCells.includes(cellKey)) return;
 
-      console.log(`Unloading cell: ${cellKey}`);
-
       // Remove positions of the cell from the state
       const cellPositions = cellCache[cellKey];
       if (cellPositions) {
-        setPositions((prevPositions) =>
-          prevPositions.filter((pos) => !cellPositions.includes(pos))
-        );
+        removePositions(cellPositions);
       }
       setLoadedCells((prevLoadedCells) =>
         prevLoadedCells.filter((key) => key !== cellKey)
       );
+
+      // Clean up the cache
+      delete cellCache[cellKey];
     },
-    [loadedCells, setLoadedCells, setPositions]
+    [loadedCells, setLoadedCells, removePositions]
   );
 
   useEffect(() => {
@@ -208,6 +209,7 @@ function App() {
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas>
         <Suspense fallback={<Loader />}>
+          <Stats />
           <ambientLight />
           <SphereRenderer
             flattenedPositions={
@@ -222,7 +224,7 @@ function App() {
           />
           {loadedCells.map((cellKey, index) => {
             const [x, z] = cellKey.split(',').map(Number);
-            console.log(`Rendering PlaneMesh for cell: ${cellKey}`);
+
             const positions = Array(6)
               .fill()
               .map((_, i) => [x * GRID_SIZE, i * 500, z * GRID_SIZE]); // Create positions for 6 planes at different heights
@@ -243,6 +245,6 @@ function App() {
       </Canvas>
     </div>
   );
-}
+});
 
 export default App;

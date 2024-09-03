@@ -2,6 +2,7 @@ import React, { useEffect, useRef, memo, useCallback } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
+import { throttle } from 'lodash';
 
 const PlaneMesh = React.forwardRef(
   (
@@ -59,7 +60,17 @@ const PlaneMesh = React.forwardRef(
           circleRef.current.visible = false;
         }
       },
-      [raycaster, mouse, camera]
+      [
+        raycaster,
+        mouse,
+        camera,
+        sphereRefs,
+        instancedMeshRef,
+        redInstancedMeshRef,
+        greenInstancedMeshRef,
+        blueInstancedMeshRef,
+        purpleInstancedMeshRef,
+      ]
     );
 
     const onMouseUp = useCallback(
@@ -157,11 +168,23 @@ const PlaneMesh = React.forwardRef(
         }
         isDragging = false;
       },
-      [raycaster, mouse, camera, setTarget, setLookAt]
+      [
+        raycaster,
+        mouse,
+        camera,
+        setTarget,
+        setLookAt,
+        sphereRefs,
+        instancedMeshRef,
+        redInstancedMeshRef,
+        greenInstancedMeshRef,
+        blueInstancedMeshRef,
+        purpleInstancedMeshRef,
+      ]
     );
 
     useEffect(() => {
-      const onMouseMove = (event) => {
+      const onMouseMove = throttle((event) => {
         // The following code will only execute when the mouse button is down
         if (isMouseDown.current) {
           const currentTime = Date.now();
@@ -186,7 +209,7 @@ const PlaneMesh = React.forwardRef(
           // Store the updated rotation back in the state
           useStore.getState().setRotation(rotation);
         }
-      };
+      }, 16); // Throttle to 60fps
 
       document.addEventListener('mousedown', onMouseDown);
       document.addEventListener('mouseup', onMouseUp);
@@ -226,6 +249,7 @@ const PlaneMesh = React.forwardRef(
           transparent
           opacity={0}
           side={THREE.DoubleSide}
+          frustumCulled={false}
         />
       </mesh>
     ));
