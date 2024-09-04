@@ -54,11 +54,19 @@ const SphereRenderer = ({ flattenedPositions }) => {
 
   const spherePools = useMemo(
     () => ({
-      default: new SpherePool(() => createSphereMesh(sphereMaterial), 50),
-      red: new SpherePool(() => createSphereMesh(redSphereMaterial), 50),
-      green: new SpherePool(() => createSphereMesh(greenSphereMaterial), 50),
-      blue: new SpherePool(() => createSphereMesh(blueSphereMaterial), 50),
-      purple: new SpherePool(() => createSphereMesh(purpleSphereMaterial), 50),
+      default: new SpherePool(() => createSphereMesh(sphereMaterial), 50, 100),
+      red: new SpherePool(() => createSphereMesh(redSphereMaterial), 50, 100),
+      green: new SpherePool(
+        () => createSphereMesh(greenSphereMaterial),
+        50,
+        100
+      ),
+      blue: new SpherePool(() => createSphereMesh(blueSphereMaterial), 50, 100),
+      purple: new SpherePool(
+        () => createSphereMesh(purpleSphereMaterial),
+        50,
+        100
+      ),
     }),
     []
   );
@@ -123,7 +131,6 @@ const SphereRenderer = ({ flattenedPositions }) => {
           greenInstancedMeshRef={sphereRefs.green}
           blueInstancedMeshRef={sphereRefs.blue}
           purpleInstancedMeshRef={sphereRefs.purple}
-          positionY={i * 500}
           frustumCulled={false}
         />
       ))}

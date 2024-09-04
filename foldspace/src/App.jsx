@@ -17,7 +17,7 @@ import { throttle } from 'lodash';
 
 const GRID_SIZE = 20000; // Size of each grid cell
 const LOAD_DISTANCE = 20000; // Distance from the edge to trigger loading new cells
-const UNLOAD_DISTANCE = 40000; // Distance to trigger unloading cells (increased for better performance)
+const UNLOAD_DISTANCE = 20000; // Distance to trigger unloading cells (increased for better performance)
 
 const cellCache = {};
 
@@ -69,11 +69,19 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
         const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
 
         if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
+          console.log(`Unloading cell: ${cellKey}`);
           unloadCell(x, z);
         }
       });
     }, 16)
   );
+
+  useEffect(() => {
+    return () => {
+      // Clean up throttled function
+      throttle.cancel();
+    };
+  }, []);
 
   return null;
 });
@@ -85,6 +93,7 @@ const App = React.memo(() => {
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
   const removePositions = useStore((state) => state.removePositions);
+  const removeSphereRefs = useStore((state) => state.removeSphereRefs);
   const cameraRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
 
@@ -183,16 +192,27 @@ const App = React.memo(() => {
         prevLoadedCells.filter((key) => key !== cellKey)
       );
 
+      // Remove sphere references for the cell
+      removeSphereRefs(cellKey);
+
       // Clean up the cache
       delete cellCache[cellKey];
     },
-    [loadedCells, setLoadedCells, removePositions]
+    [loadedCells, setLoadedCells, removePositions, removeSphereRefs]
   );
 
   useEffect(() => {
     // Load the initial cell
     loadCell(0, 0);
   }, [loadCell]);
+
+  useEffect(() => {
+    // Log the data of all currently loaded cells
+    console.log('Loaded Cells:', loadedCells);
+    loadedCells.forEach((cellKey) => {
+      console.log(`Positions for cell ${cellKey}:`, cellCache[cellKey]);
+    });
+  }, [loadedCells, positions]);
 
   const flattenedPositions = useMemo(() => {
     if (

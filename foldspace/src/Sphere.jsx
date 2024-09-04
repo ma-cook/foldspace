@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);

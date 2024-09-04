@@ -9,7 +9,7 @@ export const useStore = create((set) => ({
   currentPlaneIndex: 0,
   positions: [], // Ensure positions is always an array
   cameraPosition: [0, 50, 100], // new state variable
-  sphereRefs: null,
+  sphereRefs: {}, // Store sphereRefs as an object
   loadedCells: [], // Store as an array
   setLoadedCells: (loadedCells) => {
     set((state) => {
@@ -23,7 +23,19 @@ export const useStore = create((set) => ({
       };
     });
   },
-  setSphereRefs: (refs) => set({ sphereRefs: refs }),
+  setSphereRefs: (cellKey, refs) =>
+    set((state) => ({
+      sphereRefs: {
+        ...state.sphereRefs,
+        [cellKey]: refs,
+      },
+    })),
+  removeSphereRefs: (cellKey) =>
+    set((state) => {
+      const newSphereRefs = { ...state.sphereRefs };
+      delete newSphereRefs[cellKey];
+      return { sphereRefs: newSphereRefs };
+    }),
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
     set((state) => ({

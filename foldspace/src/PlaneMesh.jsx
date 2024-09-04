@@ -8,7 +8,6 @@ const PlaneMesh = React.forwardRef(
   (
     {
       sphereRefs,
-      positionY,
       instancedMeshRef,
       redInstancedMeshRef,
       greenInstancedMeshRef,
@@ -219,6 +218,7 @@ const PlaneMesh = React.forwardRef(
         document.removeEventListener('mousedown', onMouseDown);
         document.removeEventListener('mouseup', onMouseUp);
         document.removeEventListener('mousemove', onMouseMove);
+        onMouseMove.cancel(); // Cancel the throttled function
       };
     }, [
       raycaster,
@@ -249,7 +249,6 @@ const PlaneMesh = React.forwardRef(
           transparent
           opacity={0}
           side={THREE.DoubleSide}
-          frustumCulled={false}
         />
       </mesh>
     ));
