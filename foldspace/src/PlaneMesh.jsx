@@ -14,6 +14,7 @@ const PlaneMesh = React.forwardRef(
       blueInstancedMeshRef,
       purpleInstancedMeshRef,
       positions = [], // Provide a default value for positions
+      cellKey, // Add cellKey prop to identify the cell
     },
     ref
   ) => {
@@ -22,6 +23,7 @@ const PlaneMesh = React.forwardRef(
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
+    const setPlaneMeshes = useStore((state) => state.setPlaneMeshes); // Get setPlaneMeshes action
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
     let isDragging = false;
@@ -231,6 +233,14 @@ const PlaneMesh = React.forwardRef(
       onMouseDown,
       onMouseUp,
     ]);
+
+    // useEffect(() => {
+    //   // Store the plane meshes in the state
+    //   setPlaneMeshes(cellKey, meshRefs.current);
+
+    //   // Log the number of plane meshes
+    //   console.log(`Number of plane meshes: ${meshRefs.current.length}`);
+    // }, [cellKey, setPlaneMeshes, meshRefs.current.length]);
 
     const meshes = positions.map((pos, i) => (
       <mesh

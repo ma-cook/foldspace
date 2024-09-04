@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
+import cellCache from './cellCache';
 
 export const useStore = create((set) => ({
   vec: null,
@@ -7,10 +8,28 @@ export const useStore = create((set) => ({
   lookAt: new THREE.Vector3(),
   rotation: new THREE.Euler(),
   currentPlaneIndex: 0,
-  positions: [], // Ensure positions is always an array
-  cameraPosition: [0, 50, 100], // new state variable
-  sphereRefs: {}, // Store sphereRefs as an object
-  loadedCells: [], // Store as an array
+  positions: [], // Yellow sphere positions
+  redPositions: [], // Red sphere positions
+  greenPositions: [], // Green sphere positions
+  bluePositions: [], // Blue sphere positions
+  purplePositions: [], // Purple sphere positions
+  cameraPosition: [0, 50, 100],
+  sphereRefs: {},
+  planeMeshes: {}, // Add state to track plane meshes
+  setPlaneMeshes: (cellKey, meshes) =>
+    set((state) => ({
+      planeMeshes: {
+        ...state.planeMeshes,
+        [cellKey]: meshes,
+      },
+    })),
+  removePlaneMeshes: (cellKey) =>
+    set((state) => {
+      const newPlaneMeshes = { ...state.planeMeshes };
+      delete newPlaneMeshes[cellKey];
+      return { planeMeshes: newPlaneMeshes };
+    }),
+  loadedCells: [],
   setLoadedCells: (loadedCells) => {
     set((state) => {
       const newLoadedCells =
@@ -52,7 +71,7 @@ export const useStore = create((set) => ({
     })),
   setCameraPosition: (x, y, z) =>
     set((state) => ({
-      cameraPosition: [x, y, z], // update the array
+      cameraPosition: [x, y, z],
     })),
   setPositions: (positions) => {
     set((state) => {
@@ -61,7 +80,6 @@ export const useStore = create((set) => ({
           ? positions(state.positions)
           : positions;
 
-      // Ensure positions are unique
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
             new Set(newPositions.map((pos) => pos.toArray().toString()))
@@ -69,6 +87,70 @@ export const useStore = create((set) => ({
         : [];
 
       return { positions: uniquePositions };
+    });
+  },
+  setRedPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.redPositions)
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      return { redPositions: uniquePositions };
+    });
+  },
+  setGreenPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.greenPositions)
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      return { greenPositions: uniquePositions };
+    });
+  },
+  setBluePositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.bluePositions)
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      return { bluePositions: uniquePositions };
+    });
+  },
+  setPurplePositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.purplePositions)
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      return { purplePositions: uniquePositions };
     });
   },
   removePositions: (positionsToRemove) => {
@@ -80,6 +162,38 @@ export const useStore = create((set) => ({
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
       return { positions: newPositions };
+    });
+  },
+  removeAllPositions: (cellKey) => {
+    set((state) => {
+      const cellPositions = cellCache[cellKey] || [];
+      const positionsSet = new Set(
+        cellPositions.map((pos) => pos.toArray().toString())
+      );
+
+      const newPositions = state.positions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+      const newRedPositions = state.redPositions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+      const newGreenPositions = state.greenPositions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+      const newBluePositions = state.bluePositions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+      const newPurplePositions = state.purplePositions.filter(
+        (pos) => !positionsSet.has(pos.toArray().toString())
+      );
+
+      return {
+        positions: newPositions,
+        redPositions: newRedPositions,
+        greenPositions: newGreenPositions,
+        bluePositions: newBluePositions,
+        purplePositions: newPurplePositions,
+      };
     });
   },
 }));
