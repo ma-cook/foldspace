@@ -22,6 +22,7 @@ import {
   blueSphereMaterial,
   purpleSphereMaterial,
 } from './SphereData';
+import CellLoader from './CellLoader'; // Import the CellLoader component
 
 const GRID_SIZE = 20000;
 const LOAD_DISTANCE = 40000;
@@ -31,65 +32,6 @@ function Loader() {
   const { progress } = useProgress();
   return <Html center>{progress} % loaded</Html>;
 }
-
-const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
-  const [currentCell, setCurrentCell] = useState({ x: null, z: null });
-
-  const throttledFrame = useMemo(
-    () =>
-      throttle(() => {
-        if (!cameraRef.current) return;
-
-        const cameraPosition = cameraRef.current.position;
-        if (!cameraPosition) return;
-
-        const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
-        const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
-
-        if (currentCell.x === cellX && currentCell.z === cellZ) {
-          return;
-        }
-
-        setCurrentCell({ x: cellX, z: cellZ });
-
-        for (let dx = -1; dx <= 1; dx++) {
-          for (let dz = -1; dz <= 1; dz++) {
-            const newX = cellX + dx;
-            const newZ = cellZ + dz;
-            const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
-            const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
-
-            if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
-              loadCell(newX, newZ);
-            }
-          }
-        }
-
-        const loadedCells = new Set(useStore.getState().loadedCells);
-
-        loadedCells.forEach((cellKey) => {
-          const [x, z] = cellKey.split(',').map(Number);
-          const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
-          const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
-
-          if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
-            unloadCell(x, z);
-          }
-        });
-      }, 16),
-    [cameraRef, currentCell, loadCell, unloadCell]
-  );
-
-  useFrame(throttledFrame);
-
-  useEffect(() => {
-    return () => {
-      throttledFrame.cancel();
-    };
-  }, [throttledFrame]);
-
-  return null;
-});
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
@@ -106,6 +48,7 @@ const App = React.memo(() => {
   const setPurplePositions = useStore((state) => state.setPurplePositions);
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
+  const swapBuffers = useStore((state) => state.swapBuffers);
   const cameraRef = useRef();
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
@@ -123,6 +66,36 @@ const App = React.memo(() => {
       console.error('Error saving cell data to Firestore:', error);
     }
   }, []);
+
+  const generateNewPositions = (x, z) => {
+    const newPositions = [];
+    const newRedPositions = [];
+    const newGreenPositions = [];
+    const newBluePositions = [];
+    const newPurplePositions = [];
+
+    for (let i = 0; i < 50; i++) {
+      const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
+      const posY = Math.floor(Math.random() * 6) * 1000;
+      const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
+      const position = new THREE.Vector3(posX, posY, posZ);
+
+      newPositions.push(position);
+
+      if (i % 4 === 0) newRedPositions.push(position.clone());
+      if (i % 4 === 1) newGreenPositions.push(position.clone());
+      if (i % 4 === 2) newBluePositions.push(position.clone());
+      if (i % 4 === 3) newPurplePositions.push(position.clone());
+    }
+
+    return {
+      newPositions,
+      newRedPositions,
+      newGreenPositions,
+      newBluePositions,
+      newPurplePositions,
+    };
+  };
 
   const loadCell = useCallback(
     async (x, z) => {
@@ -184,26 +157,14 @@ const App = React.memo(() => {
           console.log(
             `Cell data not found for ${cellKey}, generating new data.`
           );
-          const newPositions = [];
-          const newRedPositions = [];
-          const newGreenPositions = [];
-          const newBluePositions = [];
-          const newPurplePositions = [];
-          for (let i = 0; i < 50; i++) {
-            const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-            const posY = Math.floor(Math.random() * 6) * 1000;
-            const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
-            newPositions.push(new THREE.Vector3(posX, posY, posZ));
 
-            if (i % 4 === 0)
-              newRedPositions.push(new THREE.Vector3(posX, posY, posZ));
-            if (i % 4 === 1)
-              newGreenPositions.push(new THREE.Vector3(posX, posY, posZ));
-            if (i % 4 === 2)
-              newBluePositions.push(new THREE.Vector3(posX, posY, posZ));
-            if (i % 4 === 3)
-              newPurplePositions.push(new THREE.Vector3(posX, posY, posZ));
-          }
+          const {
+            newPositions,
+            newRedPositions,
+            newGreenPositions,
+            newBluePositions,
+            newPurplePositions,
+          } = generateNewPositions(x, z);
 
           cellCache[cellKey] = newPositions;
 
@@ -252,18 +213,20 @@ const App = React.memo(() => {
           newSet.delete(cellKey);
           return newSet;
         });
+        swapBuffers(); // Swap buffers after loading cell data
       }
     },
     [
       loadedCells,
       loadingCells,
       saveCellData,
-      setLoadedCells,
       setPositions,
       setRedPositions,
       setGreenPositions,
       setBluePositions,
       setPurplePositions,
+      setLoadedCells,
+      swapBuffers,
     ]
   );
 
@@ -282,6 +245,7 @@ const App = React.memo(() => {
       if (cellPositions) {
         removeAllPositions(cellKey);
       }
+
       setLoadedCells((prevLoadedCells) =>
         prevLoadedCells.filter((key) => key !== cellKey)
       );
@@ -300,6 +264,8 @@ const App = React.memo(() => {
       disposeMaterial(greenSphereMaterial);
       disposeMaterial(blueSphereMaterial);
       disposeMaterial(purpleSphereMaterial);
+
+      swapBuffers(); // Swap buffers after unloading cell data
     },
     [
       loadedCells,
@@ -307,6 +273,7 @@ const App = React.memo(() => {
       removeAllPositions,
       removeSphereRefs,
       sphereRendererRef,
+      swapBuffers,
     ]
   );
 

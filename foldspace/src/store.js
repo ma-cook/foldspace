@@ -8,11 +8,12 @@ export const useStore = create((set) => ({
   lookAt: new THREE.Vector3(),
   rotation: new THREE.Euler(),
   currentPlaneIndex: 0,
-  positions: [], // Yellow sphere positions
-  redPositions: [], // Red sphere positions
-  greenPositions: [], // Green sphere positions
-  bluePositions: [], // Blue sphere positions
-  purplePositions: [], // Purple sphere positions
+  positions: [[], []], // Double buffer for yellow sphere positions
+  redPositions: [[], []], // Double buffer for red sphere positions
+  greenPositions: [[], []], // Double buffer for green sphere positions
+  bluePositions: [[], []], // Double buffer for blue sphere positions
+  purplePositions: [[], []], // Double buffer for purple sphere positions
+  activeBuffer: 0, // Index of the active buffer
   cameraPosition: [0, 50, 100],
   sphereRefs: {},
   planeMeshes: {}, // Add state to track plane meshes
@@ -77,7 +78,7 @@ export const useStore = create((set) => ({
     set((state) => {
       const newPositions =
         typeof positions === 'function'
-          ? positions(state.positions)
+          ? positions(state.positions[state.activeBuffer])
           : positions;
 
       const uniquePositions = Array.isArray(newPositions)
@@ -86,14 +87,18 @@ export const useStore = create((set) => ({
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
-      return { positions: uniquePositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.positions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { positions: updatedPositions };
     });
   },
   setRedPositions: (positions) => {
     set((state) => {
       const newPositions =
         typeof positions === 'function'
-          ? positions(state.redPositions)
+          ? positions(state.redPositions[state.activeBuffer])
           : positions;
 
       const uniquePositions = Array.isArray(newPositions)
@@ -102,14 +107,18 @@ export const useStore = create((set) => ({
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
-      return { redPositions: uniquePositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.redPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { redPositions: updatedPositions };
     });
   },
   setGreenPositions: (positions) => {
     set((state) => {
       const newPositions =
         typeof positions === 'function'
-          ? positions(state.greenPositions)
+          ? positions(state.greenPositions[state.activeBuffer])
           : positions;
 
       const uniquePositions = Array.isArray(newPositions)
@@ -118,14 +127,18 @@ export const useStore = create((set) => ({
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
-      return { greenPositions: uniquePositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.greenPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { greenPositions: updatedPositions };
     });
   },
   setBluePositions: (positions) => {
     set((state) => {
       const newPositions =
         typeof positions === 'function'
-          ? positions(state.bluePositions)
+          ? positions(state.bluePositions[state.activeBuffer])
           : positions;
 
       const uniquePositions = Array.isArray(newPositions)
@@ -134,14 +147,18 @@ export const useStore = create((set) => ({
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
-      return { bluePositions: uniquePositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.bluePositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { bluePositions: updatedPositions };
     });
   },
   setPurplePositions: (positions) => {
     set((state) => {
       const newPositions =
         typeof positions === 'function'
-          ? positions(state.purplePositions)
+          ? positions(state.purplePositions[state.activeBuffer])
           : positions;
 
       const uniquePositions = Array.isArray(newPositions)
@@ -150,18 +167,29 @@ export const useStore = create((set) => ({
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
-      return { purplePositions: uniquePositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.purplePositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { purplePositions: updatedPositions };
     });
   },
+  swapBuffers: () =>
+    set((state) => ({
+      activeBuffer: (state.activeBuffer + 1) % 2,
+    })),
   removePositions: (positionsToRemove) => {
     set((state) => {
       const positionsSet = new Set(
         positionsToRemove.map((pos) => pos.toArray().toString())
       );
-      const newPositions = state.positions.filter(
+      const newPositions = state.positions[state.activeBuffer].filter(
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
-      return { positions: newPositions };
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.positions];
+      updatedPositions[nextBuffer] = newPositions;
+      return { positions: updatedPositions };
     });
   },
   removeAllPositions: (cellKey) => {
@@ -171,28 +199,41 @@ export const useStore = create((set) => ({
         cellPositions.map((pos) => pos.toArray().toString())
       );
 
-      const newPositions = state.positions.filter(
+      const newPositions = state.positions[state.activeBuffer].filter(
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
-      const newRedPositions = state.redPositions.filter(
+      const newRedPositions = state.redPositions[state.activeBuffer].filter(
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
-      const newGreenPositions = state.greenPositions.filter(
+      const newGreenPositions = state.greenPositions[state.activeBuffer].filter(
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
-      const newBluePositions = state.bluePositions.filter(
+      const newBluePositions = state.bluePositions[state.activeBuffer].filter(
         (pos) => !positionsSet.has(pos.toArray().toString())
       );
-      const newPurplePositions = state.purplePositions.filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
-      );
+      const newPurplePositions = state.purplePositions[
+        state.activeBuffer
+      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.positions];
+      const updatedRedPositions = [...state.redPositions];
+      const updatedGreenPositions = [...state.greenPositions];
+      const updatedBluePositions = [...state.bluePositions];
+      const updatedPurplePositions = [...state.purplePositions];
+
+      updatedPositions[nextBuffer] = newPositions;
+      updatedRedPositions[nextBuffer] = newRedPositions;
+      updatedGreenPositions[nextBuffer] = newGreenPositions;
+      updatedBluePositions[nextBuffer] = newBluePositions;
+      updatedPurplePositions[nextBuffer] = newPurplePositions;
 
       return {
-        positions: newPositions,
-        redPositions: newRedPositions,
-        greenPositions: newGreenPositions,
-        bluePositions: newBluePositions,
-        purplePositions: newPurplePositions,
+        positions: updatedPositions,
+        redPositions: updatedRedPositions,
+        greenPositions: updatedGreenPositions,
+        bluePositions: updatedBluePositions,
+        purplePositions: updatedPurplePositions,
       };
     });
   },

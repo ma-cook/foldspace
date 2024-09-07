@@ -11,6 +11,7 @@ import {
 import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
 import SpherePool from './SpherePool';
+import { useStore } from './store';
 
 const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
 
@@ -76,6 +77,17 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     []
   );
 
+  const activeBuffer = useStore((state) => state.activeBuffer);
+  const positions = useStore((state) => state.positions[activeBuffer]);
+  const redPositions = useStore((state) => state.redPositions[activeBuffer]);
+  const greenPositions = useStore(
+    (state) => state.greenPositions[activeBuffer]
+  );
+  const bluePositions = useStore((state) => state.bluePositions[activeBuffer]);
+  const purplePositions = useStore(
+    (state) => state.purplePositions[activeBuffer]
+  );
+
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
       (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
@@ -123,19 +135,19 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   const radius = 400; // Adjust this value to increase the spacing
   const orbitCount = 4; // Number of non-yellow spheres orbiting each yellow sphere
 
-  const redOrbitPositions = flattenedPositions.flatMap(
+  const redOrbitPositions = positions.flatMap(
     (centralPosition) =>
       calculateCircularPositions(centralPosition, radius, orbitCount)[0]
   );
-  const greenOrbitPositions = flattenedPositions.flatMap(
+  const greenOrbitPositions = positions.flatMap(
     (centralPosition) =>
       calculateCircularPositions(centralPosition, radius, orbitCount)[1]
   );
-  const blueOrbitPositions = flattenedPositions.flatMap(
+  const blueOrbitPositions = positions.flatMap(
     (centralPosition) =>
       calculateCircularPositions(centralPosition, radius, orbitCount)[2]
   );
-  const purpleOrbitPositions = flattenedPositions.flatMap(
+  const purpleOrbitPositions = positions.flatMap(
     (centralPosition) =>
       calculateCircularPositions(centralPosition, radius, orbitCount)[3]
   );
@@ -157,7 +169,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
       ))}
       <MemoizedSphere
         ref={sphereRefs.central}
-        positions={Array.isArray(flattenedPositions) ? flattenedPositions : []}
+        positions={Array.isArray(positions) ? positions : []}
         material={sphereMaterial}
         geometry={sphereGeometry}
         frustumCulled={false}
