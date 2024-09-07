@@ -15,10 +15,17 @@ import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
 import { throttle } from 'lodash';
 import cellCache from './cellCache';
+import {
+  sphereMaterial,
+  redSphereMaterial,
+  greenSphereMaterial,
+  blueSphereMaterial,
+  purpleSphereMaterial,
+} from './SphereData';
 
 const GRID_SIZE = 20000;
-const LOAD_DISTANCE = 50000;
-const UNLOAD_DISTANCE = 50000;
+const LOAD_DISTANCE = 40000;
+const UNLOAD_DISTANCE = 40000;
 
 function Loader() {
   const { progress } = useProgress();
@@ -260,6 +267,12 @@ const App = React.memo(() => {
     ]
   );
 
+  const disposeMaterial = (material) => {
+    if (material && typeof material.dispose === 'function') {
+      material.dispose();
+    }
+  };
+
   const unloadCell = useCallback(
     (x, z) => {
       const cellKey = `${x},${z}`;
@@ -280,6 +293,13 @@ const App = React.memo(() => {
       if (sphereRendererRef.current) {
         sphereRendererRef.current.clearNonYellowSpheres(cellKey);
       }
+
+      // Dispose of materials
+      disposeMaterial(sphereMaterial);
+      disposeMaterial(redSphereMaterial);
+      disposeMaterial(greenSphereMaterial);
+      disposeMaterial(blueSphereMaterial);
+      disposeMaterial(purpleSphereMaterial);
     },
     [
       loadedCells,
