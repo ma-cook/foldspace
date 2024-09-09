@@ -51,14 +51,18 @@ const PlaneMesh = React.forwardRef(
         );
         if (intersects.length > 0) {
           // Set the position of the circleRef to the intersection point
-          circleRef.current.position.copy(intersects[0].point);
-          // Raise the circle slightly above the plane
-          circleRef.current.position.y += 0.01;
-          // Make the circle visible
-          circleRef.current.visible = true;
+          if (circleRef.current) {
+            circleRef.current.position.copy(intersects[0].point);
+            // Raise the circle slightly above the plane
+            circleRef.current.position.y += 0.01;
+            // Make the circle visible
+            circleRef.current.visible = true;
+          }
         } else {
           // Hide the circle when the mouse is not over the plane
-          circleRef.current.visible = false;
+          if (circleRef.current) {
+            circleRef.current.visible = false;
+          }
         }
       },
       [
@@ -234,14 +238,6 @@ const PlaneMesh = React.forwardRef(
       onMouseUp,
     ]);
 
-    // useEffect(() => {
-    //   // Store the plane meshes in the state
-    //   setPlaneMeshes(cellKey, meshRefs.current);
-
-    //   // Log the number of plane meshes
-    //   console.log(`Number of plane meshes: ${meshRefs.current.length}`);
-    // }, [cellKey, setPlaneMeshes, meshRefs.current.length]);
-
     const meshes = positions.map((pos, i) => (
       <mesh
         key={i}
@@ -252,10 +248,9 @@ const PlaneMesh = React.forwardRef(
         rotation={[-Math.PI / 2, 0, 0]}
         position={pos}
       >
-        <planeGeometry attach="geometry" args={[20000, 20000]} />
-        <meshStandardMaterial
+        <planeGeometry attach="geometry" args={[40000, 40000]} />
+        <meshBasicMaterial
           attach="material"
-          color="red"
           transparent
           opacity={0}
           side={THREE.DoubleSide}

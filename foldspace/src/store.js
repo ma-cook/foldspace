@@ -17,6 +17,8 @@ export const useStore = create((set) => ({
   cameraPosition: [0, 50, 100],
   sphereRefs: {},
   planeMeshes: {}, // Add state to track plane meshes
+  cameraRef: { current: null }, // Add cameraRef to the store
+  setCameraRef: (ref) => set(() => ({ cameraRef: ref })), // Add setter for cameraRef
   setPlaneMeshes: (cellKey, meshes) =>
     set((state) => ({
       planeMeshes: {

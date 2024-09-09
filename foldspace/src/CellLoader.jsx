@@ -3,12 +3,13 @@ import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
 import { useStore } from './store';
 
-const GRID_SIZE = 20000;
-const LOAD_DISTANCE = 40000;
-const UNLOAD_DISTANCE = 40000;
+const GRID_SIZE = 40000;
+const LOAD_DISTANCE = 120000;
+const UNLOAD_DISTANCE = 120000;
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [currentCell, setCurrentCell] = useState({ x: null, z: null });
+  const [loadingCells, setLoadingCells] = useState(new Set());
 
   const throttledFrame = useMemo(
     () =>
@@ -35,7 +36,17 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
             const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
 
             if (distanceX < LOAD_DISTANCE && distanceZ < LOAD_DISTANCE) {
-              loadCell(newX, newZ);
+              const cellKey = `${newX},${newZ}`;
+              if (!loadingCells.has(cellKey)) {
+                setLoadingCells((prev) => new Set(prev).add(cellKey));
+                loadCell(newX, newZ).finally(() => {
+                  setLoadingCells((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(cellKey);
+                    return newSet;
+                  });
+                });
+              }
             }
           }
         }
@@ -51,8 +62,8 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
             unloadCell(x, z);
           }
         });
-      }, 60),
-    [cameraRef, currentCell, loadCell, unloadCell]
+      }, 10), // Increase throttle delay to 100ms
+    [cameraRef, currentCell, loadCell, unloadCell, loadingCells]
   );
 
   useFrame(throttledFrame);
