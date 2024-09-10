@@ -19,7 +19,7 @@ import generateNewPositions from './generateNewPositions';
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
-const GRID_SIZE = 40000;
+const GRID_SIZE = 80000;
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);

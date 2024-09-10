@@ -4,10 +4,10 @@ import { throttle } from 'lodash';
 import { useStore } from './store';
 
 const GRID_SIZE = 80000;
-const LOAD_DISTANCE = 120000;
-const UNLOAD_DISTANCE = 120000;
-const DETAIL_DISTANCE = 60000;
-const UNLOAD_DETAIL_DISTANCE = 60000; // Add UNLOAD_DETAIL_DISTANCE
+const LOAD_DISTANCE = 1200000;
+const UNLOAD_DISTANCE = 1200000;
+const DETAIL_DISTANCE = 30000;
+const UNLOAD_DETAIL_DISTANCE = 30000; // Add UNLOAD_DETAIL_DISTANCE
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [currentCell, setCurrentCell] = useState({ x: null, z: null });

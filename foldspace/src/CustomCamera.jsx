@@ -37,6 +37,27 @@ const CustomCamera = forwardRef((props, ref) => {
     }
   }, [vec, lookAt, target, camera, ref]);
 
+  // Update the camera position in the store whenever the camera moves
+  useEffect(() => {
+    const handleCameraMove = () => {
+      setCameraPosition(
+        camera.position.x,
+        camera.position.y,
+        camera.position.z
+      );
+    };
+
+    if (controlsRef.current) {
+      controlsRef.current.addEventListener('change', handleCameraMove);
+    }
+
+    return () => {
+      if (controlsRef.current) {
+        controlsRef.current.removeEventListener('change', handleCameraMove);
+      }
+    };
+  }, [camera, setCameraPosition]);
+
   return (
     <PerspectiveCamera
       defaultCamera={true}

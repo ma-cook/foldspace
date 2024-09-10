@@ -160,9 +160,9 @@ const PlaneMesh = React.forwardRef(
                 new THREE.Vector3().setFromMatrixPosition(instanceMatrix);
 
               setTarget({
-                x: instancePosition.x + 50,
-                y: instancePosition.y + 120,
-                z: instancePosition.z + 100,
+                x: instancePosition.x + 100,
+                y: instancePosition.y + 280,
+                z: instancePosition.z + 380,
               });
               setLookAt(instancePosition);
             } else {
@@ -248,7 +248,7 @@ const PlaneMesh = React.forwardRef(
         rotation={[-Math.PI / 2, 0, 0]}
         position={pos}
       >
-        <planeGeometry attach="geometry" args={[40000, 40000]} />
+        <planeGeometry attach="geometry" args={[80000, 80000]} />
         <meshBasicMaterial
           attach="material"
           transparent

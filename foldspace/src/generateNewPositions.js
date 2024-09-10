@@ -29,6 +29,7 @@ const generateNewPositions = (x, z) => {
 
     newPositions.push(position);
 
+    // Update the distance range to be between 300 and 1000
     newRedPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
     newGreenPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
     newBluePositions.push(calculateRandomOrbitPosition(position, 300, 1000));

@@ -11,7 +11,6 @@ import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
 import SpherePool from './SpherePool';
 import { useStore } from './store';
-import FakeGlowMaterial from './FakeGlowMaterial';
 
 const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
 
@@ -203,17 +202,13 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
           purpleInstancedMeshRef={sphereRefs.purple}
         />
       ))}
-      <>
-        <MemoizedSphere
-          ref={sphereRefs.central}
-          positions={Array.isArray(positions) ? positions : []}
-          material={sphereMaterial}
-          geometry={sphereGeometry}
-          frustumCulled={false}
-        />
-
-        <FakeGlowMaterial />
-      </>
+      <MemoizedSphere
+        ref={sphereRefs.central}
+        positions={Array.isArray(positions) ? positions : []}
+        material={sphereMaterial}
+        geometry={sphereGeometry}
+        frustumCulled={false}
+      />
       <MemoizedSphere
         ref={sphereRefs.red}
         positions={filteredRedPositions}
