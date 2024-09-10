@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const GRID_SIZE = 40000;
+const GRID_SIZE = 80000;
 
 const generateNewPositions = (x, z) => {
   const newPositions = [];
@@ -9,7 +9,19 @@ const generateNewPositions = (x, z) => {
   const newBluePositions = [];
   const newPurplePositions = [];
 
-  for (let i = 0; i < 75; i++) {
+  const calculateRandomOrbitPosition = (
+    centralPosition,
+    minRadius,
+    maxRadius
+  ) => {
+    const radius = Math.random() * (maxRadius - minRadius) + minRadius;
+    const angle = Math.random() * 2 * Math.PI;
+    const offsetX = radius * Math.cos(angle);
+    const offsetZ = radius * Math.sin(angle);
+    return centralPosition.clone().add(new THREE.Vector3(offsetX, 0, offsetZ));
+  };
+
+  for (let i = 0; i < 150; i++) {
     const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
     const posY = Math.floor(Math.random() * 6) * 1000;
     const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
@@ -17,10 +29,10 @@ const generateNewPositions = (x, z) => {
 
     newPositions.push(position);
 
-    if (i % 4 === 0) newRedPositions.push(position.clone());
-    if (i % 4 === 1) newGreenPositions.push(position.clone());
-    if (i % 4 === 2) newBluePositions.push(position.clone());
-    if (i % 4 === 3) newPurplePositions.push(position.clone());
+    newRedPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
+    newGreenPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
+    newBluePositions.push(calculateRandomOrbitPosition(position, 300, 1000));
+    newPurplePositions.push(calculateRandomOrbitPosition(position, 300, 1000));
   }
 
   return {

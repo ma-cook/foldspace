@@ -6,18 +6,21 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   purpleSphereMaterial,
-  getSpherePositions,
 } from './SphereData';
 import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
 import SpherePool from './SpherePool';
 import { useStore } from './store';
+import FakeGlowMaterial from './FakeGlowMaterial';
 
 const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
 
 const createInstancedMesh = (material, count = 100) => {
   return new THREE.InstancedMesh(sphereGeometry, material, count);
 };
+
+const DETAIL_DISTANCE = 30000;
+const UNLOAD_DETAIL_DISTANCE = 60000; // Add UNLOAD_DETAIL_DISTANCE
 
 const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -87,6 +90,36 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   const purplePositions = useStore(
     (state) => state.purplePositions[activeBuffer]
   );
+  const cameraPositionArray = useStore((state) => state.cameraPosition);
+
+  // Convert cameraPositionArray to THREE.Vector3
+  const cameraPosition = useMemo(() => {
+    return new THREE.Vector3(...cameraPositionArray);
+  }, [cameraPositionArray]);
+
+  const filterPositionsByDistance = (positions, maxDistance) => {
+    return positions.filter((pos) => {
+      const distance = cameraPosition.distanceTo(pos);
+      return distance < maxDistance;
+    });
+  };
+
+  const filteredRedPositions = filterPositionsByDistance(
+    redPositions,
+    DETAIL_DISTANCE
+  );
+  const filteredGreenPositions = filterPositionsByDistance(
+    greenPositions,
+    DETAIL_DISTANCE
+  );
+  const filteredBluePositions = filterPositionsByDistance(
+    bluePositions,
+    DETAIL_DISTANCE
+  );
+  const filteredPurplePositions = filterPositionsByDistance(
+    purplePositions,
+    DETAIL_DISTANCE
+  );
 
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
@@ -94,8 +127,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     );
 
     if (newYellowPositions.length > 0) {
-      const newPositions = getSpherePositions(newYellowPositions);
-
       newYellowPositions.forEach((pos) =>
         previousYellowPositions.current.add(pos.toArray().toString())
       );
@@ -121,36 +152,41 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     };
   }, []);
 
-  const calculateCircularPositions = (centralPosition, radius, count) => {
-    return Array.from({ length: count }, (_, index) => {
-      const angle = (index / count) * 2 * Math.PI;
-      const offsetX = radius * Math.cos(angle);
-      const offsetZ = radius * Math.sin(angle);
-      return centralPosition
-        .clone()
-        .add(new THREE.Vector3(offsetX, 0, offsetZ));
-    });
+  // Method to clear detailed spheres beyond UNLOAD_DETAIL_DISTANCE
+  const clearDetailedSpheres = () => {
+    const clearPositionsByDistance = (positions, maxDistance) => {
+      return positions.filter((pos) => {
+        const distance = cameraPosition.distanceTo(pos);
+        return distance >= maxDistance;
+      });
+    };
+
+    const clearedRedPositions = clearPositionsByDistance(
+      redPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+    const clearedGreenPositions = clearPositionsByDistance(
+      greenPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+    const clearedBluePositions = clearPositionsByDistance(
+      bluePositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+    const clearedPurplePositions = clearPositionsByDistance(
+      purplePositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+
+    useStore.getState().setRedPositions(clearedRedPositions);
+    useStore.getState().setGreenPositions(clearedGreenPositions);
+    useStore.getState().setBluePositions(clearedBluePositions);
+    useStore.getState().setPurplePositions(clearedPurplePositions);
   };
 
-  const radius = 400; // Adjust this value to increase the spacing
-  const orbitCount = 4; // Number of non-yellow spheres orbiting each yellow sphere
-
-  const redOrbitPositions = positions.flatMap(
-    (centralPosition) =>
-      calculateCircularPositions(centralPosition, radius, orbitCount)[0]
-  );
-  const greenOrbitPositions = positions.flatMap(
-    (centralPosition) =>
-      calculateCircularPositions(centralPosition, radius, orbitCount)[1]
-  );
-  const blueOrbitPositions = positions.flatMap(
-    (centralPosition) =>
-      calculateCircularPositions(centralPosition, radius, orbitCount)[2]
-  );
-  const purpleOrbitPositions = positions.flatMap(
-    (centralPosition) =>
-      calculateCircularPositions(centralPosition, radius, orbitCount)[3]
-  );
+  useEffect(() => {
+    useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
+  }, [clearDetailedSpheres]);
 
   return (
     <>
@@ -167,37 +203,41 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
           purpleInstancedMeshRef={sphereRefs.purple}
         />
       ))}
-      <MemoizedSphere
-        ref={sphereRefs.central}
-        positions={Array.isArray(positions) ? positions : []}
-        material={sphereMaterial}
-        geometry={sphereGeometry}
-        frustumCulled={false}
-      />
+      <>
+        <MemoizedSphere
+          ref={sphereRefs.central}
+          positions={Array.isArray(positions) ? positions : []}
+          material={sphereMaterial}
+          geometry={sphereGeometry}
+          frustumCulled={false}
+        />
+
+        <FakeGlowMaterial />
+      </>
       <MemoizedSphere
         ref={sphereRefs.red}
-        positions={redOrbitPositions}
+        positions={filteredRedPositions}
         material={sphereMaterials.red}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
         ref={sphereRefs.green}
-        positions={greenOrbitPositions}
+        positions={filteredGreenPositions}
         material={sphereMaterials.green}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
         ref={sphereRefs.blue}
-        positions={blueOrbitPositions}
+        positions={filteredBluePositions}
         material={sphereMaterials.blue}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
         ref={sphereRefs.purple}
-        positions={purpleOrbitPositions}
+        positions={filteredPurplePositions}
         material={sphereMaterials.purple}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}

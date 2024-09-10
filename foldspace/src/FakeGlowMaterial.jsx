@@ -28,7 +28,7 @@ const FakeGlowMaterial = ({
   depthTest = false,
   opacity = 1.0,
 }) => {
-  const FakeGlowMaterial = useMemo(() => {
+  const material = useMemo(() => {
     return shaderMaterial(
       {
         falloffAmount: falloff,
@@ -37,7 +37,7 @@ const FakeGlowMaterial = ({
         glowSharpness: glowSharpness,
         opacity: opacity,
       },
-      /*GLSL */
+      /* Vertex Shader */
       `
       varying vec3 vPosition;
       varying vec3 vNormal;
@@ -48,7 +48,7 @@ const FakeGlowMaterial = ({
         vPosition = modelPosition.xyz;
         vNormal = modelNormal.xyz;
       }`,
-      /*GLSL */
+      /* Fragment Shader */
       ` 
       uniform vec3 glowColor;
       uniform float falloffAmount;
@@ -77,11 +77,11 @@ const FakeGlowMaterial = ({
     );
   }, [falloff, glowInternalRadius, glowColor, glowSharpness, opacity]);
 
-  extend({ FakeGlowMaterial });
+  extend({ FakeGlowMaterial: material });
 
   return (
     <fakeGlowMaterial
-      key={FakeGlowMaterial.key}
+      key={material.key}
       side={side}
       transparent={true}
       blending={AdditiveBlending}

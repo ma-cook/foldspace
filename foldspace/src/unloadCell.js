@@ -1,7 +1,6 @@
 import cellCache from './cellCache';
 import { useStore } from './store';
 import {
-  sphereMaterial,
   redSphereMaterial,
   greenSphereMaterial,
   blueSphereMaterial,
@@ -45,7 +44,6 @@ const unloadCell = (
   }
 
   // Dispose of materials
-  disposeMaterial(sphereMaterial);
   disposeMaterial(redSphereMaterial);
   disposeMaterial(greenSphereMaterial);
   disposeMaterial(blueSphereMaterial);

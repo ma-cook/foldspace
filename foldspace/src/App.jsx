@@ -46,8 +46,9 @@ const App = React.memo(() => {
       loadCell(
         x,
         z,
-        loadedCells,
-        loadingCells,
+        true, // Pass loadDetail
+        new Set(loadedCells), // Ensure loadedCells is a Set
+        new Set(loadingCells), // Ensure loadingCells is a Set
         setLoadingCells,
         setPositions,
         setRedPositions,
@@ -76,7 +77,7 @@ const App = React.memo(() => {
       unloadCell(
         x,
         z,
-        loadedCells,
+        new Set(loadedCells), // Ensure loadedCells is a Set
         setLoadedCells,
         removeAllPositions,
         removeSphereRefs,

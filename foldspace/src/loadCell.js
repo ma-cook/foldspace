@@ -6,6 +6,7 @@ import saveCellData from './saveCellData';
 const loadCell = async (
   x,
   z,
+  loadDetail, // Add loadDetail parameter
   loadedCells,
   loadingCells,
   setLoadingCells,
@@ -18,7 +19,7 @@ const loadCell = async (
   swapBuffers
 ) => {
   const cellKey = `${x},${z}`;
-  if (loadedCells.includes(cellKey) || loadingCells.has(cellKey)) {
+  if (loadedCells.has(cellKey) || loadingCells.has(cellKey)) {
     return;
   }
 
@@ -52,39 +53,45 @@ const loadCell = async (
       const newPositions = positions.map(
         (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
       );
-      const newRedPositions = redPositions.map(
-        (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-      );
-      const newGreenPositions = greenPositions.map(
-        (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-      );
-      const newBluePositions = bluePositions.map(
-        (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-      );
-      const newPurplePositions = purplePositions.map(
-        (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-      );
 
       cellCache[cellKey] = newPositions;
       setPositions((prevPositions) => [...prevPositions, ...newPositions]);
-      setRedPositions((prevPositions) => [
-        ...prevPositions,
-        ...newRedPositions,
-      ]);
-      setGreenPositions((prevPositions) => [
-        ...prevPositions,
-        ...newGreenPositions,
-      ]);
-      setBluePositions((prevPositions) => [
-        ...prevPositions,
-        ...newBluePositions,
-      ]);
-      setPurplePositions((prevPositions) => [
-        ...prevPositions,
-        ...newPurplePositions,
-      ]);
+
+      if (loadDetail) {
+        const newRedPositions = redPositions.map(
+          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        );
+        const newGreenPositions = greenPositions.map(
+          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        );
+        const newBluePositions = bluePositions.map(
+          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        );
+        const newPurplePositions = purplePositions.map(
+          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        );
+
+        setRedPositions((prevPositions) => [
+          ...prevPositions,
+          ...newRedPositions,
+        ]);
+        setGreenPositions((prevPositions) => [
+          ...prevPositions,
+          ...newGreenPositions,
+        ]);
+        setBluePositions((prevPositions) => [
+          ...prevPositions,
+          ...newBluePositions,
+        ]);
+        setPurplePositions((prevPositions) => [
+          ...prevPositions,
+          ...newPurplePositions,
+        ]);
+      }
+
       setLoadedCells((prevLoadedCells) => {
-        const updatedLoadedCells = [...prevLoadedCells, cellKey];
+        const updatedLoadedCells = new Set(prevLoadedCells);
+        updatedLoadedCells.add(cellKey);
         return updatedLoadedCells;
       });
     } else if (response.status === 404) {
@@ -101,24 +108,29 @@ const loadCell = async (
       cellCache[cellKey] = newPositions;
 
       setPositions((prevPositions) => [...prevPositions, ...newPositions]);
-      setRedPositions((prevPositions) => [
-        ...prevPositions,
-        ...newRedPositions,
-      ]);
-      setGreenPositions((prevPositions) => [
-        ...prevPositions,
-        ...newGreenPositions,
-      ]);
-      setBluePositions((prevPositions) => [
-        ...prevPositions,
-        ...newBluePositions,
-      ]);
-      setPurplePositions((prevPositions) => [
-        ...prevPositions,
-        ...newPurplePositions,
-      ]);
+
+      if (loadDetail) {
+        setRedPositions((prevPositions) => [
+          ...prevPositions,
+          ...newRedPositions,
+        ]);
+        setGreenPositions((prevPositions) => [
+          ...prevPositions,
+          ...newGreenPositions,
+        ]);
+        setBluePositions((prevPositions) => [
+          ...prevPositions,
+          ...newBluePositions,
+        ]);
+        setPurplePositions((prevPositions) => [
+          ...prevPositions,
+          ...newPurplePositions,
+        ]);
+      }
+
       setLoadedCells((prevLoadedCells) => {
-        const updatedLoadedCells = [...prevLoadedCells, cellKey];
+        const updatedLoadedCells = new Set(prevLoadedCells);
+        updatedLoadedCells.add(cellKey);
         return updatedLoadedCells;
       });
 

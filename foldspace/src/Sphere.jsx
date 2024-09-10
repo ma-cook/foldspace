@@ -22,11 +22,13 @@ const Sphere = React.forwardRef(
     }, [positions, scale]);
 
     return (
-      <instancedMesh
-        ref={ref}
-        args={[sphereGeometry, material, positions.length]}
-        frustumCulled={false}
-      />
+      <>
+        <instancedMesh
+          ref={ref}
+          args={[sphereGeometry, material, positions.length]}
+          frustumCulled={false}
+        />
+      </>
     );
   }
 );
