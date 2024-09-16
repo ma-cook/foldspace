@@ -3,15 +3,33 @@ import * as THREE from 'three';
 export const sphereMaterial = new THREE.MeshStandardMaterial({
   color: 'yellow',
 });
+
+export const atmosMaterial = new THREE.MeshStandardMaterial({
+  color: 'orange',
+  transparent: true,
+  opacity: 0.3,
+  depthWrite: false, // Ensure it doesn't affect the depth buffer
+});
+
+export const atmosMaterial2 = new THREE.MeshStandardMaterial({
+  color: 'white',
+  transparent: true,
+  opacity: 0.2,
+  depthWrite: false, // Ensure it doesn't affect the depth buffer
+});
+
 export const redSphereMaterial = new THREE.MeshStandardMaterial({
   color: 'red',
 });
+
 export const greenSphereMaterial = new THREE.MeshStandardMaterial({
   color: 'green',
 });
+
 export const blueSphereMaterial = new THREE.MeshStandardMaterial({
   color: 'blue',
 });
+
 export const purpleSphereMaterial = new THREE.MeshStandardMaterial({
   color: 'purple',
 });

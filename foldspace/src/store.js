@@ -18,6 +18,7 @@ export const useStore = create((set) => ({
   sphereRefs: {},
   planeMeshes: {}, // Add state to track plane meshes
   cameraRef: { current: null }, // Add cameraRef to the store
+  loadedCells: new Set(), // Use a Set to track loaded cells
   setCameraRef: (ref) => set(() => ({ cameraRef: ref })), // Add setter for cameraRef
   setPlaneMeshes: (cellKey, meshes) =>
     set((state) => ({
@@ -32,7 +33,6 @@ export const useStore = create((set) => ({
       delete newPlaneMeshes[cellKey];
       return { planeMeshes: newPlaneMeshes };
     }),
-  loadedCells: [],
   setLoadedCells: (loadedCells) => {
     set((state) => {
       const newLoadedCells =
@@ -41,7 +41,7 @@ export const useStore = create((set) => ({
           : loadedCells;
 
       return {
-        loadedCells: Array.isArray(newLoadedCells) ? newLoadedCells : [],
+        loadedCells: new Set(newLoadedCells),
       };
     });
   },

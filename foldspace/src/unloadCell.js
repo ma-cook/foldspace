@@ -5,6 +5,8 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   purpleSphereMaterial,
+  atmosMaterial,
+  atmosMaterial2,
 } from './SphereData';
 
 const disposeMaterial = (material) => {
@@ -48,6 +50,8 @@ const unloadCell = (
   disposeMaterial(greenSphereMaterial);
   disposeMaterial(blueSphereMaterial);
   disposeMaterial(purpleSphereMaterial);
+  disposeMaterial(atmosMaterial);
+  disposeMaterial(atmosMaterial2);
 
   swapBuffers(); // Swap buffers after unloading cell data
 };

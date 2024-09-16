@@ -1,17 +1,18 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
 import { useStore } from './store';
 
 const GRID_SIZE = 80000;
-const LOAD_DISTANCE = 1200000;
-const UNLOAD_DISTANCE = 1200000;
-const DETAIL_DISTANCE = 30000;
-const UNLOAD_DETAIL_DISTANCE = 30000; // Add UNLOAD_DETAIL_DISTANCE
+const LOAD_DISTANCE = 120000;
+const UNLOAD_DISTANCE = 2400000;
+const DETAIL_DISTANCE = 40000;
+const UNLOAD_DETAIL_DISTANCE = 100000;
+const SIGNIFICANT_MOVE_DISTANCE = 50000; // Define the threshold distance
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
-  const [currentCell, setCurrentCell] = useState({ x: null, z: null });
   const [loadingCells, setLoadingCells] = useState(new Set());
+  const previousCameraPosition = useRef({ x: null, z: null });
 
   const loadCellsAroundCamera = () => {
     if (!cameraRef.current) return;
@@ -22,14 +23,12 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
     const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
 
-    if (currentCell.x === cellX && currentCell.z === cellZ) {
-      return;
-    }
+    const loadedCells = useStore.getState().loadedCells;
 
-    setCurrentCell({ x: cellX, z: cellZ });
-
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
+    // Check if any cells within the load distance have been loaded
+    let cellsLoadedWithinDistance = false;
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
         const newX = cellX + dx;
         const newZ = cellZ + dz;
         const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
@@ -38,14 +37,52 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
         if (distance < LOAD_DISTANCE) {
           const cellKey = `${newX},${newZ}`;
-          if (!loadingCells.has(cellKey)) {
+          if (loadedCells.has(cellKey)) {
+            cellsLoadedWithinDistance = true;
+            break;
+          }
+        }
+      }
+      if (cellsLoadedWithinDistance) break;
+    }
+
+    // Check if the camera has moved significantly or if no cells within the load distance have been loaded
+    const prevPos = previousCameraPosition.current;
+    const distanceMoved = Math.sqrt(
+      (cameraPosition.x - prevPos.x) ** 2 + (cameraPosition.z - prevPos.z) ** 2
+    );
+
+    if (
+      distanceMoved < SIGNIFICANT_MOVE_DISTANCE &&
+      cellsLoadedWithinDistance
+    ) {
+      return;
+    }
+
+    // Update the previous camera position
+    previousCameraPosition.current = {
+      x: cameraPosition.x,
+      z: cameraPosition.z,
+    };
+
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        const newX = cellX + dx;
+        const newZ = cellZ + dz;
+        const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
+        const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
+        const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
+
+        if (distance < LOAD_DISTANCE) {
+          const cellKey = `${newX},${newZ}`;
+          if (!loadedCells.has(cellKey) && !loadingCells.has(cellKey)) {
             setLoadingCells((prev) => new Set(prev).add(cellKey));
             loadCell(
               newX,
               newZ,
-              distance < DETAIL_DISTANCE, // Pass loadDetail based on distance
-              new Set(useStore.getState().loadedCells), // Ensure loadedCells is a Set
-              new Set(loadingCells), // Ensure loadingCells is a Set
+              distance < DETAIL_DISTANCE,
+              loadedCells,
+              new Set(loadingCells),
               setLoadingCells,
               useStore.getState().setPositions,
               useStore.getState().setRedPositions,
@@ -66,32 +103,29 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       }
     }
 
-    const loadedCells = new Set(useStore.getState().loadedCells);
-
     loadedCells.forEach((cellKey) => {
       const [x, z] = cellKey.split(',').map(Number);
       const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
       const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
       const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
 
-      if (distanceX > UNLOAD_DISTANCE || distanceZ > UNLOAD_DISTANCE) {
+      if (distance > UNLOAD_DISTANCE) {
         unloadCell(x, z);
       } else if (distance > UNLOAD_DETAIL_DISTANCE) {
-        // Unload detailed spheres if beyond UNLOAD_DETAIL_DISTANCE
         useStore.getState().unloadDetailedSpheres(cellKey);
       }
     });
   };
 
   const throttledFrame = useMemo(
-    () => throttle(loadCellsAroundCamera, 100), // Increase throttle delay to 100ms
-    [cameraRef, currentCell, loadCell, unloadCell, loadingCells]
+    () => throttle(loadCellsAroundCamera, 100),
+    [cameraRef, loadCell, unloadCell, loadingCells]
   );
 
   useFrame(throttledFrame);
 
   useEffect(() => {
-    loadCellsAroundCamera(); // Trigger loading on mount and camera position change
+    loadCellsAroundCamera();
     return () => {
       throttledFrame.cancel();
     };

@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
-import { Stats } from '@react-three/drei';
+import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
@@ -40,6 +40,8 @@ const App = React.memo(() => {
   const cameraRef = useRef();
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
+  const [backgroundColor, setBackgroundColor] = useState('white');
+  const [farBackgroundColor, setFarBackgroundColor] = useState('white');
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -121,13 +123,20 @@ const App = React.memo(() => {
             bluePositions={bluePositions}
             purplePositions={purplePositions}
           />
+          <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
+          <Environment
+            preset="forest"
+            background
+            backgroundBlurriness={0.8}
+            backgroundIntensity={0.005}
+          />
           <CustomCamera ref={cameraRef} />
           <CellLoader
             cameraRef={cameraRef}
             loadCell={loadCellCallback}
             unloadCell={unloadCellCallback}
           />
-          {loadedCells.map((cellKey, index) => {
+          {[...loadedCells].map((cellKey, index) => {
             const [x, z] = cellKey.split(',').map(Number);
 
             const positions = Array(6)

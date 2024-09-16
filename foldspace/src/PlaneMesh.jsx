@@ -238,29 +238,8 @@ const PlaneMesh = React.forwardRef(
       onMouseUp,
     ]);
 
-    const meshes = positions.map((pos, i) => (
-      <mesh
-        key={i}
-        ref={(el) => {
-          meshRefs.current[i] = el;
-          if (i === 0 && ref) ref.current = el; // Forward the ref to the first mesh
-        }} // Assign each mesh its own reference
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={pos}
-      >
-        <planeGeometry attach="geometry" args={[80000, 80000]} />
-        <meshBasicMaterial
-          attach="material"
-          transparent
-          opacity={0}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-    ));
-
     return (
       <>
-        {meshes}
         {/* Add a new mesh for the circle */}
         <mesh ref={circleRef} visible={false} rotation={[Math.PI / 2, 0, 0]}>
           <circleGeometry attach="geometry" args={[2, 64]} />

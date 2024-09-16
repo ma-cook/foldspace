@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useMemo, forwardRef } from 'react';
 import PlaneMesh from './PlaneMesh';
 import {
   sphereMaterial,
+  atmosMaterial,
+  atmosMaterial2,
   redSphereMaterial,
   greenSphereMaterial,
   blueSphereMaterial,
@@ -12,14 +14,15 @@ import * as THREE from 'three';
 import SpherePool from './SpherePool';
 import { useStore } from './store';
 
-const sphereGeometry = new THREE.SphereGeometry(10, 20, 20);
+const sphereGeometry = new THREE.SphereGeometry(5, 3, 3);
+const atmosGeometry = new THREE.SphereGeometry(5, 20, 20);
 
 const createInstancedMesh = (material, count = 100) => {
   return new THREE.InstancedMesh(sphereGeometry, material, count);
 };
 
 const DETAIL_DISTANCE = 30000;
-const UNLOAD_DETAIL_DISTANCE = 60000; // Add UNLOAD_DETAIL_DISTANCE
+const UNLOAD_DETAIL_DISTANCE = 60000;
 
 const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -31,6 +34,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   );
 
   const sphereRefs = {
+    atmos: useRef(),
+    atmos2: useRef(),
+    atmos3: useRef(),
     red: useRef(),
     green: useRef(),
     blue: useRef(),
@@ -91,7 +97,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   );
   const cameraPositionArray = useStore((state) => state.cameraPosition);
 
-  // Convert cameraPositionArray to THREE.Vector3
   const cameraPosition = useMemo(() => {
     return new THREE.Vector3(...cameraPositionArray);
   }, [cameraPositionArray]);
@@ -151,7 +156,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     };
   }, []);
 
-  // Method to clear detailed spheres beyond UNLOAD_DETAIL_DISTANCE
   const clearDetailedSpheres = () => {
     const clearPositionsByDistance = (positions, maxDistance) => {
       return positions.filter((pos) => {
@@ -210,6 +214,14 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
         frustumCulled={false}
       />
       <MemoizedSphere
+        ref={sphereRefs.atmos}
+        positions={Array.isArray(positions) ? positions : []}
+        material={atmosMaterial}
+        geometry={atmosGeometry}
+        frustumCulled={false}
+        scale={[1.4, 1.4, 1.4]}
+      />
+      <MemoizedSphere
         ref={sphereRefs.red}
         positions={filteredRedPositions}
         material={sphereMaterials.red}
@@ -217,18 +229,34 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        ref={sphereRefs.green}
+        ref={sphereRefs.atmos2}
         positions={filteredGreenPositions}
         material={sphereMaterials.green}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        ref={sphereRefs.blue}
+        ref={sphereRefs.green}
+        positions={filteredGreenPositions}
+        material={atmosMaterial2}
+        geometry={atmosGeometry}
+        frustumCulled={false}
+        scale={[0.25, 0.25, 0.25]}
+      />
+      <MemoizedSphere
+        ref={sphereRefs.atmos3}
         positions={filteredBluePositions}
         material={sphereMaterials.blue}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
+      />
+      <MemoizedSphere
+        ref={sphereRefs.blue}
+        positions={filteredBluePositions}
+        material={atmosMaterial2}
+        geometry={atmosGeometry}
+        frustumCulled={false}
+        scale={[0.25, 0.25, 0.25]}
       />
       <MemoizedSphere
         ref={sphereRefs.purple}

@@ -6,7 +6,7 @@ import saveCellData from './saveCellData';
 const loadCell = async (
   x,
   z,
-  loadDetail, // Add loadDetail parameter
+  loadDetail,
   loadedCells,
   loadingCells,
   setLoadingCells,
@@ -33,7 +33,6 @@ const loadCell = async (
     if (response.ok) {
       const savedPositions = await response.json();
 
-      // Validate the structure of savedPositions
       const positions = Array.isArray(savedPositions.positions)
         ? savedPositions.positions
         : [];
@@ -95,8 +94,6 @@ const loadCell = async (
         return updatedLoadedCells;
       });
     } else if (response.status === 404) {
-      // Handle 404 error by generating new positions
-
       const {
         newPositions,
         newRedPositions,
@@ -158,7 +155,7 @@ const loadCell = async (
       newSet.delete(cellKey);
       return newSet;
     });
-    swapBuffers(); // Swap buffers after loading cell data
+    swapBuffers();
   }
 };
 
