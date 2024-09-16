@@ -49,7 +49,10 @@ export const useStore = create((set) => ({
     set((state) => ({
       sphereRefs: {
         ...state.sphereRefs,
-        [cellKey]: refs,
+        [cellKey]: {
+          ...state.sphereRefs[cellKey],
+          ...refs,
+        },
       },
     })),
   removeSphereRefs: (cellKey) =>

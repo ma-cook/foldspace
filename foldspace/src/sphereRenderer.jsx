@@ -191,6 +191,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
   }, [clearDetailedSpheres]);
 
+  useEffect(() => {
+    // Set sphere refs in the store
+    useStore.getState().setSphereRefs('someCellKey', sphereRefs);
+  }, []);
+
   return (
     <>
       {planeMeshRefs.current.map((ref, i) => (

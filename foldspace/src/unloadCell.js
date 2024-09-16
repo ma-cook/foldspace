@@ -26,16 +26,18 @@ const unloadCell = (
   swapBuffers
 ) => {
   const cellKey = `${x},${z}`;
-  if (!loadedCells.includes(cellKey)) return;
+  if (!loadedCells.has(cellKey)) return;
 
   const cellPositions = cellCache[cellKey];
   if (cellPositions) {
     removeAllPositions(cellKey);
   }
 
-  setLoadedCells((prevLoadedCells) =>
-    prevLoadedCells.filter((key) => key !== cellKey)
-  );
+  setLoadedCells((prevLoadedCells) => {
+    const newLoadedCells = new Set(prevLoadedCells);
+    newLoadedCells.delete(cellKey);
+    return newLoadedCells;
+  });
 
   removeSphereRefs(cellKey);
   useStore.getState().removePlaneMeshes(cellKey);
@@ -54,6 +56,9 @@ const unloadCell = (
   disposeMaterial(atmosMaterial2);
 
   swapBuffers(); // Swap buffers after unloading cell data
+
+  // Log to console
+  console.log(`Cell at (${x}, ${z}) has been unloaded.`);
 };
 
 export default unloadCell;
