@@ -1,10 +1,8 @@
 import React, { useEffect } from 'react';
 import * as THREE from 'three';
 
-const sphereGeometry = new THREE.SphereGeometry(40, 20, 20);
-
 const Sphere = React.forwardRef(
-  ({ positions, material, scale = [1, 1, 1] }, ref) => {
+  ({ positions, material, geometry, scale = [1, 1, 1] }, ref) => {
     useEffect(() => {
       const mesh = ref.current;
       if (mesh) {
@@ -22,13 +20,11 @@ const Sphere = React.forwardRef(
     }, [positions, scale]);
 
     return (
-      <>
-        <instancedMesh
-          ref={ref}
-          args={[sphereGeometry, material, positions.length]}
-          frustumCulled={false}
-        />
-      </>
+      <instancedMesh
+        ref={ref}
+        args={[geometry, material, positions.length]}
+        frustumCulled={false}
+      />
     );
   }
 );

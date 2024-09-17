@@ -15,6 +15,8 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   purpleSphereMaterial,
+  lessDetailedSphereGeometry,
+  sphereGeometry,
 } from './SphereData';
 import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
@@ -22,14 +24,12 @@ import SpherePool from './SpherePool';
 import { useStore } from './store';
 import { useFrame } from '@react-three/fiber';
 
-const sphereGeometry = new THREE.SphereGeometry(5, 3, 3);
-
-const createInstancedMesh = (material, count = 100) => {
-  return new THREE.InstancedMesh(sphereGeometry, material, count);
+const createInstancedMesh = (geometry, material, count = 100) => {
+  return new THREE.InstancedMesh(geometry, material, count);
 };
 
 const DETAIL_DISTANCE = 40000;
-const UNLOAD_DETAIL_DISTANCE = 60000;
+const UNLOAD_DETAIL_DISTANCE = 40000;
 
 const useFilteredPositions = (positions, cameraRef, maxDistance) => {
   const [filteredPositions, setFilteredPositions] = useState([]);
@@ -47,36 +47,36 @@ const useFilteredPositions = (positions, cameraRef, maxDistance) => {
   return filteredPositions;
 };
 
-const useSpherePools = () => {
+const useSpherePools = (geometry) => {
   return useMemo(
     () => ({
       default: new SpherePool(
-        () => createInstancedMesh(sphereMaterial),
+        () => createInstancedMesh(geometry, sphereMaterial),
         10,
         100
       ),
       red: new SpherePool(
-        () => createInstancedMesh(redSphereMaterial),
+        () => createInstancedMesh(geometry, redSphereMaterial),
         10,
         100
       ),
       green: new SpherePool(
-        () => createInstancedMesh(greenSphereMaterial),
+        () => createInstancedMesh(geometry, greenSphereMaterial),
         10,
         100
       ),
       blue: new SpherePool(
-        () => createInstancedMesh(blueSphereMaterial),
+        () => createInstancedMesh(geometry, blueSphereMaterial),
         10,
         100
       ),
       purple: new SpherePool(
-        () => createInstancedMesh(purpleSphereMaterial),
+        () => createInstancedMesh(geometry, purpleSphereMaterial),
         10,
         100
       ),
     }),
-    []
+    [geometry]
   );
 };
 
@@ -111,7 +111,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   }).current;
 
   const sphereMaterials = useSphereMaterials();
-  const spherePools = useSpherePools();
+  const [geometry, setGeometry] = useState(lessDetailedSphereGeometry);
+  const spherePools = useSpherePools(geometry);
 
   const activeBuffer = useStore((state) => state.activeBuffer);
   const positions = useStore((state) => state.positions[activeBuffer]);
@@ -218,6 +219,24 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     useStore.getState().setSphereRefs('someCellKey', sphereRefs);
   }, []);
 
+  useEffect(() => {
+    const updateGeometry = () => {
+      if (!cameraRef.current) return;
+      const cameraPosition = cameraRef.current.position;
+      const anyClose = positions.some((pos) => {
+        const distance = cameraPosition.distanceTo(pos);
+
+        return distance < DETAIL_DISTANCE;
+      });
+      setGeometry(anyClose ? sphereGeometry : lessDetailedSphereGeometry);
+    };
+
+    updateGeometry();
+    const interval = setInterval(updateGeometry, 1000); // Check every second
+
+    return () => clearInterval(interval);
+  }, [cameraRef, positions]);
+
   return (
     <>
       {planeMeshRefs.current.map((ref, i) => (
@@ -234,62 +253,70 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         />
       ))}
       <MemoizedSphere
+        key={`central-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.central}
         positions={Array.isArray(positions) ? positions : []}
         material={sphereMaterial}
-        geometry={sphereGeometry}
+        geometry={geometry}
         frustumCulled={false}
       />
       <MemoizedSphere
+        key={`atmos-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos}
         positions={Array.isArray(positions) ? positions : []}
         material={atmosMaterial}
-        geometry={sphereGeometry}
+        geometry={geometry}
         frustumCulled={false}
         scale={[1.4, 1.4, 1.4]}
       />
       <MemoizedSphere
+        key={`red-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.red}
         positions={filteredRedPositions}
         material={sphereMaterials.red}
-        geometry={sphereGeometry}
+        geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
+        key={`atmos2-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos2}
         positions={filteredGreenPositions}
         material={sphereMaterials.green}
-        geometry={sphereGeometry}
+        geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
+        key={`green-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.green}
         positions={filteredGreenPositions}
         material={atmosMaterial2}
-        geometry={sphereGeometry}
+        geometry={geometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />
       <MemoizedSphere
+        key={`atmos3-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos3}
         positions={filteredBluePositions}
         material={sphereMaterials.blue}
-        geometry={sphereGeometry}
+        geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
+        key={`blue-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.blue}
         positions={filteredBluePositions}
         material={atmosMaterial2}
-        geometry={sphereGeometry}
+        geometry={geometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />
       <MemoizedSphere
+        key={`purple-${geometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purple}
         positions={filteredPurplePositions}
         material={sphereMaterials.purple}
-        geometry={sphereGeometry}
+        geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
       />
     </>

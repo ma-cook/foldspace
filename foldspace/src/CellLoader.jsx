@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
 import { useStore } from './store';
-
-const GRID_SIZE = 80000;
-const LOAD_DISTANCE = 120000;
-const UNLOAD_DISTANCE = 300000;
-const DETAIL_DISTANCE = 40000;
-const UNLOAD_DETAIL_DISTANCE = 120000;
-const SIGNIFICANT_MOVE_DISTANCE = 50000; // Define the threshold distance
+import {
+  GRID_SIZE,
+  LOAD_DISTANCE,
+  UNLOAD_DISTANCE,
+  DETAIL_DISTANCE,
+  UNLOAD_DETAIL_DISTANCE,
+  SIGNIFICANT_MOVE_DISTANCE,
+} from './config';
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [loadingCells, setLoadingCells] = useState(new Set());
