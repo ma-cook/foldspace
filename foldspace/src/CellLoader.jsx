@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
 import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
 import { useStore } from './store';
@@ -122,7 +128,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           useStore.getState().unloadDetailedSpheres(cellKey);
         }
       });
-    }, 100); // Adjust the throttle delay as needed
+    }, 10); // Adjust the throttle delay as needed
   }, [cameraRef, loadCell, unloadCell, loadingCells]);
 
   useFrame(loadCellsAroundCamera);

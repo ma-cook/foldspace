@@ -114,6 +114,7 @@ const App = React.memo(() => {
           <Stats />
           <ambientLight />
           <SphereRenderer
+            cameraRef={cameraRef}
             ref={sphereRendererRef}
             flattenedPositions={
               Array.isArray(flattenedPositions) ? flattenedPositions : []

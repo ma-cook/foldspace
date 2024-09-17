@@ -1,4 +1,11 @@
-import React, { useRef, useEffect, useMemo, forwardRef } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  forwardRef,
+  useCallback,
+  useState,
+} from 'react';
 import PlaneMesh from './PlaneMesh';
 import {
   sphereMaterial,
@@ -13,6 +20,8 @@ import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
 import SpherePool from './SpherePool';
 import { useStore } from './store';
+import { useFrame } from '@react-three/fiber';
+import unloadCell from './unloadCell';
 
 const sphereGeometry = new THREE.SphereGeometry(5, 3, 3);
 const atmosGeometry = new THREE.SphereGeometry(5, 20, 20);
@@ -21,10 +30,10 @@ const createInstancedMesh = (material, count = 100) => {
   return new THREE.InstancedMesh(sphereGeometry, material, count);
 };
 
-const DETAIL_DISTANCE = 30000;
+const DETAIL_DISTANCE = 40000;
 const UNLOAD_DETAIL_DISTANCE = 60000;
 
-const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
+const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
 
   const planeMeshRefs = useRef(
@@ -95,35 +104,38 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
   const purplePositions = useStore(
     (state) => state.purplePositions[activeBuffer]
   );
-  const cameraPositionArray = useStore((state) => state.cameraPosition);
 
-  const cameraPosition = useMemo(() => {
-    return new THREE.Vector3(...cameraPositionArray);
-  }, [cameraPositionArray]);
+  const filterPositionsByDistance = useCallback(
+    (positions, maxDistance) => {
+      if (!cameraRef.current) return [];
+      const cameraPosition = cameraRef.current.position;
+      return positions.filter((pos) => {
+        const distance = cameraPosition.distanceTo(pos);
+        return distance < maxDistance;
+      });
+    },
+    [cameraRef]
+  );
 
-  const filterPositionsByDistance = (positions, maxDistance) => {
-    return positions.filter((pos) => {
-      const distance = cameraPosition.distanceTo(pos);
-      return distance < maxDistance;
-    });
-  };
+  const [filteredRedPositions, setFilteredRedPositions] = useState([]);
+  const [filteredGreenPositions, setFilteredGreenPositions] = useState([]);
+  const [filteredBluePositions, setFilteredBluePositions] = useState([]);
+  const [filteredPurplePositions, setFilteredPurplePositions] = useState([]);
 
-  const filteredRedPositions = filterPositionsByDistance(
-    redPositions,
-    DETAIL_DISTANCE
-  );
-  const filteredGreenPositions = filterPositionsByDistance(
-    greenPositions,
-    DETAIL_DISTANCE
-  );
-  const filteredBluePositions = filterPositionsByDistance(
-    bluePositions,
-    DETAIL_DISTANCE
-  );
-  const filteredPurplePositions = filterPositionsByDistance(
-    purplePositions,
-    DETAIL_DISTANCE
-  );
+  useFrame(() => {
+    setFilteredRedPositions(
+      filterPositionsByDistance(redPositions, DETAIL_DISTANCE)
+    );
+    setFilteredGreenPositions(
+      filterPositionsByDistance(greenPositions, DETAIL_DISTANCE)
+    );
+    setFilteredBluePositions(
+      filterPositionsByDistance(bluePositions, DETAIL_DISTANCE)
+    );
+    setFilteredPurplePositions(
+      filterPositionsByDistance(purplePositions, DETAIL_DISTANCE)
+    );
+  });
 
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
@@ -156,8 +168,10 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     };
   }, []);
 
-  const clearDetailedSpheres = () => {
+  const clearDetailedSpheres = useCallback(() => {
     const clearPositionsByDistance = (positions, maxDistance) => {
+      if (!cameraRef.current) return positions;
+      const cameraPosition = cameraRef.current.position;
       return positions.filter((pos) => {
         const distance = cameraPosition.distanceTo(pos);
         return distance >= maxDistance;
@@ -185,7 +199,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions }, ref) => {
     useStore.getState().setGreenPositions(clearedGreenPositions);
     useStore.getState().setBluePositions(clearedBluePositions);
     useStore.getState().setPurplePositions(clearedPurplePositions);
-  };
+  }, [cameraRef, redPositions, greenPositions, bluePositions, purplePositions]);
 
   useEffect(() => {
     useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });

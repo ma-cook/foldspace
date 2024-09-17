@@ -15,6 +15,12 @@ const disposeMaterial = (material) => {
   }
 };
 
+const disposeGeometry = (geometry) => {
+  if (geometry && typeof geometry.dispose === 'function') {
+    geometry.dispose();
+  }
+};
+
 const unloadCell = (
   x,
   z,
@@ -23,7 +29,9 @@ const unloadCell = (
   removeAllPositions,
   removeSphereRefs,
   sphereRendererRef,
-  swapBuffers
+  swapBuffers,
+  sphereGeometry,
+  atmosGeometry
 ) => {
   const cellKey = `${x},${z}`;
   if (!loadedCells.has(cellKey)) return;
@@ -47,13 +55,17 @@ const unloadCell = (
     sphereRendererRef.current.clearNonYellowSpheres(cellKey);
   }
 
-  // Dispose of materials
+  // Dispose of materials and geometries
   disposeMaterial(redSphereMaterial);
   disposeMaterial(greenSphereMaterial);
   disposeMaterial(blueSphereMaterial);
   disposeMaterial(purpleSphereMaterial);
   disposeMaterial(atmosMaterial);
   disposeMaterial(atmosMaterial2);
+
+  // Dispose of geometries if they are not shared
+  disposeGeometry(sphereGeometry);
+  disposeGeometry(atmosGeometry);
 
   swapBuffers(); // Swap buffers after unloading cell data
 
