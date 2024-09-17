@@ -12,10 +12,10 @@ import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
-import cellCache from './cellCache';
+
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import generateNewPositions from './generateNewPositions';
+
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
@@ -41,7 +41,6 @@ const App = React.memo(() => {
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
   const [backgroundColor, setBackgroundColor] = useState('white');
-  const [farBackgroundColor, setFarBackgroundColor] = useState('white');
 
   const loadCellCallback = useCallback(
     (x, z) =>

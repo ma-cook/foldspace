@@ -3,6 +3,16 @@ import cellCache from './cellCache';
 import generateNewPositions from './generateNewPositions';
 import saveCellData from './saveCellData';
 
+const createVector3Array = (positions) => {
+  return Array.isArray(positions)
+    ? positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z))
+    : [];
+};
+
+const updatePositions = (setPositions, newPositions) => {
+  setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+};
+
 const loadCell = async (
   x,
   z,
@@ -33,59 +43,26 @@ const loadCell = async (
     if (response.ok) {
       const savedPositions = await response.json();
 
-      const positions = Array.isArray(savedPositions.positions)
-        ? savedPositions.positions
-        : [];
-      const redPositions = Array.isArray(savedPositions.redPositions)
-        ? savedPositions.redPositions
-        : [];
-      const greenPositions = Array.isArray(savedPositions.greenPositions)
-        ? savedPositions.greenPositions
-        : [];
-      const bluePositions = Array.isArray(savedPositions.bluePositions)
-        ? savedPositions.bluePositions
-        : [];
-      const purplePositions = Array.isArray(savedPositions.purplePositions)
-        ? savedPositions.purplePositions
-        : [];
-
-      const newPositions = positions.map(
-        (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-      );
-
+      const newPositions = createVector3Array(savedPositions.positions);
       cellCache[cellKey] = newPositions;
-      setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+      updatePositions(setPositions, newPositions);
 
       if (loadDetail) {
-        const newRedPositions = redPositions.map(
-          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        const newRedPositions = createVector3Array(savedPositions.redPositions);
+        const newGreenPositions = createVector3Array(
+          savedPositions.greenPositions
         );
-        const newGreenPositions = greenPositions.map(
-          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        const newBluePositions = createVector3Array(
+          savedPositions.bluePositions
         );
-        const newBluePositions = bluePositions.map(
-          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
-        );
-        const newPurplePositions = purplePositions.map(
-          (pos) => new THREE.Vector3(pos.x, pos.y, pos.z)
+        const newPurplePositions = createVector3Array(
+          savedPositions.purplePositions
         );
 
-        setRedPositions((prevPositions) => [
-          ...prevPositions,
-          ...newRedPositions,
-        ]);
-        setGreenPositions((prevPositions) => [
-          ...prevPositions,
-          ...newGreenPositions,
-        ]);
-        setBluePositions((prevPositions) => [
-          ...prevPositions,
-          ...newBluePositions,
-        ]);
-        setPurplePositions((prevPositions) => [
-          ...prevPositions,
-          ...newPurplePositions,
-        ]);
+        updatePositions(setRedPositions, newRedPositions);
+        updatePositions(setGreenPositions, newGreenPositions);
+        updatePositions(setBluePositions, newBluePositions);
+        updatePositions(setPurplePositions, newPurplePositions);
       }
 
       setLoadedCells((prevLoadedCells) => {
@@ -103,26 +80,13 @@ const loadCell = async (
       } = generateNewPositions(x, z);
 
       cellCache[cellKey] = newPositions;
-
-      setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+      updatePositions(setPositions, newPositions);
 
       if (loadDetail) {
-        setRedPositions((prevPositions) => [
-          ...prevPositions,
-          ...newRedPositions,
-        ]);
-        setGreenPositions((prevPositions) => [
-          ...prevPositions,
-          ...newGreenPositions,
-        ]);
-        setBluePositions((prevPositions) => [
-          ...prevPositions,
-          ...newBluePositions,
-        ]);
-        setPurplePositions((prevPositions) => [
-          ...prevPositions,
-          ...newPurplePositions,
-        ]);
+        updatePositions(setRedPositions, newRedPositions);
+        updatePositions(setGreenPositions, newGreenPositions);
+        updatePositions(setBluePositions, newBluePositions);
+        updatePositions(setPurplePositions, newPurplePositions);
       }
 
       setLoadedCells((prevLoadedCells) => {

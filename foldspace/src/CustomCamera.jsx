@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, memo, forwardRef } from 'react';
+import React, { useEffect, useRef, memo, forwardRef, useCallback } from 'react';
 import { useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from '@react-three/drei';
-import { OrbitControls } from '@react-three/drei';
+import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import { useStore } from './store';
 
 const CustomCamera = forwardRef((props, ref) => {
@@ -11,7 +10,6 @@ const CustomCamera = forwardRef((props, ref) => {
   const { camera } = useThree(); // Get the camera object
   const controlsRef = useRef(); // Reference to the OrbitControls component
   const target = useStore((state) => state.target);
-  const clickedObject = useStore((state) => state.clickedObject);
   const cameraPosition = useStore((state) => state.cameraPosition);
   const setCameraPosition = useStore((state) => state.setCameraPosition);
 
@@ -35,18 +33,15 @@ const CustomCamera = forwardRef((props, ref) => {
       controlsRef.current.update();
       setCameraPosition(target.x, target.y, target.z); // Update the cameraPosition state
     }
-  }, [vec, lookAt, target, camera, ref]);
+  }, [vec, lookAt, target, camera, ref, setCameraPosition]);
+
+  // Memoize the handleCameraMove function
+  const handleCameraMove = useCallback(() => {
+    setCameraPosition(camera.position.x, camera.position.y, camera.position.z);
+  }, [camera.position, setCameraPosition]);
 
   // Update the camera position in the store whenever the camera moves
   useEffect(() => {
-    const handleCameraMove = () => {
-      setCameraPosition(
-        camera.position.x,
-        camera.position.y,
-        camera.position.z
-      );
-    };
-
     if (controlsRef.current) {
       controlsRef.current.addEventListener('change', handleCameraMove);
     }
@@ -56,7 +51,7 @@ const CustomCamera = forwardRef((props, ref) => {
         controlsRef.current.removeEventListener('change', handleCameraMove);
       }
     };
-  }, [camera, setCameraPosition]);
+  }, [handleCameraMove]);
 
   return (
     <PerspectiveCamera

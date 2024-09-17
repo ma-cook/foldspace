@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 class SpherePool {
   constructor(createFunc, initialSize = 10, maxSize = 100) {
     this.createFunc = createFunc; // Function to create a new instanced mesh

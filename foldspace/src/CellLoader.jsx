@@ -1,27 +1,33 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
 import { useStore } from './store';
 
 const GRID_SIZE = 80000;
 const LOAD_DISTANCE = 120000;
-const UNLOAD_DISTANCE = 240000;
+const UNLOAD_DISTANCE = 300000;
 const DETAIL_DISTANCE = 40000;
-const UNLOAD_DETAIL_DISTANCE = 60000;
+const UNLOAD_DETAIL_DISTANCE = 120000;
 const SIGNIFICANT_MOVE_DISTANCE = 50000; // Define the threshold distance
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [loadingCells, setLoadingCells] = useState(new Set());
   const previousCameraPosition = useRef({ x: null, z: null });
 
-  const loadCellsAroundCamera = useMemo(() => {
-    return throttle(() => {
+  const loadedCells = useStore((state) => state.loadedCells);
+  const setPositions = useStore((state) => state.setPositions);
+  const setRedPositions = useStore((state) => state.setRedPositions);
+  const setGreenPositions = useStore((state) => state.setGreenPositions);
+  const setBluePositions = useStore((state) => state.setBluePositions);
+  const setPurplePositions = useStore((state) => state.setPurplePositions);
+  const setLoadedCells = useStore((state) => state.setLoadedCells);
+  const swapBuffers = useStore((state) => state.swapBuffers);
+  const unloadDetailedSpheres = useStore(
+    (state) => state.unloadDetailedSpheres
+  );
+
+  const loadCellsAroundCamera = useCallback(
+    throttle(() => {
       if (!cameraRef.current) return;
 
       const cameraPosition = cameraRef.current.position;
@@ -29,8 +35,6 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
       const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
       const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
-
-      const loadedCells = useStore.getState().loadedCells;
 
       // Check if any cells within the load distance have been loaded
       let cellsLoadedWithinDistance = false;
@@ -94,13 +98,13 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
                 loadedCells,
                 newLoadingCells,
                 setLoadingCells,
-                useStore.getState().setPositions,
-                useStore.getState().setRedPositions,
-                useStore.getState().setGreenPositions,
-                useStore.getState().setBluePositions,
-                useStore.getState().setPurplePositions,
-                useStore.getState().setLoadedCells,
-                useStore.getState().swapBuffers
+                setPositions,
+                setRedPositions,
+                setGreenPositions,
+                setBluePositions,
+                setPurplePositions,
+                setLoadedCells,
+                swapBuffers
               ).finally(() => {
                 setLoadingCells((prev) => {
                   const updatedSet = new Set(prev);
@@ -125,11 +129,26 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           console.log(`Unloading cell at (${x}, ${z})`);
           unloadCell(x, z);
         } else if (distance > UNLOAD_DETAIL_DISTANCE) {
-          useStore.getState().unloadDetailedSpheres(cellKey);
+          unloadDetailedSpheres(cellKey);
         }
       });
-    }, 10); // Adjust the throttle delay as needed
-  }, [cameraRef, loadCell, unloadCell, loadingCells]);
+    }, 10), // Adjust the throttle delay as needed
+    [
+      cameraRef,
+      loadCell,
+      unloadCell,
+      loadingCells,
+      loadedCells,
+      setPositions,
+      setRedPositions,
+      setGreenPositions,
+      setBluePositions,
+      setPurplePositions,
+      setLoadedCells,
+      swapBuffers,
+      unloadDetailedSpheres,
+    ]
+  );
 
   useFrame(loadCellsAroundCamera);
 
