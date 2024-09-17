@@ -24,7 +24,6 @@ import { useFrame } from '@react-three/fiber';
 import unloadCell from './unloadCell';
 
 const sphereGeometry = new THREE.SphereGeometry(5, 3, 3);
-const atmosGeometry = new THREE.SphereGeometry(5, 20, 20);
 
 const createInstancedMesh = (material, count = 100) => {
   return new THREE.InstancedMesh(sphereGeometry, material, count);
@@ -236,7 +235,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         ref={sphereRefs.atmos}
         positions={Array.isArray(positions) ? positions : []}
         material={atmosMaterial}
-        geometry={atmosGeometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[1.4, 1.4, 1.4]}
       />
@@ -258,7 +257,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         ref={sphereRefs.green}
         positions={filteredGreenPositions}
         material={atmosMaterial2}
-        geometry={atmosGeometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />
@@ -273,7 +272,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         ref={sphereRefs.blue}
         positions={filteredBluePositions}
         material={atmosMaterial2}
-        geometry={atmosGeometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />

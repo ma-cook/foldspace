@@ -30,8 +30,7 @@ const unloadCell = (
   removeSphereRefs,
   sphereRendererRef,
   swapBuffers,
-  sphereGeometry,
-  atmosGeometry
+  sphereGeometry
 ) => {
   const cellKey = `${x},${z}`;
   if (!loadedCells.has(cellKey)) return;
@@ -65,7 +64,6 @@ const unloadCell = (
 
   // Dispose of geometries if they are not shared
   disposeGeometry(sphereGeometry);
-  disposeGeometry(atmosGeometry);
 
   swapBuffers(); // Swap buffers after unloading cell data
 
