@@ -1,3 +1,4 @@
 # foldspace
 infinite procedurally generated universe in a web browser
-![fold](https://github.com/user-attachments/assets/22570872-6979-46c5-b9ca-4a5fea5b27a4)
+
+![fold2](https://github.com/user-attachments/assets/8715a34c-efce-43c4-ab56-9f6b1726c61a)
