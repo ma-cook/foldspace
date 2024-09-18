@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 
 export const sphereGeometry = new THREE.SphereGeometry(40, 20, 20);
-export const lessDetailedSphereGeometry = new THREE.SphereGeometry(40, 5, 5);
+export const lessDetailedSphereGeometry = new THREE.SphereGeometry(30, 5, 5);
+
+export const greySphereGeometry = new THREE.SphereGeometry(10, 10, 10);
 
 export const sphereMaterial = new THREE.MeshStandardMaterial({
   color: 'yellow',
+});
+
+export const greySphereMaterial = new THREE.MeshStandardMaterial({
+  color: 'grey',
 });
 
 export const atmosMaterial = new THREE.MeshStandardMaterial({

@@ -25,21 +25,21 @@ const generateNewPositions = (x, z) => {
     const positions = [];
     for (let i = 0; i < count; i++) {
       const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-      const posY = Math.floor(Math.random() * 6) * 1000;
+      const posY = Math.floor(Math.random() * 10) * 5000;
       const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
       positions.push(new THREE.Vector3(posX, posY, posZ));
     }
     return positions;
   };
 
-  const positions = generateRandomPositions(150, x, z);
+  const positions = generateRandomPositions(200, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
-    newRedPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
-    newGreenPositions.push(calculateRandomOrbitPosition(position, 300, 1000));
-    newBluePositions.push(calculateRandomOrbitPosition(position, 300, 1000));
-    newPurplePositions.push(calculateRandomOrbitPosition(position, 300, 1000));
+    newRedPositions.push(calculateRandomOrbitPosition(position, 300, 400));
+    newGreenPositions.push(calculateRandomOrbitPosition(position, 500, 600));
+    newBluePositions.push(calculateRandomOrbitPosition(position, 600, 700));
+    newPurplePositions.push(calculateRandomOrbitPosition(position, 800, 1000));
   });
 
   return {

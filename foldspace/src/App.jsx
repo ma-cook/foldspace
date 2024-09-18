@@ -12,6 +12,7 @@ import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
+import CustomFogMaterial from './CustomFogMaterial';
 
 import CellLoader from './CellLoader';
 import Loader from './Loader';
@@ -124,12 +125,14 @@ const App = React.memo(() => {
             purplePositions={purplePositions}
           />
           <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
+
           <Environment
             preset="forest"
             background
             backgroundBlurriness={0.8}
-            backgroundIntensity={0.005}
+            backgroundIntensity={0.007}
           />
+
           <CustomCamera ref={cameraRef} />
           <CellLoader
             cameraRef={cameraRef}
@@ -137,11 +140,16 @@ const App = React.memo(() => {
             unloadCell={unloadCellCallback}
           />
           {[...loadedCells].map((cellKey, index) => {
+            if (typeof cellKey !== 'string') {
+              console.error(`Invalid cellKey: ${cellKey}`);
+              return null;
+            }
+
             const [x, z] = cellKey.split(',').map(Number);
 
-            const positions = Array(6)
+            const positions = Array(10)
               .fill()
-              .map((_, i) => [x * GRID_SIZE, i * 1000, z * GRID_SIZE]);
+              .map((_, i) => [x * GRID_SIZE, i * 5000, z * GRID_SIZE]);
             return (
               <PlaneMesh
                 key={`${cellKey}-${index}`}
