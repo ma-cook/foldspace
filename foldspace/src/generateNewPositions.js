@@ -8,7 +8,8 @@ const generateNewPositions = (x, z) => {
   const newGreenPositions = [];
   const newBluePositions = [];
   const newPurplePositions = [];
-  const newGreenMoonPositions = []; // New array for orbit positions around green positions
+  const newGreenMoonPositions = [];
+  const newPurpleMoonPositions = []; // New array for orbit positions around green positions
 
   const calculateRandomOrbitPosition = (
     centralPosition,
@@ -50,13 +51,20 @@ const generateNewPositions = (x, z) => {
     );
   });
 
+  newPurplePositions.forEach((purplePosition) => {
+    newPurpleMoonPositions.push(
+      calculateRandomOrbitPosition(purplePosition, 50, 50)
+    );
+  });
+
   return {
     newPositions,
     newRedPositions,
     newGreenPositions,
     newBluePositions,
     newPurplePositions,
-    newGreenMoonPositions, // Include the new array in the return object
+    newGreenMoonPositions,
+    newPurpleMoonPositions, // Include the new array in the return object
   };
 };
 

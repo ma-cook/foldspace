@@ -24,6 +24,9 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const setGreenMoonPositions = useStore(
     (state) => state.setGreenMoonPositions
   );
+  const setPurpleMoonPositions = useStore(
+    (state) => state.setGreenMoonPositions
+  );
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const swapBuffers = useStore((state) => state.swapBuffers);
   const unloadDetailedSpheres = useStore(
@@ -108,6 +111,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
                 setBluePositions,
                 setPurplePositions,
                 setGreenMoonPositions,
+                setPurpleMoonPositions,
                 setLoadedCells,
                 swapBuffers
               ).finally(() => {
@@ -150,6 +154,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       setBluePositions,
       setPurplePositions,
       setGreenMoonPositions,
+      setPurpleMoonPositions,
       setLoadedCells,
       swapBuffers,
       unloadDetailedSpheres,

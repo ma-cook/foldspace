@@ -30,6 +30,7 @@ const App = React.memo(() => {
   const bluePositions = useStore((state) => state.bluePositions);
   const purplePositions = useStore((state) => state.purplePositions);
   const greenMoonPositions = useStore((state) => state.greenMoonPositions);
+  const purpleMoonPositions = useStore((state) => state.purpleMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
   const setRedPositions = useStore((state) => state.setRedPositions);
@@ -38,6 +39,9 @@ const App = React.memo(() => {
   const setPurplePositions = useStore((state) => state.setPurplePositions);
   const setGreenMoonPositions = useStore(
     (state) => state.setGreenMoonPositions
+  );
+  const setPurpleMoonPositions = useStore(
+    (state) => state.setPurpleMoonPositions
   );
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
@@ -62,6 +66,7 @@ const App = React.memo(() => {
         setBluePositions,
         setPurplePositions,
         setGreenMoonPositions,
+        setPurpleMoonPositions,
         setLoadedCells,
         swapBuffers
       ),
@@ -75,6 +80,7 @@ const App = React.memo(() => {
       setBluePositions,
       setPurplePositions,
       setGreenMoonPositions,
+      setPurpleMoonPositions,
       setLoadedCells,
       swapBuffers,
     ]
@@ -130,6 +136,7 @@ const App = React.memo(() => {
             bluePositions={bluePositions}
             purplePositions={purplePositions}
             greenMoonPositions={greenMoonPositions}
+            purpleMoonPositions={purpleMoonPositions}
           />
           <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 

@@ -81,6 +81,11 @@ const useSpherePools = (geometry) => {
         10,
         100
       ),
+      purpleMoon: new SpherePool(
+        () => createInstancedMesh(geometry, moonMaterial),
+        10,
+        100
+      ),
     }),
     [geometry]
   );
@@ -94,6 +99,7 @@ const useSphereMaterials = () => {
       blue: blueSphereMaterial,
       purple: purpleSphereMaterial,
       greenMoon: moonMaterial,
+      purpleMoon: moonMaterial,
     }),
     []
   );
@@ -111,6 +117,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     atmos2: useRef(),
     atmos3: useRef(),
     greenMoon: useRef(),
+    purpleMoon: useRef(),
     red: useRef(),
     green: useRef(),
     blue: useRef(),
@@ -134,6 +141,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const greenMoonPositions = useStore(
     (state) => state.greenMoonPositions[activeBuffer]
+  );
+  const purpleMoonPositions = useStore(
+    (state) => state.purpleMoonPositions[activeBuffer]
   );
 
   const filteredRedPositions = useFilteredPositions(
@@ -161,6 +171,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
+  const filteredPurpleMoonPositions = useFilteredPositions(
+    purpleMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
 
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
@@ -173,17 +188,29 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       );
     }
 
-    const spheres = ['red', 'green', 'blue', 'purple', 'greenMoon'].map(
-      (color) => {
-        const instancedMesh = spherePools[color].get();
-        instancedMesh.material = sphereMaterials[color];
-        return instancedMesh;
-      }
-    );
+    const spheres = [
+      'red',
+      'green',
+      'blue',
+      'purple',
+      'greenMoon',
+      'purpleMoon',
+    ].map((color) => {
+      const instancedMesh = spherePools[color].get();
+      instancedMesh.material = sphereMaterials[color];
+      return instancedMesh;
+    });
 
     return () => {
       spheres.forEach((instancedMesh, index) => {
-        const color = ['red', 'green', 'blue', 'purple', 'greenMoon'][index];
+        const color = [
+          'red',
+          'green',
+          'blue',
+          'purple',
+          'greenMoon',
+          'purpleMoon',
+        ][index];
         spherePools[color].release(instancedMesh);
       });
     };
@@ -225,12 +252,17 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       greenMoonPositions,
       UNLOAD_DETAIL_DISTANCE
     );
+    const clearedPurpleMoonPositions = clearPositionsByDistance(
+      purpleMoonPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
 
     useStore.getState().setRedPositions(clearedRedPositions);
     useStore.getState().setGreenPositions(clearedGreenPositions);
     useStore.getState().setBluePositions(clearedBluePositions);
     useStore.getState().setPurplePositions(clearedPurplePositions);
     useStore.getState().setGreenMoonPositions(clearedGreenMoonPositions);
+    useStore.getState().setPurpleMoonPositions(clearedPurpleMoonPositions);
   }, [
     cameraRef,
     redPositions,
@@ -238,6 +270,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     bluePositions,
     purplePositions,
     greenMoonPositions,
+    purpleMoonPositions,
   ]);
 
   useEffect(() => {
@@ -281,6 +314,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           blueInstancedMeshRef={sphereRefs.blue}
           purpleInstancedMeshRef={sphereRefs.purple}
           greenMoonInstancedMeshRef={sphereRefs.greenMoon}
+          purpleMoonInstancedMeshRef={sphereRefs.purpleMoon}
         />
       ))}
       <MemoizedSphere
@@ -358,6 +392,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={sphereMaterials.purple}
         geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
+      />
+      <MemoizedSphere
+        key={`purpleMoon-${geometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.purpleMoon}
+        positions={filteredPurpleMoonPositions}
+        material={moonMaterial}
+        geometry={geometry}
+        frustumCulled={false}
+        scale={[0.05, 0.05, 0.05]}
       />
     </>
   );

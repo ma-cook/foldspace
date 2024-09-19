@@ -14,6 +14,7 @@ const PlaneMesh = React.forwardRef(
       blueInstancedMeshRef,
       purpleInstancedMeshRef,
       greenMoonInstancedMeshRef,
+      purpleMoonInstancedMeshRef,
       positions = [], // Provide a default value for positions
       cellKey, // Add cellKey prop to identify the cell
     },
@@ -24,7 +25,7 @@ const PlaneMesh = React.forwardRef(
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
-    const setPlaneMeshes = useStore((state) => state.setPlaneMeshes); // Get setPlaneMeshes action
+
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
     let isDragging = false;
@@ -48,6 +49,7 @@ const PlaneMesh = React.forwardRef(
             blueInstancedMeshRef.current,
             purpleInstancedMeshRef.current,
             greenMoonInstancedMeshRef.current,
+            purpleMoonInstancedMeshRef.current,
             ...Object.values(sphereRefs).map((ref) => ref.current),
           ].filter(Boolean)
         );
@@ -78,6 +80,7 @@ const PlaneMesh = React.forwardRef(
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
         greenMoonInstancedMeshRef,
+        purpleMoonInstancedMeshRef,
       ]
     );
 
@@ -106,6 +109,7 @@ const PlaneMesh = React.forwardRef(
               blueInstancedMeshRef.current, // Include redInstancedMeshRef
               purpleInstancedMeshRef.current,
               greenMoonInstancedMeshRef.current,
+              purpleMoonInstancedMeshRef.current,
               ...Object.values(sphereRefs).map((ref) => ref.current),
             ].filter(Boolean)
           );
@@ -176,6 +180,15 @@ const PlaneMesh = React.forwardRef(
                   instanceMatrix
                 );
                 console.log('A green moon sphere was clicked');
+              } else if (
+                intersects[0].object === purpleMoonInstancedMeshRef.current
+              ) {
+                // Check if the purple moon sphere was clicked
+                purpleMoonInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A purple moon sphere was clicked');
               }
 
               const instancePosition =

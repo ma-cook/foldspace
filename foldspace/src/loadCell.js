@@ -26,6 +26,7 @@ const loadCell = async (
   setBluePositions,
   setPurplePositions,
   setGreenMoonPositions,
+  setPurpleMoonPositions,
   setLoadedCells,
   swapBuffers
 ) => {
@@ -62,12 +63,16 @@ const loadCell = async (
         const newGreenMoonPositions = createVector3Array(
           savedPositions.greenMoonPositions
         );
+        const newPurpleMoonPositions = createVector3Array(
+          savedPositions.purpleMoonPositions
+        );
 
         updatePositions(setRedPositions, newRedPositions);
         updatePositions(setGreenPositions, newGreenPositions);
         updatePositions(setBluePositions, newBluePositions);
         updatePositions(setPurplePositions, newPurplePositions);
         updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
       }
 
       setLoadedCells((prevLoadedCells) => {
@@ -83,6 +88,7 @@ const loadCell = async (
         newBluePositions,
         newPurplePositions,
         newGreenMoonPositions,
+        newPurpleMoonPositions,
       } = generateNewPositions(x, z);
 
       cellCache[cellKey] = newPositions;
@@ -94,6 +100,7 @@ const loadCell = async (
         updatePositions(setBluePositions, newBluePositions);
         updatePositions(setPurplePositions, newPurplePositions);
         updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
       }
 
       setLoadedCells((prevLoadedCells) => {
@@ -109,6 +116,7 @@ const loadCell = async (
         bluePositions: newBluePositions,
         purplePositions: newPurplePositions,
         greenMoonPositions: newGreenMoonPositions,
+        purpleMoonPositions: newPurpleMoonPositions,
       });
     } else {
       console.error(
