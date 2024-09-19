@@ -8,6 +8,7 @@ import {
   moonMaterial,
   atmosMaterial,
   atmosMaterial2,
+  lessDetailedSphereGeometry,
 } from './SphereData';
 
 const disposeMaterial = (material) => {
@@ -31,7 +32,8 @@ const unloadCell = (
   removeSphereRefs,
   sphereRendererRef,
   swapBuffers,
-  sphereGeometry
+  sphereGeometry,
+  lessDetailedSphereGeometry
 ) => {
   const cellKey = `${x},${z}`;
   if (!loadedCells.has(cellKey)) return;
@@ -66,6 +68,7 @@ const unloadCell = (
 
   // Dispose of geometries if they are not shared
   disposeGeometry(sphereGeometry);
+  disposeGeometry(lessDetailedSphereGeometry);
 
   swapBuffers(); // Swap buffers after unloading cell data
 

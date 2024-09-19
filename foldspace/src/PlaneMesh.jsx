@@ -43,14 +43,14 @@ const PlaneMesh = React.forwardRef(
         const intersects = raycaster.intersectObjects(
           [
             ...meshRefs.current,
-            instancedMeshRef.current,
-            redInstancedMeshRef.current,
-            greenInstancedMeshRef.current,
-            blueInstancedMeshRef.current,
-            purpleInstancedMeshRef.current,
-            greenMoonInstancedMeshRef.current,
-            purpleMoonInstancedMeshRef.current,
-            ...Object.values(sphereRefs).map((ref) => ref.current),
+            instancedMeshRef?.current,
+            redInstancedMeshRef?.current,
+            greenInstancedMeshRef?.current,
+            blueInstancedMeshRef?.current,
+            purpleInstancedMeshRef?.current,
+            greenMoonInstancedMeshRef?.current,
+            purpleMoonInstancedMeshRef?.current,
+            ...Object.values(sphereRefs).map((ref) => ref?.current),
           ].filter(Boolean)
         );
         if (intersects.length > 0) {
@@ -103,22 +103,22 @@ const PlaneMesh = React.forwardRef(
           const intersects = raycaster.intersectObjects(
             [
               ...meshRefs.current,
-              instancedMeshRef.current,
-              redInstancedMeshRef.current,
-              greenInstancedMeshRef.current, // Include greenInstancedMeshRef
-              blueInstancedMeshRef.current, // Include redInstancedMeshRef
-              purpleInstancedMeshRef.current,
-              greenMoonInstancedMeshRef.current,
-              purpleMoonInstancedMeshRef.current,
-              ...Object.values(sphereRefs).map((ref) => ref.current),
+              instancedMeshRef?.current,
+              redInstancedMeshRef?.current,
+              greenInstancedMeshRef?.current, // Include greenInstancedMeshRef
+              blueInstancedMeshRef?.current, // Include redInstancedMeshRef
+              purpleInstancedMeshRef?.current,
+              greenMoonInstancedMeshRef?.current,
+              purpleMoonInstancedMeshRef?.current,
+              ...Object.values(sphereRefs).map((ref) => ref?.current),
             ].filter(Boolean)
           );
 
           // Sort the intersects array so that any intersected sphere comes first
           intersects.sort((a, b) => {
-            if (a.object === instancedMeshRef.current) {
+            if (a.object === instancedMeshRef?.current) {
               return -1;
-            } else if (b.object === instancedMeshRef.current) {
+            } else if (b.object === instancedMeshRef?.current) {
               return 1;
             } else {
               return 0;
@@ -132,20 +132,22 @@ const PlaneMesh = React.forwardRef(
             if (instanceId !== undefined) {
               const instanceMatrix = new THREE.Matrix4();
 
-              if (intersects[0].object === instancedMeshRef.current) {
+              if (intersects[0].object === instancedMeshRef?.current) {
                 instancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
                 );
                 console.log('A yellow sphere was clicked');
-              } else if (intersects[0].object === redInstancedMeshRef.current) {
+              } else if (
+                intersects[0].object === redInstancedMeshRef?.current
+              ) {
                 redInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
                 );
                 console.log('A red sphere was clicked');
               } else if (
-                intersects[0].object === greenInstancedMeshRef.current
+                intersects[0].object === greenInstancedMeshRef?.current
               ) {
                 // Check if the green sphere was clicked
                 greenInstancedMeshRef.current.getMatrixAt(
@@ -154,7 +156,7 @@ const PlaneMesh = React.forwardRef(
                 );
                 console.log('A green sphere was clicked');
               } else if (
-                intersects[0].object === blueInstancedMeshRef.current
+                intersects[0].object === blueInstancedMeshRef?.current
               ) {
                 // Check if the blue sphere was clicked
                 blueInstancedMeshRef.current.getMatrixAt(
@@ -163,7 +165,7 @@ const PlaneMesh = React.forwardRef(
                 );
                 console.log('A blue sphere was clicked');
               } else if (
-                intersects[0].object === purpleInstancedMeshRef.current
+                intersects[0].object === purpleInstancedMeshRef?.current
               ) {
                 // Check if the purple sphere was clicked
                 purpleInstancedMeshRef.current.getMatrixAt(
@@ -172,7 +174,7 @@ const PlaneMesh = React.forwardRef(
                 );
                 console.log('A purple sphere was clicked');
               } else if (
-                intersects[0].object === greenMoonInstancedMeshRef.current
+                intersects[0].object === greenMoonInstancedMeshRef?.current
               ) {
                 // Check if the green moon sphere was clicked
                 greenMoonInstancedMeshRef.current.getMatrixAt(
@@ -181,7 +183,7 @@ const PlaneMesh = React.forwardRef(
                 );
                 console.log('A green moon sphere was clicked');
               } else if (
-                intersects[0].object === purpleMoonInstancedMeshRef.current
+                intersects[0].object === purpleMoonInstancedMeshRef?.current
               ) {
                 // Check if the purple moon sphere was clicked
                 purpleMoonInstancedMeshRef.current.getMatrixAt(

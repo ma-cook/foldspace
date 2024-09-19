@@ -262,18 +262,30 @@ export const useStore = create((set) => ({
         state.activeBuffer
       ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
 
+      const newGreenMoonPositions = state.greenMoonPositions[
+        state.activeBuffer
+      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+
+      const newPurpleMoonPositions = state.purpleMoonPositions[
+        state.activeBuffer
+      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+
       const nextBuffer = (state.activeBuffer + 1) % 2;
       const updatedPositions = [...state.positions];
       const updatedRedPositions = [...state.redPositions];
       const updatedGreenPositions = [...state.greenPositions];
       const updatedBluePositions = [...state.bluePositions];
       const updatedPurplePositions = [...state.purplePositions];
+      const updatedGreenMoonPositions = [...state.greenMoonPositions];
+      const updatedPurpleMoonPositions = [...state.purpleMoonPositions];
 
       updatedPositions[nextBuffer] = newPositions;
       updatedRedPositions[nextBuffer] = newRedPositions;
       updatedGreenPositions[nextBuffer] = newGreenPositions;
       updatedBluePositions[nextBuffer] = newBluePositions;
       updatedPurplePositions[nextBuffer] = newPurplePositions;
+      updatedGreenMoonPositions[nextBuffer] = newGreenMoonPositions;
+      updatedPurpleMoonPositions[nextBuffer] = newPurpleMoonPositions;
 
       return {
         positions: updatedPositions,
@@ -281,6 +293,8 @@ export const useStore = create((set) => ({
         greenPositions: updatedGreenPositions,
         bluePositions: updatedBluePositions,
         purplePositions: updatedPurplePositions,
+        greenMoonPositions: updatedGreenMoonPositions,
+        purpleMoonPositions: updatedPurpleMoonPositions,
       };
     });
   },
