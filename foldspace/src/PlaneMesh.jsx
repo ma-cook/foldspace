@@ -13,6 +13,7 @@ const PlaneMesh = React.forwardRef(
       greenInstancedMeshRef,
       blueInstancedMeshRef,
       purpleInstancedMeshRef,
+      greenMoonInstancedMeshRef,
       positions = [], // Provide a default value for positions
       cellKey, // Add cellKey prop to identify the cell
     },
@@ -46,6 +47,7 @@ const PlaneMesh = React.forwardRef(
             greenInstancedMeshRef.current,
             blueInstancedMeshRef.current,
             purpleInstancedMeshRef.current,
+            greenMoonInstancedMeshRef.current,
             ...Object.values(sphereRefs).map((ref) => ref.current),
           ].filter(Boolean)
         );
@@ -75,6 +77,7 @@ const PlaneMesh = React.forwardRef(
         greenInstancedMeshRef,
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
+        greenMoonInstancedMeshRef,
       ]
     );
 
@@ -102,6 +105,7 @@ const PlaneMesh = React.forwardRef(
               greenInstancedMeshRef.current, // Include greenInstancedMeshRef
               blueInstancedMeshRef.current, // Include redInstancedMeshRef
               purpleInstancedMeshRef.current,
+              greenMoonInstancedMeshRef.current,
               ...Object.values(sphereRefs).map((ref) => ref.current),
             ].filter(Boolean)
           );
@@ -154,6 +158,24 @@ const PlaneMesh = React.forwardRef(
                   instanceMatrix
                 );
                 console.log('A blue sphere was clicked');
+              } else if (
+                intersects[0].object === purpleInstancedMeshRef.current
+              ) {
+                // Check if the purple sphere was clicked
+                purpleInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A purple sphere was clicked');
+              } else if (
+                intersects[0].object === greenMoonInstancedMeshRef.current
+              ) {
+                // Check if the green moon sphere was clicked
+                greenMoonInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A green moon sphere was clicked');
               }
 
               const instancePosition =
@@ -185,6 +207,7 @@ const PlaneMesh = React.forwardRef(
         greenInstancedMeshRef,
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
+        greenMoonInstancedMeshRef,
       ]
     );
 

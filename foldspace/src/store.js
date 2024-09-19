@@ -12,7 +12,8 @@ export const useStore = create((set) => ({
   redPositions: [[], []], // Double buffer for red sphere positions
   greenPositions: [[], []], // Double buffer for green sphere positions
   bluePositions: [[], []], // Double buffer for blue sphere positions
-  purplePositions: [[], []], // Double buffer for purple sphere positions
+  purplePositions: [[], []],
+  greenMoonPositions: [[], []], // Double buffer for purple sphere positions
   activeBuffer: 0, // Index of the active buffer
   cameraPosition: [0, 50, 100],
   sphereRefs: {},
@@ -177,6 +178,26 @@ export const useStore = create((set) => ({
       updatedPositions[nextBuffer] = uniquePositions;
 
       return { purplePositions: updatedPositions };
+    });
+  },
+  setGreenMoonPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.greenMoonPositions[state.activeBuffer])
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(newPositions.map((pos) => pos.toArray().toString()))
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.greenMoonPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { greenMoonPositions: updatedPositions };
     });
   },
   swapBuffers: () =>

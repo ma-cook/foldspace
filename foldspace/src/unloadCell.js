@@ -5,6 +5,7 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   purpleSphereMaterial,
+  moonMaterial,
   atmosMaterial,
   atmosMaterial2,
 } from './SphereData';
@@ -59,6 +60,7 @@ const unloadCell = (
   disposeMaterial(greenSphereMaterial);
   disposeMaterial(blueSphereMaterial);
   disposeMaterial(purpleSphereMaterial);
+  disposeMaterial(moonMaterial);
   disposeMaterial(atmosMaterial);
   disposeMaterial(atmosMaterial2);
 

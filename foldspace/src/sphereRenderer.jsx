@@ -17,6 +17,7 @@ import {
   purpleSphereMaterial,
   lessDetailedSphereGeometry,
   sphereGeometry,
+  moonMaterial,
 } from './SphereData';
 import { MemoizedSphere } from './Sphere';
 import * as THREE from 'three';
@@ -75,6 +76,11 @@ const useSpherePools = (geometry) => {
         10,
         100
       ),
+      greenMoon: new SpherePool(
+        () => createInstancedMesh(geometry, moonMaterial),
+        10,
+        100
+      ),
     }),
     [geometry]
   );
@@ -87,6 +93,7 @@ const useSphereMaterials = () => {
       green: greenSphereMaterial,
       blue: blueSphereMaterial,
       purple: purpleSphereMaterial,
+      greenMoon: moonMaterial,
     }),
     []
   );
@@ -103,6 +110,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     atmos: useRef(),
     atmos2: useRef(),
     atmos3: useRef(),
+    greenMoon: useRef(),
     red: useRef(),
     green: useRef(),
     blue: useRef(),
@@ -123,6 +131,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const bluePositions = useStore((state) => state.bluePositions[activeBuffer]);
   const purplePositions = useStore(
     (state) => state.purplePositions[activeBuffer]
+  );
+  const greenMoonPositions = useStore(
+    (state) => state.greenMoonPositions[activeBuffer]
   );
 
   const filteredRedPositions = useFilteredPositions(
@@ -145,6 +156,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
+  const filteredGreenMoonPositions = useFilteredPositions(
+    greenMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
 
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
@@ -157,15 +173,17 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       );
     }
 
-    const spheres = ['red', 'green', 'blue', 'purple'].map((color) => {
-      const instancedMesh = spherePools[color].get();
-      instancedMesh.material = sphereMaterials[color];
-      return instancedMesh;
-    });
+    const spheres = ['red', 'green', 'blue', 'purple', 'greenMoon'].map(
+      (color) => {
+        const instancedMesh = spherePools[color].get();
+        instancedMesh.material = sphereMaterials[color];
+        return instancedMesh;
+      }
+    );
 
     return () => {
       spheres.forEach((instancedMesh, index) => {
-        const color = ['red', 'green', 'blue', 'purple'][index];
+        const color = ['red', 'green', 'blue', 'purple', 'greenMoon'][index];
         spherePools[color].release(instancedMesh);
       });
     };
@@ -203,12 +221,24 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       purplePositions,
       UNLOAD_DETAIL_DISTANCE
     );
+    const clearedGreenMoonPositions = clearPositionsByDistance(
+      greenMoonPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
 
     useStore.getState().setRedPositions(clearedRedPositions);
     useStore.getState().setGreenPositions(clearedGreenPositions);
     useStore.getState().setBluePositions(clearedBluePositions);
     useStore.getState().setPurplePositions(clearedPurplePositions);
-  }, [cameraRef, redPositions, greenPositions, bluePositions, purplePositions]);
+    useStore.getState().setGreenMoonPositions(clearedGreenMoonPositions);
+  }, [
+    cameraRef,
+    redPositions,
+    greenPositions,
+    bluePositions,
+    purplePositions,
+    greenMoonPositions,
+  ]);
 
   useEffect(() => {
     useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
@@ -250,6 +280,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           greenInstancedMeshRef={sphereRefs.green}
           blueInstancedMeshRef={sphereRefs.blue}
           purpleInstancedMeshRef={sphereRefs.purple}
+          greenMoonInstancedMeshRef={sphereRefs.greenMoon}
         />
       ))}
       <MemoizedSphere
@@ -301,6 +332,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={sphereMaterials.blue}
         geometry={geometry}
         scale={[0.2, 0.2, 0.2]}
+      />
+      <MemoizedSphere
+        key={`greenMoon-${geometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.greenMoon}
+        positions={filteredGreenMoonPositions}
+        material={moonMaterial}
+        geometry={geometry}
+        frustumCulled={false}
+        scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
         key={`blue-${geometry.uuid}`} // Force re-render when geometry changes

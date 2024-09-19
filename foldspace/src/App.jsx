@@ -29,12 +29,16 @@ const App = React.memo(() => {
   const greenPositions = useStore((state) => state.greenPositions);
   const bluePositions = useStore((state) => state.bluePositions);
   const purplePositions = useStore((state) => state.purplePositions);
+  const greenMoonPositions = useStore((state) => state.greenMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
   const setRedPositions = useStore((state) => state.setRedPositions);
   const setGreenPositions = useStore((state) => state.setGreenPositions);
   const setBluePositions = useStore((state) => state.setBluePositions);
   const setPurplePositions = useStore((state) => state.setPurplePositions);
+  const setGreenMoonPositions = useStore(
+    (state) => state.setGreenMoonPositions
+  );
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
   const swapBuffers = useStore((state) => state.swapBuffers);
@@ -57,6 +61,7 @@ const App = React.memo(() => {
         setGreenPositions,
         setBluePositions,
         setPurplePositions,
+        setGreenMoonPositions,
         setLoadedCells,
         swapBuffers
       ),
@@ -69,6 +74,7 @@ const App = React.memo(() => {
       setGreenPositions,
       setBluePositions,
       setPurplePositions,
+      setGreenMoonPositions,
       setLoadedCells,
       swapBuffers,
     ]
@@ -123,6 +129,7 @@ const App = React.memo(() => {
             greenPositions={greenPositions}
             bluePositions={bluePositions}
             purplePositions={purplePositions}
+            greenMoonPositions={greenMoonPositions}
           />
           <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
@@ -160,6 +167,7 @@ const App = React.memo(() => {
                 greenInstancedMeshRef={{}}
                 blueInstancedMeshRef={{}}
                 purpleInstancedMeshRef={{}}
+                greenMoonInstancedMeshRef={{}}
                 cellKey={cellKey}
               />
             );
