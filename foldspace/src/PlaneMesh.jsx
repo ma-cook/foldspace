@@ -9,6 +9,7 @@ const PlaneMesh = React.forwardRef(
     {
       sphereRefs,
       instancedMeshRef,
+      lessDetailedMeshRef, // Add lessDetailedMeshRef prop
       redInstancedMeshRef,
       greenInstancedMeshRef,
       blueInstancedMeshRef,
@@ -44,6 +45,7 @@ const PlaneMesh = React.forwardRef(
           [
             ...meshRefs.current,
             instancedMeshRef?.current,
+            lessDetailedMeshRef?.current, // Include lessDetailedMeshRef
             redInstancedMeshRef?.current,
             greenInstancedMeshRef?.current,
             blueInstancedMeshRef?.current,
@@ -75,6 +77,7 @@ const PlaneMesh = React.forwardRef(
         camera,
         sphereRefs,
         instancedMeshRef,
+        lessDetailedMeshRef, // Include lessDetailedMeshRef in dependencies
         redInstancedMeshRef,
         greenInstancedMeshRef,
         blueInstancedMeshRef,
@@ -104,6 +107,7 @@ const PlaneMesh = React.forwardRef(
             [
               ...meshRefs.current,
               instancedMeshRef?.current,
+              lessDetailedMeshRef?.current, // Include lessDetailedMeshRef
               redInstancedMeshRef?.current,
               greenInstancedMeshRef?.current, // Include greenInstancedMeshRef
               blueInstancedMeshRef?.current, // Include redInstancedMeshRef
@@ -138,6 +142,14 @@ const PlaneMesh = React.forwardRef(
                   instanceMatrix
                 );
                 console.log('A yellow sphere was clicked');
+              } else if (
+                intersects[0].object === lessDetailedMeshRef?.current
+              ) {
+                lessDetailedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A less detailed yellow sphere was clicked');
               } else if (
                 intersects[0].object === redInstancedMeshRef?.current
               ) {
@@ -218,11 +230,13 @@ const PlaneMesh = React.forwardRef(
         setLookAt,
         sphereRefs,
         instancedMeshRef,
+        lessDetailedMeshRef, // Include lessDetailedMeshRef in dependencies
         redInstancedMeshRef,
         greenInstancedMeshRef,
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
         greenMoonInstancedMeshRef,
+        purpleMoonInstancedMeshRef,
       ]
     );
 

@@ -22,6 +22,7 @@ import {
   atmosMaterial2,
   moonMaterial,
 } from './SphereData';
+import { BVH } from './BVH'; // Import BVH class
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -40,12 +41,12 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     green: useRef(),
     blue: useRef(),
     purple: useRef(),
-    central: useRef(),
+    centralDetailed: useRef(), // Separate ref for detailed central sphere
+    centralLessDetailed: useRef(), // Separate ref for less detailed central sphere
   }).current;
 
   const sphereMaterials = useSphereMaterials();
-  const [geometry, setGeometry] = useState(lessDetailedSphereGeometry);
-  const spherePools = useSpherePools(geometry);
+  const spherePools = useSpherePools(sphereGeometry);
 
   const activeBuffer = useStore((state) => state.activeBuffer);
   const positions = useStore((state) => state.positions[activeBuffer]);
@@ -63,6 +64,13 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const purpleMoonPositions = useStore(
     (state) => state.purpleMoonPositions[activeBuffer]
   );
+
+  const [bvh, setBVH] = useState(null);
+
+  useEffect(() => {
+    // Build BVH when positions change
+    setBVH(new BVH(positions));
+  }, [positions]);
 
   const filteredRedPositions = useFilteredPositions(
     redPositions,
@@ -91,6 +99,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const filteredPurpleMoonPositions = useFilteredPositions(
     purpleMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
+  const filteredPositions = useFilteredPositions(
+    positions,
     cameraRef,
     DETAIL_DISTANCE
   );
@@ -174,6 +187,10 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       purpleMoonPositions,
       UNLOAD_DETAIL_DISTANCE
     );
+    const clearedYellowPositions = clearPositionsByDistance(
+      filteredPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
 
     useStore.getState().setRedPositions(clearedRedPositions);
     useStore.getState().setGreenPositions(clearedGreenPositions);
@@ -181,6 +198,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     useStore.getState().setPurplePositions(clearedPurplePositions);
     useStore.getState().setGreenMoonPositions(clearedGreenMoonPositions);
     useStore.getState().setPurpleMoonPositions(clearedPurpleMoonPositions);
+    useStore.getState().setPositions(clearedYellowPositions);
   }, [
     cameraRef,
     redPositions,
@@ -189,6 +207,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     purplePositions,
     greenMoonPositions,
     purpleMoonPositions,
+    filteredPositions,
   ]);
 
   useEffect(() => {
@@ -200,22 +219,40 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     useStore.getState().setSphereRefs('someCellKey', sphereRefs);
   }, []);
 
+  const [detailedPositions, setDetailedPositions] = useState([]);
+  const [lessDetailedPositions, setLessDetailedPositions] = useState([]);
+
   useEffect(() => {
     const updateGeometry = () => {
-      if (!cameraRef.current) return;
+      if (!cameraRef.current || !bvh) return;
       const cameraPosition = cameraRef.current.position;
-      const anyClose = positions.some((pos) => {
-        const distance = cameraPosition.distanceTo(pos);
-        return distance < DETAIL_DISTANCE;
-      });
-      setGeometry(anyClose ? sphereGeometry : lessDetailedSphereGeometry);
+      const detailBoundingBox = {
+        min: {
+          x: cameraPosition.x - DETAIL_DISTANCE,
+          y: cameraPosition.y - DETAIL_DISTANCE,
+          z: cameraPosition.z - DETAIL_DISTANCE,
+        },
+        max: {
+          x: cameraPosition.x + DETAIL_DISTANCE,
+          y: cameraPosition.y + DETAIL_DISTANCE,
+          z: cameraPosition.z + DETAIL_DISTANCE,
+        },
+      };
+
+      const newDetailedPositions = bvh.query(detailBoundingBox);
+      const newLessDetailedPositions = positions.filter(
+        (pos) => !newDetailedPositions.includes(pos)
+      );
+
+      setDetailedPositions(newDetailedPositions);
+      setLessDetailedPositions(newLessDetailedPositions);
     };
 
     updateGeometry();
     const interval = setInterval(updateGeometry, 1000); // Check every second
 
     return () => clearInterval(interval);
-  }, [cameraRef, positions]);
+  }, [cameraRef, positions, bvh]);
 
   return (
     <>
@@ -225,7 +262,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           id={i}
           ref={ref}
           sphereRefs={sphereRefs}
-          instancedMeshRef={sphereRefs.central}
+          lessDetailedMeshRef={sphereRefs.centralLessDetailed} // Use less detailed ref
+          instancedMeshRef={sphereRefs.centralDetailed} // Use detailed ref
           redInstancedMeshRef={sphereRefs.red}
           greenInstancedMeshRef={sphereRefs.green}
           blueInstancedMeshRef={sphereRefs.blue}
@@ -235,87 +273,95 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         />
       ))}
       <MemoizedSphere
-        key={`central-${geometry.uuid}`} // Force re-render when geometry changes
-        ref={sphereRefs.central}
-        positions={Array.isArray(positions) ? positions : []}
+        key={`central-detailed-${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.centralDetailed} // Use detailed ref
+        positions={detailedPositions}
         material={sphereMaterial}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
       />
       <MemoizedSphere
-        key={`atmos-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.centralLessDetailed} // Use less detailed ref
+        positions={lessDetailedPositions}
+        material={sphereMaterial}
+        geometry={lessDetailedSphereGeometry}
+        frustumCulled={false}
+      />
+      <MemoizedSphere
+        key={`atmos-${atmosMaterial.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos}
-        positions={Array.isArray(positions) ? positions : []}
+        positions={filteredPositions}
         material={atmosMaterial}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[1.4, 1.4, 1.4]}
       />
       <MemoizedSphere
-        key={`red-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`red-${sphereMaterials.red.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.red}
         positions={filteredRedPositions}
         material={sphereMaterials.red}
-        geometry={geometry}
+        geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`atmos2-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`atmos2-${sphereMaterials.green.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos2}
         positions={filteredGreenPositions}
         material={sphereMaterials.green}
-        geometry={geometry}
+        geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`green-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`green-${atmosMaterial2.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.green}
         positions={filteredGreenPositions}
         material={atmosMaterial2}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />
       <MemoizedSphere
-        key={`atmos3-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`atmos3-${sphereMaterials.blue.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.atmos3}
         positions={filteredBluePositions}
         material={sphereMaterials.blue}
-        geometry={geometry}
+        geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`greenMoon-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`greenMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.greenMoon}
         positions={filteredGreenMoonPositions}
         material={moonMaterial}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
-        key={`blue-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`blue-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.blue}
         positions={filteredBluePositions}
         material={atmosMaterial2}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.25, 0.25, 0.25]}
       />
       <MemoizedSphere
-        key={`purple-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`purple-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purple}
         positions={filteredPurplePositions}
         material={sphereMaterials.purple}
-        geometry={geometry}
+        geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`purpleMoon-${geometry.uuid}`} // Force re-render when geometry changes
+        key={`purpleMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purpleMoon}
         positions={filteredPurpleMoonPositions}
         material={moonMaterial}
-        geometry={geometry}
+        geometry={sphereGeometry}
         frustumCulled={false}
         scale={[0.05, 0.05, 0.05]}
       />

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-export const sphereGeometry = new THREE.SphereGeometry(40, 20, 20);
-export const lessDetailedSphereGeometry = new THREE.SphereGeometry(40, 10, 10);
+export const sphereGeometry = new THREE.SphereGeometry(40, 40, 40);
+export const lessDetailedSphereGeometry = new THREE.SphereGeometry(40, 1, 1);
 
 export const sphereMaterial = new THREE.MeshStandardMaterial({
   color: 'yellow',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { throttle } from 'lodash';
+import { debounce } from 'lodash';
 import { useStore } from './store';
 import {
   GRID_SIZE,
@@ -25,7 +25,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     (state) => state.setGreenMoonPositions
   );
   const setPurpleMoonPositions = useStore(
-    (state) => state.setGreenMoonPositions
+    (state) => state.setPurpleMoonPositions
   );
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const swapBuffers = useStore((state) => state.swapBuffers);
@@ -34,7 +34,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   );
 
   const loadCellsAroundCamera = useCallback(
-    throttle(() => {
+    debounce(() => {
       if (!cameraRef.current) return;
 
       const cameraPosition = cameraRef.current.position;
@@ -141,7 +141,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           unloadDetailedSpheres(cellKey);
         }
       });
-    }, 10), // Adjust the throttle delay as needed
+    }, 100), // Adjust the debounce delay as needed
     [
       cameraRef,
       loadCell,
