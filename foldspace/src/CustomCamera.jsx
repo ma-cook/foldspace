@@ -15,7 +15,7 @@ const CustomCamera = forwardRef((props, ref) => {
 
   // Update the camera's position and lookAt when vec or lookAt changes
   useEffect(() => {
-    camera.far = 220000; // Update the far property
+    camera.far = 300000; // Update the far property
     camera.updateProjectionMatrix(); // Update the camera's projection matrix
 
     if (vec) {
@@ -58,7 +58,7 @@ const CustomCamera = forwardRef((props, ref) => {
       defaultCamera={true}
       fov={70}
       near={0.1}
-      far={220000}
+      far={300000}
       position={cameraPosition}
     >
       <OrbitControls

@@ -49,12 +49,33 @@ class BVH {
   }
 
   splitObjectsSAH(objects) {
-    // Sort objects by their centroid along the longest axis
     const axis = this.findLongestAxis(objects);
     objects.sort((a, b) => a[axis] - b[axis]);
 
-    const mid = Math.floor(objects.length / 2);
-    return [objects.slice(0, mid), objects.slice(mid)];
+    let bestCost = Infinity;
+    let bestSplit = 0;
+
+    for (let i = 1; i < objects.length; i++) {
+      const leftObjects = objects.slice(0, i);
+      const rightObjects = objects.slice(i);
+
+      const leftBoundingBox = this.computeBoundingBox(leftObjects);
+      const rightBoundingBox = this.computeBoundingBox(rightObjects);
+
+      const leftSurfaceArea = this.computeSurfaceArea(leftBoundingBox);
+      const rightSurfaceArea = this.computeSurfaceArea(rightBoundingBox);
+
+      const cost =
+        leftSurfaceArea * leftObjects.length +
+        rightSurfaceArea * rightObjects.length;
+
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestSplit = i;
+      }
+    }
+
+    return [objects.slice(0, bestSplit), objects.slice(bestSplit)];
   }
 
   findLongestAxis(objects) {
@@ -68,6 +89,13 @@ class BVH {
     return Object.keys(lengths).reduce((a, b) =>
       lengths[a] > lengths[b] ? a : b
     );
+  }
+
+  computeSurfaceArea(boundingBox) {
+    const dx = boundingBox.max.x - boundingBox.min.x;
+    const dy = boundingBox.max.y - boundingBox.min.y;
+    const dz = boundingBox.max.z - boundingBox.min.z;
+    return 2 * (dx * dy + dy * dz + dz * dx);
   }
 
   query(boundingBox) {
