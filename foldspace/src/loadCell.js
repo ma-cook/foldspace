@@ -35,7 +35,12 @@ const loadCell = async (
     return;
   }
 
-  setLoadingCells((prev) => new Set(prev).add(cellKey));
+  // Update loadingCells state synchronously
+  setLoadingCells((prev) => {
+    const newSet = new Set(prev);
+    newSet.add(cellKey);
+    return newSet;
+  });
 
   try {
     const response = await fetch(
@@ -118,6 +123,17 @@ const loadCell = async (
         greenMoonPositions: newGreenMoonPositions,
         purpleMoonPositions: newPurpleMoonPositions,
       });
+
+      // Update the state with the newly generated positions
+      updatePositions(setPositions, newPositions);
+      if (loadDetail) {
+        updatePositions(setRedPositions, newRedPositions);
+        updatePositions(setGreenPositions, newGreenPositions);
+        updatePositions(setBluePositions, newBluePositions);
+        updatePositions(setPurplePositions, newPurplePositions);
+        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
+      }
     } else {
       console.error(
         `Error loading cell data from Firestore for ${cellKey}:`,

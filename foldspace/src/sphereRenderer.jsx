@@ -4,6 +4,7 @@ import React, {
   useState,
   forwardRef,
   useCallback,
+  useMemo,
 } from 'react';
 import PlaneMesh from './PlaneMesh';
 import { MemoizedSphere } from './Sphere';
@@ -64,13 +65,12 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const purpleMoonPositions = useStore(
     (state) => state.purpleMoonPositions[activeBuffer]
   );
-
-  const [bvh, setBVH] = useState(null);
+  const bvh = useStore((state) => state.bvh[activeBuffer]);
 
   useEffect(() => {
     // Build BVH when positions change
-    setBVH(new BVH(positions));
-  }, [positions]);
+    useStore.getState().setBVH(new BVH(positions), activeBuffer);
+  }, [positions, activeBuffer]);
 
   const filteredRedPositions = useFilteredPositions(
     redPositions,
@@ -192,13 +192,19 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       UNLOAD_DETAIL_DISTANCE
     );
 
-    useStore.getState().setRedPositions(clearedRedPositions);
-    useStore.getState().setGreenPositions(clearedGreenPositions);
-    useStore.getState().setBluePositions(clearedBluePositions);
-    useStore.getState().setPurplePositions(clearedPurplePositions);
-    useStore.getState().setGreenMoonPositions(clearedGreenMoonPositions);
-    useStore.getState().setPurpleMoonPositions(clearedPurpleMoonPositions);
-    useStore.getState().setPositions(clearedYellowPositions);
+    useStore.getState().setRedPositions(clearedRedPositions, activeBuffer);
+    useStore.getState().setGreenPositions(clearedGreenPositions, activeBuffer);
+    useStore.getState().setBluePositions(clearedBluePositions, activeBuffer);
+    useStore
+      .getState()
+      .setPurplePositions(clearedPurplePositions, activeBuffer);
+    useStore
+      .getState()
+      .setGreenMoonPositions(clearedGreenMoonPositions, activeBuffer);
+    useStore
+      .getState()
+      .setPurpleMoonPositions(clearedPurpleMoonPositions, activeBuffer);
+    useStore.getState().setPositions(clearedYellowPositions, activeBuffer);
   }, [
     cameraRef,
     redPositions,
@@ -208,6 +214,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     greenMoonPositions,
     purpleMoonPositions,
     filteredPositions,
+    activeBuffer,
   ]);
 
   useEffect(() => {

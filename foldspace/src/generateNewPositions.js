@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const GRID_SIZE = 80000;
+const GRID_SIZE = 100000;
 
 const generateNewPositions = (x, z) => {
   const newPositions = [];
@@ -34,7 +34,7 @@ const generateNewPositions = (x, z) => {
     return positions;
   };
 
-  const positions = generateRandomPositions(200, x, z);
+  const positions = generateRandomPositions(225, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);

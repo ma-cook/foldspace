@@ -21,6 +21,19 @@ export const useStore = create((set) => ({
   planeMeshes: {}, // Add state to track plane meshes
   cameraRef: { current: null }, // Add cameraRef to the store
   loadedCells: new Set(), // Use a Set to track loaded cells
+  bvh: [null, null], // Add BVH state
+  detailedPositions: [], // Add detailed positions state
+  lessDetailedPositions: [], // Add less detailed positions state
+  setBVH: (bvh, bufferIndex) =>
+    set((state) => {
+      const newBVH = [...state.bvh];
+      newBVH[bufferIndex] = bvh;
+      return { bvh: newBVH };
+    }), // Add setter for BVH
+  setDetailedPositions: (positions) =>
+    set(() => ({ detailedPositions: positions })), // Add setter for detailed positions
+  setLessDetailedPositions: (positions) =>
+    set(() => ({ lessDetailedPositions: positions })), // Add setter for less detailed positions
   setCameraRef: (ref) => set(() => ({ cameraRef: ref })), // Add setter for cameraRef
   setPlaneMeshes: (cellKey, meshes) =>
     set((state) => ({

@@ -1,3 +1,4 @@
+// App.jsx
 import React, {
   useRef,
   useEffect,
@@ -16,6 +17,7 @@ import CustomFogMaterial from './CustomFogMaterial';
 
 import CellLoader from './CellLoader';
 import Loader from './Loader';
+import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
 
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
@@ -181,6 +183,8 @@ const App = React.memo(() => {
           })}
         </Suspense>
       </Canvas>
+      {loadingCells.size > 0 && <LoadingMessage />}{' '}
+      {/* Conditionally render LoadingMessage */}
     </div>
   );
 });

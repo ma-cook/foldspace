@@ -11,13 +11,13 @@ import {
   lessDetailedSphereGeometry,
 } from './SphereData';
 
-const disposeMaterial = (material) => {
+export const disposeMaterial = (material) => {
   if (material && typeof material.dispose === 'function') {
     material.dispose();
   }
 };
 
-const disposeGeometry = (geometry) => {
+export const disposeGeometry = (geometry) => {
   if (geometry && typeof geometry.dispose === 'function') {
     geometry.dispose();
   }

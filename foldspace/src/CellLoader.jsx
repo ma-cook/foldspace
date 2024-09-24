@@ -141,7 +141,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           unloadDetailedSpheres(cellKey);
         }
       });
-    }, 100), // Adjust the debounce delay as needed
+    }, 1), // Adjust the debounce delay as needed
     [
       cameraRef,
       loadCell,
