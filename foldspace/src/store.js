@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import * as THREE from 'three';
 import cellCache from './cellCache';
 
+// Define the ensureVector3 function
+const ensureVector3 = (pos) => {
+  return pos instanceof THREE.Vector3
+    ? pos
+    : new THREE.Vector3(pos.x, pos.y, pos.z);
+};
+
 export const useStore = create((set) => ({
   vec: null,
   defaultPosition: new THREE.Vector3(0, 50, 100),
@@ -103,7 +110,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -114,6 +123,7 @@ export const useStore = create((set) => ({
       return { positions: updatedPositions };
     });
   },
+
   setRedPositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -123,7 +133,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -134,6 +146,7 @@ export const useStore = create((set) => ({
       return { redPositions: updatedPositions };
     });
   },
+
   setGreenPositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -143,7 +156,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -154,6 +169,7 @@ export const useStore = create((set) => ({
       return { greenPositions: updatedPositions };
     });
   },
+
   setBluePositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -163,7 +179,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -174,6 +192,7 @@ export const useStore = create((set) => ({
       return { bluePositions: updatedPositions };
     });
   },
+
   setPurplePositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -183,7 +202,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -194,6 +215,7 @@ export const useStore = create((set) => ({
       return { purplePositions: updatedPositions };
     });
   },
+
   setGreenMoonPositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -203,7 +225,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -214,6 +238,7 @@ export const useStore = create((set) => ({
       return { greenMoonPositions: updatedPositions };
     });
   },
+
   setPurpleMoonPositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -223,7 +248,9 @@ export const useStore = create((set) => ({
 
       const uniquePositions = Array.isArray(newPositions)
         ? Array.from(
-            new Set(newPositions.map((pos) => pos.toArray().toString()))
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
           ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
         : [];
 
@@ -241,10 +268,10 @@ export const useStore = create((set) => ({
   removePositions: (positionsToRemove) => {
     set((state) => {
       const positionsSet = new Set(
-        positionsToRemove.map((pos) => pos.toArray().toString())
+        positionsToRemove.map((pos) => ensureVector3(pos).toArray().toString())
       );
       const newPositions = state.positions[state.activeBuffer].filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
       const nextBuffer = (state.activeBuffer + 1) % 2;
       const updatedPositions = [...state.positions];
@@ -256,32 +283,38 @@ export const useStore = create((set) => ({
     set((state) => {
       const cellPositions = cellCache[cellKey] || [];
       const positionsSet = new Set(
-        cellPositions.map((pos) => pos.toArray().toString())
+        cellPositions.map((pos) => ensureVector3(pos).toArray().toString())
       );
 
       const newPositions = state.positions[state.activeBuffer].filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
       const newRedPositions = state.redPositions[state.activeBuffer].filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
       const newGreenPositions = state.greenPositions[state.activeBuffer].filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
       const newBluePositions = state.bluePositions[state.activeBuffer].filter(
-        (pos) => !positionsSet.has(pos.toArray().toString())
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
       const newPurplePositions = state.purplePositions[
         state.activeBuffer
-      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
 
       const newGreenMoonPositions = state.greenMoonPositions[
         state.activeBuffer
-      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
 
       const newPurpleMoonPositions = state.purpleMoonPositions[
         state.activeBuffer
-      ].filter((pos) => !positionsSet.has(pos.toArray().toString()));
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
 
       const nextBuffer = (state.activeBuffer + 1) % 2;
       const updatedPositions = [...state.positions];

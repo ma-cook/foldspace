@@ -12,7 +12,8 @@ import {
 } from './config';
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
-  const [loadingCells, setLoadingCells] = useState(new Set());
+  const [loadingQueue, setLoadingQueue] = useState([]);
+  const [currentLoadDistance, setCurrentLoadDistance] = useState(LOAD_DISTANCE);
   const previousCameraPosition = useRef({ x: null, z: null });
 
   const loadedCells = useStore((state) => state.loadedCells);
@@ -53,7 +54,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
           const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
 
-          if (distance < LOAD_DISTANCE) {
+          if (distance < currentLoadDistance) {
             const cellKey = `${newX},${newZ}`;
             if (loadedCells.has(cellKey)) {
               cellsLoadedWithinDistance = true;
@@ -84,7 +85,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
         z: cameraPosition.z,
       };
 
-      const newLoadingCells = new Set(loadingCells);
+      const newLoadingQueue = [];
 
       for (let dx = -2; dx <= 2; dx++) {
         for (let dz = -2; dz <= 2; dz++) {
@@ -94,39 +95,25 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
           const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
 
-          if (distance < LOAD_DISTANCE) {
+          if (distance < currentLoadDistance) {
             const cellKey = `${newX},${newZ}`;
-            if (!loadedCells.has(cellKey) && !newLoadingCells.has(cellKey)) {
-              newLoadingCells.add(cellKey);
-              loadCell(
+            if (!loadedCells.has(cellKey)) {
+              newLoadingQueue.push({
+                cellKey,
                 newX,
                 newZ,
-                distance < DETAIL_DISTANCE,
-                loadedCells,
-                newLoadingCells,
-                setLoadingCells,
-                setPositions,
-                setRedPositions,
-                setGreenPositions,
-                setBluePositions,
-                setPurplePositions,
-                setGreenMoonPositions,
-                setPurpleMoonPositions,
-                setLoadedCells,
-                swapBuffers
-              ).finally(() => {
-                setLoadingCells((prev) => {
-                  const updatedSet = new Set(prev);
-                  updatedSet.delete(cellKey);
-                  return updatedSet;
-                });
+                distance,
+                loadDetail: distance < DETAIL_DISTANCE,
               });
             }
           }
         }
       }
 
-      setLoadingCells(newLoadingCells);
+      // Sort the queue by distance to prioritize closer cells
+      newLoadingQueue.sort((a, b) => a.distance - b.distance);
+
+      setLoadingQueue((prevQueue) => [...prevQueue, ...newLoadingQueue]);
 
       loadedCells.forEach((cellKey) => {
         const [x, z] = cellKey.split(',').map(Number);
@@ -146,7 +133,6 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       cameraRef,
       loadCell,
       unloadCell,
-      loadingCells,
       loadedCells,
       setPositions,
       setRedPositions,
@@ -158,10 +144,40 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       setLoadedCells,
       swapBuffers,
       unloadDetailedSpheres,
+      currentLoadDistance,
     ]
   );
 
-  useFrame(loadCellsAroundCamera);
+  useFrame(() => {
+    if (loadingQueue.length > 0) {
+      const batchSize = 5; // Number of cells to load in parallel
+      const batch = loadingQueue.splice(0, batchSize);
+
+      batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
+        loadCell(
+          newX,
+          newZ,
+          loadDetail,
+          loadedCells,
+          new Set(loadingQueue.map((item) => item.cellKey)),
+          setLoadingQueue,
+          setPositions,
+          setRedPositions,
+          setGreenPositions,
+          setBluePositions,
+          setPurplePositions,
+          setGreenMoonPositions,
+          setPurpleMoonPositions,
+          setLoadedCells,
+          swapBuffers
+        ).finally(() => {
+          setLoadingQueue((prevQueue) =>
+            prevQueue.filter((item) => item.cellKey !== cellKey)
+          );
+        });
+      });
+    }
+  });
 
   useEffect(() => {
     loadCellsAroundCamera();
@@ -169,6 +185,23 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       loadCellsAroundCamera.cancel();
     };
   }, [cameraRef.current?.position]);
+
+  useEffect(() => {
+    const handleCameraMove = () => {
+      loadCellsAroundCamera();
+    };
+
+    const interval = setInterval(handleCameraMove, 1); // Check every 100ms
+
+    return () => clearInterval(interval);
+  }, [loadCellsAroundCamera]);
+
+  useEffect(() => {
+    // Change the load distance after initial cells are loaded
+    if (loadingQueue.length === 0) {
+      setCurrentLoadDistance(150000);
+    }
+  }, [loadingQueue]);
 
   return null;
 });

@@ -70,7 +70,6 @@ const CustomCamera = forwardRef((props, ref) => {
         enableDamping={true} // Add this line
         dampingFactor={1} // Add this line
         staticMoving={true} // Add this line
-        maxDistance={100000}
       />
     </PerspectiveCamera>
   );

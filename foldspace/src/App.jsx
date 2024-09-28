@@ -13,7 +13,6 @@ import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
-import CustomFogMaterial from './CustomFogMaterial';
 
 import CellLoader from './CellLoader';
 import Loader from './Loader';
@@ -22,7 +21,7 @@ import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
-const GRID_SIZE = 80000;
+const GRID_SIZE = 100000;
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);

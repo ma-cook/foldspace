@@ -256,7 +256,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     };
 
     updateGeometry();
-    const interval = setInterval(updateGeometry, 1000); // Check every second
+    const interval = setInterval(updateGeometry, 1); // Check every second
 
     return () => clearInterval(interval);
   }, [cameraRef, positions, bvh]);
