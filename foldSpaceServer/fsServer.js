@@ -21,8 +21,11 @@ const db = admin.firestore();
 const cache = new NodeCache({ stdTTL: 600 }); // Cache with 10 minutes TTL
 
 const dataFilePath = path.join(__dirname, 'data', 'cells.json');
-if (!fs.existsSync(path.dirname(dataFilePath))) {
-  fs.mkdirSync(path.dirname(dataFilePath));
+
+// Use the synchronous fs module for existsSync and mkdirSync
+const fsSync = require('fs');
+if (!fsSync.existsSync(path.dirname(dataFilePath))) {
+  fsSync.mkdirSync(path.dirname(dataFilePath), { recursive: true });
 }
 
 // Helper function to read the entire cell data file
