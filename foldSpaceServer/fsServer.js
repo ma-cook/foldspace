@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
+const NodeCache = require('node-cache');
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -17,6 +18,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+const cache = new NodeCache({ stdTTL: 600 }); // Cache with 10 minutes TTL
 
 const dataFilePath = path.join(__dirname, 'data', 'cells.json');
 if (!fs.existsSync(path.dirname(dataFilePath))) {
@@ -24,17 +26,18 @@ if (!fs.existsSync(path.dirname(dataFilePath))) {
 }
 
 // Helper function to read the entire cell data file
-const readCellDataFile = () => {
-  if (fs.existsSync(dataFilePath)) {
-    const data = fs.readFileSync(dataFilePath, 'utf-8');
+const readCellDataFile = async () => {
+  try {
+    const data = await fs.readFile(dataFilePath, 'utf-8');
     return JSON.parse(data);
+  } catch (error) {
+    return {};
   }
-  return {};
 };
 
 // Helper function to write the entire cell data file
-const writeCellDataFile = (data) => {
-  fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
+const writeCellDataFile = async (data) => {
+  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
 };
 
 app.post('/save-sphere-data', async (req, res) => {
@@ -42,9 +45,11 @@ app.post('/save-sphere-data', async (req, res) => {
   const docRef = db.collection('cells').doc(cellKey);
   await docRef.set({ positions });
 
-  const cellData = readCellDataFile();
+  const cellData = await readCellDataFile();
   cellData[cellKey] = positions;
-  writeCellDataFile(cellData);
+  await writeCellDataFile(cellData);
+
+  cache.set(cellKey, positions); // Update cache
 
   res.send('Sphere data saved successfully');
 });
@@ -53,17 +58,25 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
   const { cellKey } = req.params;
 
   try {
-    const cellData = readCellDataFile();
+    // Check cache first
+    const cachedData = cache.get(cellKey);
+    if (cachedData) {
+      console.log(`Loading cell data for ${cellKey} from cache.`);
+      return res.send(cachedData);
+    }
+
+    const cellData = await readCellDataFile();
     if (cellData[cellKey]) {
       console.log(`Loading cell data for ${cellKey} from local file.`);
-      res.send(cellData[cellKey]);
+      cache.set(cellKey, cellData[cellKey]); // Update cache
+      return res.send(cellData[cellKey]);
     } else {
       console.log(`Loading cell data for ${cellKey} from Firestore.`);
       const docRef = db.collection('cells').doc(cellKey);
       const doc = await docRef.get();
       if (!doc.exists) {
         console.log(`No sphere data found for ${cellKey} in Firestore.`);
-        res.status(404).send('No sphere data found');
+        return res.status(404).send('No sphere data found');
       } else {
         const data = doc.data();
         // Ensure the data structure is valid
@@ -75,13 +88,14 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
           purplePositions: data.purplePositions || [],
         };
         cellData[cellKey] = validData;
-        writeCellDataFile(cellData);
-        res.send(validData);
+        await writeCellDataFile(cellData);
+        cache.set(cellKey, validData); // Update cache
+        return res.send(validData);
       }
     }
   } catch (error) {
     console.error(`Error loading cell data for ${cellKey}:`, error);
-    res.status(500).send('Internal Server Error');
+    return res.status(500).send('Internal Server Error');
   }
 });
 

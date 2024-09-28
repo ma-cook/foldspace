@@ -12,6 +12,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "firebase-admin": "^12.2.0"
+    "firebase-admin": "^12.2.0",
+    "node-cache": "^5.1.2"
   }
 }
