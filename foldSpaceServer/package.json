@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^3.2.6",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "firebase-admin": "^12.2.0",
+    "lockfile": "^1.0.4",
     "node-cache": "^5.1.2"
   }
 }

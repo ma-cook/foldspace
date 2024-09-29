@@ -3,6 +3,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const NodeCache = require('node-cache');
+const async = require('async');
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -48,16 +49,28 @@ const writeCellDataFile = async (data) => {
   }
 };
 
+// Create a queue to manage read/write operations
+const fileQueue = async.queue(async (task, callback) => {
+  try {
+    await task();
+  } catch (error) {
+    console.error('Error processing task in queue:', error);
+  } finally {
+    if (callback) callback();
+  }
+}, 1); // Only one task is processed at a time
+
 app.post('/save-sphere-data', async (req, res) => {
   const { cellKey, positions } = req.body;
   const docRef = db.collection('cells').doc(cellKey);
   await docRef.set({ positions });
 
-  const cellData = await readCellDataFile();
-  cellData[cellKey] = positions;
-  await writeCellDataFile(cellData);
-
-  cache.set(cellKey, positions); // Update cache
+  fileQueue.push(async () => {
+    const cellData = await readCellDataFile();
+    cellData[cellKey] = positions;
+    await writeCellDataFile(cellData);
+    cache.set(cellKey, positions); // Update cache
+  });
 
   res.send('Sphere data saved successfully');
 });
@@ -70,36 +83,54 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
     if (cachedData) {
       return res.send(cachedData);
     }
-
+    console.log(cachedData);
     console.log(`Cache miss for cellKey: ${cellKey}, checking local file.`);
-    const cellData = await readCellDataFile();
-    if (cellData[cellKey]) {
-      console.log(`Loading cell data for ${cellKey} from local file.`);
-      cache.set(cellKey, cellData[cellKey]); // Update cache
-      return res.send(cellData[cellKey]);
-    } else {
-      console.log(`No local file data for ${cellKey}, checking Firestore.`);
-      const docRef = db.collection('cells').doc(cellKey);
+    fileQueue.push(
+      async () => {
+        const cellData = await readCellDataFile();
+        if (cellData[cellKey]) {
+          console.log(`Loading cell data for ${cellKey} from local file.`);
+          cache.set(cellKey, cellData[cellKey]); // Update cache
+          res.send(cellData[cellKey]);
+        } else {
+          console.log(`No local file data for ${cellKey}, checking Firestore.`);
+          const docRef = db.collection('cells').doc(cellKey);
+          const doc = await docRef.get();
 
-      const doc = await docRef.get();
-
-      if (!doc.exists) {
-        return res.status(404).send('No sphere data found');
-      } else {
-        const data = doc.data();
-        // Ensure the data structure is valid
-        const validData = {
-          positions: data.positions || [],
-        };
-        cellData[cellKey] = validData;
-        await writeCellDataFile(cellData);
-        cache.set(cellKey, validData); // Update cache
-        return res.send(validData);
+          if (!doc.exists) {
+            res.status(404).send('No sphere data found');
+          } else {
+            const data = doc.data();
+            // Ensure the data structure is valid
+            const validData = {
+              positions: data.positions || [],
+              redPositions: data.redPositions || [],
+              greenPositions: data.greenPositions || [],
+              bluePositions: data.bluePositions || [],
+              purplePositions: data.purplePositions || [],
+              greenMoonPositions: data.greenMoonPositions || [],
+              purpleMoonPositions: data.purpleMoonPositions || [],
+            };
+            fileQueue.push(async () => {
+              const cellData = await readCellDataFile();
+              cellData[cellKey] = validData;
+              await writeCellDataFile(cellData);
+              cache.set(cellKey, validData); // Update cache
+            });
+            res.send(validData);
+          }
+        }
+      },
+      (err) => {
+        if (err) {
+          console.error('Error processing task in queue:', err);
+          res.status(500).send('Internal Server Error');
+        }
       }
-    }
+    );
   } catch (error) {
     console.error(`Error loading cell data for ${cellKey}:`, error);
-    return res.status(500).send('Internal Server Error');
+    res.status(500).send('Internal Server Error');
   }
 });
 
