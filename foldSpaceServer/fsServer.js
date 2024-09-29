@@ -34,13 +34,18 @@ const readCellDataFile = async () => {
     const data = await fs.readFile(dataFilePath, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
+    console.error('Error reading cell data file:', error);
     return {};
   }
 };
 
 // Helper function to write the entire cell data file
 const writeCellDataFile = async (data) => {
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
+  try {
+    await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Error writing cell data file:', error);
+  }
 };
 
 app.post('/save-sphere-data', async (req, res) => {
@@ -61,25 +66,24 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
   const { cellKey } = req.params;
 
   try {
-    // Check cache first
     const cachedData = cache.get(cellKey);
     if (cachedData) {
       return res.send(cachedData);
     }
 
+    console.log(`Cache miss for cellKey: ${cellKey}, checking local file.`);
     const cellData = await readCellDataFile();
     if (cellData[cellKey]) {
       console.log(`Loading cell data for ${cellKey} from local file.`);
       cache.set(cellKey, cellData[cellKey]); // Update cache
       return res.send(cellData[cellKey]);
     } else {
-      console.log(`Loading cell data for ${cellKey} from Firestore.`);
+      console.log(`No local file data for ${cellKey}, checking Firestore.`);
       const docRef = db.collection('cells').doc(cellKey);
 
       const doc = await docRef.get();
 
       if (!doc.exists) {
-        console.log(`No sphere data found for ${cellKey} in Firestore.`);
         return res.status(404).send('No sphere data found');
       } else {
         const data = doc.data();
