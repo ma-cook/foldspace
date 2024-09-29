@@ -64,7 +64,6 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
     // Check cache first
     const cachedData = cache.get(cellKey);
     if (cachedData) {
-      console.log(`Loading cell data for ${cellKey} from cache.`);
       return res.send(cachedData);
     }
 
@@ -76,7 +75,9 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
     } else {
       console.log(`Loading cell data for ${cellKey} from Firestore.`);
       const docRef = db.collection('cells').doc(cellKey);
+
       const doc = await docRef.get();
+
       if (!doc.exists) {
         console.log(`No sphere data found for ${cellKey} in Firestore.`);
         return res.status(404).send('No sphere data found');
@@ -85,10 +86,6 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
         // Ensure the data structure is valid
         const validData = {
           positions: data.positions || [],
-          redPositions: data.redPositions || [],
-          greenPositions: data.greenPositions || [],
-          bluePositions: data.bluePositions || [],
-          purplePositions: data.purplePositions || [],
         };
         cellData[cellKey] = validData;
         await writeCellDataFile(cellData);
