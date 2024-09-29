@@ -4,15 +4,32 @@ import generateNewPositions from './generateNewPositions';
 import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
-  if (positions && positions.positions) {
-    positions = positions.positions; // Access the nested positions array
+  console.log('createVector3Array input:', positions);
+  if (!positions) {
+    console.warn('createVector3Array received undefined input');
+    return [];
   }
-  return Array.isArray(positions)
-    ? positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z))
-    : [];
+  if (!Array.isArray(positions)) {
+    console.warn('createVector3Array received non-array input');
+    return [];
+  }
+  positions.forEach((pos, index) => {
+    if (typeof pos !== 'object' || pos === null) {
+      console.warn(`Element at index ${index} is not an object:`, pos);
+    } else if (!('x' in pos) || !('y' in pos) || !('z' in pos)) {
+      console.warn(
+        `Element at index ${index} is missing x, y, or z properties:`,
+        pos
+      );
+    }
+  });
+  const result = positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
+  console.log('createVector3Array output:', result);
+  return result;
 };
 
 const updatePositions = (setPositions, newPositions) => {
+  console.log('updatePositions input:', newPositions);
   setPositions((prevPositions) => [...prevPositions, ...newPositions]);
 };
 
@@ -52,29 +69,41 @@ const loadCell = async (
 
     if (response.ok) {
       const savedPositions = await response.json();
+      console.log('savedPositions:', savedPositions);
 
-      const newPositions = createVector3Array(savedPositions.positions);
-
+      const newPositions = createVector3Array(
+        savedPositions.positions.positions
+      );
+      console.log('newPositions:', newPositions);
       cellCache[cellKey] = newPositions;
       updatePositions(setPositions, newPositions);
 
       if (loadDetail) {
-        const newRedPositions = createVector3Array(savedPositions.redPositions);
+        const newRedPositions = createVector3Array(
+          savedPositions.positions.redPositions
+        );
         const newGreenPositions = createVector3Array(
-          savedPositions.greenPositions
+          savedPositions.positions.greenPositions
         );
         const newBluePositions = createVector3Array(
-          savedPositions.bluePositions
+          savedPositions.positions.bluePositions
         );
         const newPurplePositions = createVector3Array(
-          savedPositions.purplePositions
+          savedPositions.positions.purplePositions
         );
         const newGreenMoonPositions = createVector3Array(
-          savedPositions.greenMoonPositions
+          savedPositions.positions.greenMoonPositions
         );
         const newPurpleMoonPositions = createVector3Array(
-          savedPositions.purpleMoonPositions
+          savedPositions.positions.purpleMoonPositions
         );
+
+        console.log('newRedPositions:', newRedPositions);
+        console.log('newGreenPositions:', newGreenPositions);
+        console.log('newBluePositions:', newBluePositions);
+        console.log('newPurplePositions:', newPurplePositions);
+        console.log('newGreenMoonPositions:', newGreenMoonPositions);
+        console.log('newPurpleMoonPositions:', newPurpleMoonPositions);
 
         updatePositions(setRedPositions, newRedPositions);
         updatePositions(setGreenPositions, newGreenPositions);

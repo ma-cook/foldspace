@@ -1,10 +1,11 @@
 import React, {
   useRef,
   useEffect,
+  useState,
+  forwardRef,
+  useCallback,
   useMemo,
   Suspense,
-  useState,
-  useCallback,
 } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
@@ -12,11 +13,9 @@ import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import PlaneMesh from './PlaneMesh';
-
 import CellLoader from './CellLoader';
 import Loader from './Loader';
 import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
-
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
@@ -109,6 +108,7 @@ const App = React.memo(() => {
   );
 
   const flattenedPositions = useMemo(() => {
+    console.log('positions:', positions);
     if (
       Array.isArray(positions) &&
       positions.length > 0 &&
@@ -139,14 +139,12 @@ const App = React.memo(() => {
             purpleMoonPositions={purpleMoonPositions}
           />
           <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
-
           <Environment
             preset="forest"
             background
             backgroundBlurriness={0.8}
             backgroundIntensity={0.007}
           />
-
           <CustomCamera ref={cameraRef} />
           <CellLoader
             cameraRef={cameraRef}
@@ -181,8 +179,7 @@ const App = React.memo(() => {
           })}
         </Suspense>
       </Canvas>
-      {loadingCells.size > 0 && <LoadingMessage />}{' '}
-      {/* Conditionally render LoadingMessage */}
+      {loadingCells.size > 0 && <LoadingMessage />}
     </div>
   );
 });
