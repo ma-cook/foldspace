@@ -4,7 +4,6 @@ import React, {
   useState,
   forwardRef,
   useCallback,
-  useMemo,
 } from 'react';
 import PlaneMesh from './PlaneMesh';
 import { MemoizedSphere } from './Sphere';
@@ -256,7 +255,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     };
 
     updateGeometry();
-    const interval = setInterval(updateGeometry, 1); // Check every second
+    const interval = setInterval(updateGeometry, 1000); // Check every second
 
     return () => clearInterval(interval);
   }, [cameraRef, positions, bvh]);

@@ -4,6 +4,9 @@ import generateNewPositions from './generateNewPositions';
 import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
+  if (positions && positions.positions) {
+    positions = positions.positions; // Access the nested positions array
+  }
   return Array.isArray(positions)
     ? positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z))
     : [];
@@ -51,6 +54,7 @@ const loadCell = async (
       const savedPositions = await response.json();
 
       const newPositions = createVector3Array(savedPositions.positions);
+
       cellCache[cellKey] = newPositions;
       updatePositions(setPositions, newPositions);
 
@@ -86,6 +90,9 @@ const loadCell = async (
         return updatedLoadedCells;
       });
     } else if (response.status === 404) {
+      console.log(
+        `No data found for cell ${cellKey}, generating new positions.`
+      );
       const {
         newPositions,
         newRedPositions,

@@ -1,4 +1,3 @@
-// App.jsx
 import React, {
   useRef,
   useEffect,
