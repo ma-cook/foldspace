@@ -4,8 +4,11 @@ const fs = require('fs').promises;
 const path = require('path');
 const NodeCache = require('node-cache');
 const async = require('async');
+const bodyParser = require('body-parser'); // Import body-parser
 const app = express();
-app.use(express.json());
+
+// Increase the limit for the request payload size
+app.use(bodyParser.json({ limit: '10mb' })); // Set the limit to 10MB
 app.use(cors());
 
 const port = process.env.PORT || 5000;
@@ -29,7 +32,7 @@ if (!fsSync.existsSync(path.dirname(dataFilePath))) {
   fsSync.mkdirSync(path.dirname(dataFilePath), { recursive: true });
 }
 
-// Helper function to read the entire cell data file
+// Helper function read the entire cell data file
 const readCellDataFile = async () => {
   try {
     const data = await fs.readFile(dataFilePath, 'utf-8');
@@ -130,6 +133,45 @@ app.get('/get-sphere-data/:cellKey', async (req, res) => {
     );
   } catch (error) {
     console.error(`Error loading cell data for ${cellKey}:`, error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Helper function to delete documents in batches
+const deleteDocumentsInBatches = async (collectionRef, batchSize = 10) => {
+  const snapshot = await collectionRef.get();
+  const totalDocs = snapshot.size;
+  let deletedDocs = 0;
+
+  while (deletedDocs < totalDocs) {
+    const batch = db.batch();
+    const batchDocs = snapshot.docs.slice(deletedDocs, deletedDocs + batchSize);
+
+    batchDocs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    deletedDocs += batchDocs.length;
+  }
+};
+
+// Endpoint to delete all cell data
+app.delete('/delete-all-cells', async (req, res) => {
+  try {
+    // Delete all documents in the 'cells' collection in Firestore
+    const cellsCollection = db.collection('cells');
+    await deleteDocumentsInBatches(cellsCollection);
+
+    // Clear the cache
+    cache.flushAll();
+
+    // Clear the local file
+    await writeCellDataFile({});
+
+    res.send('All cell data deleted successfully');
+  } catch (error) {
+    console.error('Error deleting all cell data:', error);
     res.status(500).send('Internal Server Error');
   }
 });
