@@ -119,6 +119,30 @@ const App = React.memo(() => {
     return positions;
   }, [positions]);
 
+  const handleDeleteAllCells = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/delete-all-cells', {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        console.log('All cell data deleted successfully');
+        // Clear local state if needed
+        setLoadedCells(new Set());
+        setPositions([]);
+        setRedPositions([]);
+        setGreenPositions([]);
+        setBluePositions([]);
+        setPurplePositions([]);
+        setGreenMoonPositions([]);
+        setPurpleMoonPositions([]);
+      } else {
+        console.error('Failed to delete all cell data');
+      }
+    } catch (error) {
+      console.error('Error deleting all cell data:', error);
+    }
+  };
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas>
@@ -180,6 +204,7 @@ const App = React.memo(() => {
         </Suspense>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}
+      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
     </div>
   );
 });

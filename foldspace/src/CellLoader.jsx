@@ -8,7 +8,6 @@ import {
   UNLOAD_DISTANCE,
   DETAIL_DISTANCE,
   UNLOAD_DETAIL_DISTANCE,
-  SIGNIFICANT_MOVE_DISTANCE,
 } from './config';
 
 const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
@@ -34,56 +33,14 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     (state) => state.unloadDetailedSpheres
   );
 
+  const cameraPosition = useStore((state) => state.cameraPosition);
+
   const loadCellsAroundCamera = useCallback(
     debounce(() => {
-      if (!cameraRef.current) return;
-
-      const cameraPosition = cameraRef.current.position;
       if (!cameraPosition) return;
 
-      const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
-      const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
-
-      // Check if any cells within the load distance have been loaded
-      let cellsLoadedWithinDistance = false;
-      for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
-          const newX = cellX + dx;
-          const newZ = cellZ + dz;
-          const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
-          const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
-          const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
-
-          if (distance < currentLoadDistance) {
-            const cellKey = `${newX},${newZ}`;
-            if (loadedCells.has(cellKey)) {
-              cellsLoadedWithinDistance = true;
-              break;
-            }
-          }
-        }
-        if (cellsLoadedWithinDistance) break;
-      }
-
-      // Check if the camera has moved significantly or if no cells within the load distance have been loaded
-      const prevPos = previousCameraPosition.current;
-      const distanceMoved = Math.sqrt(
-        (cameraPosition.x - prevPos.x) ** 2 +
-          (cameraPosition.z - prevPos.z) ** 2
-      );
-
-      if (
-        distanceMoved < SIGNIFICANT_MOVE_DISTANCE &&
-        cellsLoadedWithinDistance
-      ) {
-        return;
-      }
-
-      // Update the previous camera position
-      previousCameraPosition.current = {
-        x: cameraPosition.x,
-        z: cameraPosition.z,
-      };
+      const cellX = Math.floor(cameraPosition[0] / GRID_SIZE);
+      const cellZ = Math.floor(cameraPosition[2] / GRID_SIZE);
 
       const newLoadingQueue = [];
 
@@ -91,8 +48,19 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
         for (let dz = -2; dz <= 2; dz++) {
           const newX = cellX + dx;
           const newZ = cellZ + dz;
-          const distanceX = Math.abs(cameraPosition.x - newX * GRID_SIZE);
-          const distanceZ = Math.abs(cameraPosition.z - newZ * GRID_SIZE);
+          const cellMinX = newX * GRID_SIZE - GRID_SIZE / 2;
+          const cellMaxX = newX * GRID_SIZE + GRID_SIZE / 2;
+          const cellMinZ = newZ * GRID_SIZE - GRID_SIZE / 2;
+          const cellMaxZ = newZ * GRID_SIZE + GRID_SIZE / 2;
+
+          const distanceX = Math.max(
+            0,
+            Math.abs(cameraPosition[0] - newX * GRID_SIZE) - GRID_SIZE / 2
+          );
+          const distanceZ = Math.max(
+            0,
+            Math.abs(cameraPosition[2] - newZ * GRID_SIZE) - GRID_SIZE / 2
+          );
           const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
 
           if (distance < currentLoadDistance) {
@@ -117,8 +85,19 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
       loadedCells.forEach((cellKey) => {
         const [x, z] = cellKey.split(',').map(Number);
-        const distanceX = Math.abs(cameraPosition.x - x * GRID_SIZE);
-        const distanceZ = Math.abs(cameraPosition.z - z * GRID_SIZE);
+        const cellMinX = x * GRID_SIZE - GRID_SIZE / 2;
+        const cellMaxX = x * GRID_SIZE + GRID_SIZE / 2;
+        const cellMinZ = z * GRID_SIZE - GRID_SIZE / 2;
+        const cellMaxZ = z * GRID_SIZE + GRID_SIZE / 2;
+
+        const distanceX = Math.max(
+          0,
+          Math.abs(cameraPosition[0] - x * GRID_SIZE) - GRID_SIZE / 2
+        );
+        const distanceZ = Math.max(
+          0,
+          Math.abs(cameraPosition[2] - z * GRID_SIZE) - GRID_SIZE / 2
+        );
         const distance = Math.sqrt(distanceX ** 2 + distanceZ ** 2);
 
         if (distance > UNLOAD_DISTANCE) {
@@ -128,9 +107,9 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
           unloadDetailedSpheres(cellKey);
         }
       });
-    }, 1), // Adjust the debounce delay as needed
+    }, 100), // Adjust the debounce delay as needed
     [
-      cameraRef,
+      cameraPosition,
       loadCell,
       unloadCell,
       loadedCells,
@@ -184,22 +163,12 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     return () => {
       loadCellsAroundCamera.cancel();
     };
-  }, [cameraRef.current?.position]);
-
-  useEffect(() => {
-    const handleCameraMove = () => {
-      loadCellsAroundCamera();
-    };
-
-    const interval = setInterval(handleCameraMove, 1); // Check every 100ms
-
-    return () => clearInterval(interval);
-  }, [loadCellsAroundCamera]);
+  }, [cameraPosition]);
 
   useEffect(() => {
     // Change the load distance after initial cells are loaded
     if (loadingQueue.length === 0) {
-      setCurrentLoadDistance(150000);
+      setCurrentLoadDistance(100000);
     }
   }, [loadingQueue]);
 

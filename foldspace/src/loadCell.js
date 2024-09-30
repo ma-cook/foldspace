@@ -4,7 +4,6 @@ import generateNewPositions from './generateNewPositions';
 import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
-  console.log('createVector3Array input:', positions);
   if (!positions) {
     console.warn('createVector3Array received undefined input');
     return [];
@@ -24,12 +23,11 @@ const createVector3Array = (positions) => {
     }
   });
   const result = positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
-  console.log('createVector3Array output:', result);
+
   return result;
 };
 
 const updatePositions = (setPositions, newPositions) => {
-  console.log('updatePositions input:', newPositions);
   setPositions((prevPositions) => [...prevPositions, ...newPositions]);
 };
 
@@ -69,41 +67,31 @@ const loadCell = async (
 
     if (response.ok) {
       const savedPositions = await response.json();
-      console.log('savedPositions:', savedPositions);
 
-      const newPositions = createVector3Array(
-        savedPositions.positions.positions
-      );
-      console.log('newPositions:', newPositions);
+      // Ensure the data structure is valid
+      const validPositions = savedPositions.positions || {};
+      const newPositions = createVector3Array(validPositions.positions);
+
       cellCache[cellKey] = newPositions;
       updatePositions(setPositions, newPositions);
 
       if (loadDetail) {
-        const newRedPositions = createVector3Array(
-          savedPositions.positions.redPositions
-        );
+        const newRedPositions = createVector3Array(validPositions.redPositions);
         const newGreenPositions = createVector3Array(
-          savedPositions.positions.greenPositions
+          validPositions.greenPositions
         );
         const newBluePositions = createVector3Array(
-          savedPositions.positions.bluePositions
+          validPositions.bluePositions
         );
         const newPurplePositions = createVector3Array(
-          savedPositions.positions.purplePositions
+          validPositions.purplePositions
         );
         const newGreenMoonPositions = createVector3Array(
-          savedPositions.positions.greenMoonPositions
+          validPositions.greenMoonPositions
         );
         const newPurpleMoonPositions = createVector3Array(
-          savedPositions.positions.purpleMoonPositions
+          validPositions.purpleMoonPositions
         );
-
-        console.log('newRedPositions:', newRedPositions);
-        console.log('newGreenPositions:', newGreenPositions);
-        console.log('newBluePositions:', newBluePositions);
-        console.log('newPurplePositions:', newPurplePositions);
-        console.log('newGreenMoonPositions:', newGreenMoonPositions);
-        console.log('newPurpleMoonPositions:', newPurpleMoonPositions);
 
         updatePositions(setRedPositions, newRedPositions);
         updatePositions(setGreenPositions, newGreenPositions);
@@ -119,9 +107,6 @@ const loadCell = async (
         return updatedLoadedCells;
       });
     } else if (response.status === 404) {
-      console.log(
-        `No data found for cell ${cellKey}, generating new positions.`
-      );
       const {
         newPositions,
         newRedPositions,
