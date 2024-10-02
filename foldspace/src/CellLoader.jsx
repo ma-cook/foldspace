@@ -26,75 +26,71 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     (state) => state.unloadDetailedSpheres
   );
 
-  const loadCellsAroundCamera = useCallback(
-    debounce(() => {
-      if (!cameraRef.current) return;
+  const checkCellsAroundCamera = useCallback(() => {
+    if (!cameraRef.current) return;
 
-      const cameraPosition = cameraRef.current.position;
-      const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
-      const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
+    const cameraPosition = cameraRef.current.position;
+    const cellX = Math.floor(cameraPosition.x / GRID_SIZE);
+    const cellZ = Math.floor(cameraPosition.z / GRID_SIZE);
 
-      const newLoadingQueue = [];
-      let allCellsLoaded = true;
+    const newLoadingQueue = [];
+    let allCellsLoaded = true;
 
-      for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
-          const newX = cellX + dx;
-          const newZ = cellZ + dz;
-          const cellKey = `${newX},${newZ}`;
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        const newX = cellX + dx;
+        const newZ = cellZ + dz;
+        const cellKey = `${newX},${newZ}`;
 
-          if (!loadedCells.has(cellKey)) {
-            const distance = calculateDistance(
-              cameraPosition.x,
-              cameraPosition.z,
-              newX * GRID_SIZE,
-              newZ * GRID_SIZE
-            );
-            if (distance < currentLoadDistance) {
-              newLoadingQueue.push({
-                cellKey,
-                newX,
-                newZ,
-                distance,
-                loadDetail: distance < DETAIL_DISTANCE,
-              });
-              allCellsLoaded = false;
-            }
+        if (!loadedCells.has(cellKey)) {
+          const distance = calculateDistance(
+            cameraPosition.x,
+            cameraPosition.z,
+            newX * GRID_SIZE,
+            newZ * GRID_SIZE
+          );
+          if (distance < currentLoadDistance) {
+            newLoadingQueue.push({
+              cellKey,
+              newX,
+              newZ,
+              distance,
+              loadDetail: distance < DETAIL_DISTANCE,
+            });
+            allCellsLoaded = false;
           }
         }
       }
+    }
 
-      // If all cells within the load distance are already loaded, return early
-      if (allCellsLoaded) return;
+    // If all cells within the load distance are already loaded, return early
+    if (allCellsLoaded) return;
 
-      newLoadingQueue.sort((a, b) => a.distance - b.distance);
-      setLoadingQueue((prevQueue) => [...prevQueue, ...newLoadingQueue]);
+    newLoadingQueue.sort((a, b) => a.distance - b.distance);
+    setLoadingQueue((prevQueue) => [...prevQueue, ...newLoadingQueue]);
 
-      loadedCells.forEach((cellKey) => {
-        const [x, z] = cellKey.split(',').map(Number);
-        const distance = calculateDistance(
-          cameraPosition.x,
-          cameraPosition.z,
-          x * GRID_SIZE,
-          z * GRID_SIZE
-        );
+    loadedCells.forEach((cellKey) => {
+      const [x, z] = cellKey.split(',').map(Number);
+      const distance = calculateDistance(
+        cameraPosition.x,
+        cameraPosition.z,
+        x * GRID_SIZE,
+        z * GRID_SIZE
+      );
 
-        if (distance > UNLOAD_DISTANCE) {
-          unloadCell(x, z);
-        } else if (distance > UNLOAD_DETAIL_DISTANCE) {
-          unloadDetailedSpheres(cellKey);
-        }
-      });
-    }, 15), // Adjust the debounce delay as needed
-    [
-      cameraRef,
-      loadCell,
-      unloadCell,
-      loadedCells,
-      currentLoadDistance,
-      unloadDetailedSpheres,
-    ]
-  );
+      if (distance > UNLOAD_DISTANCE) {
+        unloadCell(x, z);
+      } else if (distance > UNLOAD_DETAIL_DISTANCE) {
+        unloadDetailedSpheres(cellKey);
+      }
+    });
+  }, [
+    cameraRef,
+    loadedCells,
+    currentLoadDistance,
+    unloadCell,
+    unloadDetailedSpheres,
+  ]);
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
@@ -125,15 +121,16 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   });
 
   useEffect(() => {
-    loadCellsAroundCamera();
+    const debouncedCheckCells = debounce(checkCellsAroundCamera, 15);
+    debouncedCheckCells();
     return () => {
-      loadCellsAroundCamera.cancel();
+      debouncedCheckCells.cancel();
     };
-  }, [cameraRef, loadCellsAroundCamera]);
+  }, [cameraRef, checkCellsAroundCamera]);
 
   useEffect(() => {
     if (loadingQueue.length === 0) {
-      setCurrentLoadDistance(200000);
+      setCurrentLoadDistance(150000);
     }
   }, [loadingQueue]);
 
