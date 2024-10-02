@@ -121,7 +121,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   });
 
   useEffect(() => {
-    const debouncedCheckCells = debounce(checkCellsAroundCamera, 15);
+    const debouncedCheckCells = debounce(checkCellsAroundCamera, 20);
     debouncedCheckCells();
     return () => {
       debouncedCheckCells.cancel();
