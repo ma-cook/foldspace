@@ -5,16 +5,13 @@ import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
   if (!positions) {
-    console.warn('createVector3Array received undefined input');
     return [];
   }
   if (!Array.isArray(positions)) {
-    console.warn('createVector3Array received non-array input');
     return [];
   }
   positions.forEach((pos, index) => {
     if (typeof pos !== 'object' || pos === null) {
-      console.warn(`Element at index ${index} is not an object:`, pos);
     } else if (!('x' in pos) || !('y' in pos) || !('z' in pos)) {
       console.warn(
         `Element at index ${index} is missing x, y, or z properties:`,
