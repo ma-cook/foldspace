@@ -108,7 +108,6 @@ const App = React.memo(() => {
   );
 
   const flattenedPositions = useMemo(() => {
-    console.log('positions:', positions);
     if (
       Array.isArray(positions) &&
       positions.length > 0 &&
