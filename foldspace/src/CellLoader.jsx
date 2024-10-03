@@ -94,7 +94,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
-      const batchSize = 5;
+      const batchSize = 10;
       const batch = loadingQueue.splice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {

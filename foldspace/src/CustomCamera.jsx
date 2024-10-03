@@ -1,4 +1,11 @@
-import React, { useEffect, useRef, memo, forwardRef, useCallback } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  memo,
+  forwardRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import { useThree } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import { useStore } from './store';
@@ -13,14 +20,17 @@ const CustomCamera = forwardRef((props, ref) => {
   const cameraPosition = useStore((state) => state.cameraPosition);
   const setCameraPosition = useStore((state) => state.setCameraPosition);
 
-  // Update the camera's position and lookAt when vec or lookAt changes
+  // Memoize the camera far value and update projection matrix
   useEffect(() => {
-    camera.far = 300000; // Update the far property
-    camera.updateProjectionMatrix(); // Update the camera's projection matrix
+    camera.far = 300000;
+    camera.updateProjectionMatrix();
+  }, [camera]);
 
+  // Memoize the camera position and target updates
+  useEffect(() => {
     if (vec) {
       camera.position.copy(vec);
-      setCameraPosition(vec.x, vec.y, vec.z); // Update the cameraPosition state
+      setCameraPosition(vec.x, vec.y, vec.z);
     }
 
     if (ref) {
@@ -31,9 +41,9 @@ const CustomCamera = forwardRef((props, ref) => {
       camera.position.copy(target);
       controlsRef.current.target.copy(target);
       controlsRef.current.update();
-      setCameraPosition(target.x, target.y, target.z); // Update the cameraPosition state
+      setCameraPosition(target.x, target.y, target.z);
     }
-  }, [vec, lookAt, target, camera, ref, setCameraPosition]);
+  }, [vec, target, camera, ref, setCameraPosition]);
 
   // Memoize the handleCameraMove function
   const handleCameraMove = useCallback(() => {
@@ -42,16 +52,24 @@ const CustomCamera = forwardRef((props, ref) => {
 
   // Update the camera position in the store whenever the camera moves
   useEffect(() => {
-    if (controlsRef.current) {
-      controlsRef.current.addEventListener('change', handleCameraMove);
+    const controls = controlsRef.current;
+    if (controls) {
+      controls.addEventListener('change', handleCameraMove);
     }
 
     return () => {
-      if (controlsRef.current) {
-        controlsRef.current.removeEventListener('change', handleCameraMove);
+      if (controls) {
+        controls.removeEventListener('change', handleCameraMove);
       }
     };
   }, [handleCameraMove]);
+
+  // Memoize the camera position and lookAt values
+  const memoizedCameraPosition = useMemo(
+    () => cameraPosition,
+    [cameraPosition]
+  );
+  const memoizedLookAt = useMemo(() => lookAt, [lookAt]);
 
   return (
     <PerspectiveCamera
@@ -59,17 +77,17 @@ const CustomCamera = forwardRef((props, ref) => {
       fov={70}
       near={0.1}
       far={300000}
-      position={cameraPosition}
+      position={memoizedCameraPosition}
     >
       <OrbitControls
         ref={ref || controlsRef}
         enableZoom={true}
         enablePan={true}
         enableRotate={true}
-        target={lookAt}
-        enableDamping={true} // Add this line
-        dampingFactor={1} // Add this line
-        staticMoving={true} // Add this line
+        target={memoizedLookAt}
+        enableDamping={true}
+        dampingFactor={1}
+        staticMoving={true}
         maxDistance={200000}
       />
     </PerspectiveCamera>

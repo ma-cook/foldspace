@@ -28,6 +28,28 @@ const updatePositions = (setPositions, newPositions) => {
   setPositions((prevPositions) => [...prevPositions, ...newPositions]);
 };
 
+const fetchCellDataInBatches = async (cellKeys) => {
+  try {
+    const response = await fetch('http://localhost:5000/get-sphere-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cellKeys }),
+    });
+
+    if (response.ok) {
+      return await response.json();
+    } else {
+      console.error('Error fetching cell data:', response.statusText);
+      return {};
+    }
+  } catch (error) {
+    console.error('Error fetching cell data:', error);
+    return {};
+  }
+};
+
 const loadCell = async (
   x,
   z,
@@ -58,12 +80,11 @@ const loadCell = async (
   });
 
   try {
-    const response = await fetch(
-      `http://localhost:5000/get-sphere-data/${cellKey}`
-    );
+    const cellKeysToLoad = [cellKey]; // Collect cell keys to load
+    const cellData = await fetchCellDataInBatches(cellKeysToLoad);
 
-    if (response.ok) {
-      const savedPositions = await response.json();
+    if (cellData[cellKey]) {
+      const savedPositions = cellData[cellKey];
 
       // Ensure the data structure is valid
       const validPositions = savedPositions.positions || {};
@@ -103,7 +124,7 @@ const loadCell = async (
         updatedLoadedCells.add(cellKey);
         return updatedLoadedCells;
       });
-    } else if (response.status === 404) {
+    } else {
       const {
         newPositions,
         newRedPositions,
@@ -152,17 +173,9 @@ const loadCell = async (
         updatePositions(setGreenMoonPositions, newGreenMoonPositions);
         updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
       }
-    } else {
-      console.error(
-        `Error loading cell data from Firestore for ${cellKey}:`,
-        response.statusText
-      );
     }
   } catch (error) {
-    console.error(
-      `Error loading cell data from Firestore for ${cellKey}:`,
-      error
-    );
+    console.error(`Error loading cell data for ${cellKey}:`, error);
   } finally {
     setLoadingCells((prev) => {
       const newSet = new Set(prev);
