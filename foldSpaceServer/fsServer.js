@@ -4,11 +4,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const NodeCache = require('node-cache');
 const async = require('async');
-const bodyParser = require('body-parser'); // Import body-parser
+const bodyParser = require('body-parser');
 const app = express();
 
-// Increase the limit for the request payload size
-app.use(bodyParser.json({ limit: '10mb' })); // Set the limit to 10MB
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(cors());
 
 const port = process.env.PORT || 5000;
@@ -22,17 +21,15 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
-const cache = new NodeCache({ stdTTL: 600 }); // Cache with 10 minutes TTL
+const cache = new NodeCache({ stdTTL: 600 });
 
 const dataFilePath = path.join(__dirname, 'data', 'cells.json');
 
-// Use the synchronous fs module for existsSync and mkdirSync
 const fsSync = require('fs');
 if (!fsSync.existsSync(path.dirname(dataFilePath))) {
   fsSync.mkdirSync(path.dirname(dataFilePath), { recursive: true });
 }
 
-// Helper function read the entire cell data file
 const readCellDataFile = async () => {
   try {
     const data = await fs.readFile(dataFilePath, 'utf-8');
@@ -43,7 +40,6 @@ const readCellDataFile = async () => {
   }
 };
 
-// Helper function to write the entire cell data file
 const writeCellDataFile = async (data) => {
   try {
     await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
@@ -52,7 +48,6 @@ const writeCellDataFile = async (data) => {
   }
 };
 
-// Create a queue to manage read/write operations
 const fileQueue = async.queue(async (task, callback) => {
   try {
     await task();
@@ -61,7 +56,7 @@ const fileQueue = async.queue(async (task, callback) => {
   } finally {
     if (callback) callback();
   }
-}, 1); // Only one task is processed at a time
+}, 1);
 
 app.post('/save-sphere-data', async (req, res) => {
   const { cellKey, positions } = req.body;
@@ -72,72 +67,88 @@ app.post('/save-sphere-data', async (req, res) => {
     const cellData = await readCellDataFile();
     cellData[cellKey] = positions;
     await writeCellDataFile(cellData);
-    cache.set(cellKey, positions); // Update cache
+    cache.set(cellKey, positions);
   });
 
   res.send('Sphere data saved successfully');
 });
 
-app.get('/get-sphere-data/:cellKey', async (req, res) => {
-  const { cellKey } = req.params;
+app.post('/get-sphere-data', async (req, res) => {
+  const { cellKeys } = req.body;
+  const results = {};
+  const missingKeys = [];
 
   try {
-    const cachedData = cache.get(cellKey);
-    if (cachedData) {
-      return res.send(cachedData);
-    }
-    console.log(cachedData);
-    console.log(`Cache miss for cellKey: ${cellKey}, checking local file.`);
-    fileQueue.push(
-      async () => {
-        const cellData = await readCellDataFile();
-        if (cellData[cellKey]) {
-          console.log(`Loading cell data for ${cellKey} from local file.`);
-          cache.set(cellKey, cellData[cellKey]); // Update cache
-          res.send(cellData[cellKey]);
-        } else {
-          console.log(`No local file data for ${cellKey}, checking Firestore.`);
-          const docRef = db.collection('cells').doc(cellKey);
-          const doc = await docRef.get();
+    // Check cache first
+    cellKeys.forEach((cellKey) => {
+      const cachedData = cache.get(cellKey);
+      if (cachedData) {
+        results[cellKey] = cachedData;
+      } else {
+        missingKeys.push(cellKey);
+      }
+    });
 
-          if (!doc.exists) {
-            res.status(404).send('No sphere data found');
-          } else {
-            const data = doc.data();
-            // Ensure the data structure is valid
-            const validData = {
-              positions: data.positions || [],
-              redPositions: data.redPositions || [],
-              greenPositions: data.greenPositions || [],
-              bluePositions: data.bluePositions || [],
-              purplePositions: data.purplePositions || [],
-              greenMoonPositions: data.greenMoonPositions || [],
-              purpleMoonPositions: data.purpleMoonPositions || [],
-            };
-            fileQueue.push(async () => {
-              const cellData = await readCellDataFile();
-              cellData[cellKey] = validData;
-              await writeCellDataFile(cellData);
-              cache.set(cellKey, validData); // Update cache
-            });
-            res.send(validData);
-          }
+    if (missingKeys.length > 0) {
+      const cellData = await readCellDataFile();
+
+      // Check file cache
+      missingKeys.forEach((cellKey) => {
+        if (cellData[cellKey]) {
+          cache.set(cellKey, cellData[cellKey]);
+          results[cellKey] = cellData[cellKey];
+        } else {
+          missingKeys.push(cellKey);
         }
-      },
-      (err) => {
-        if (err) {
-          console.error('Error processing task in queue:', err);
-          res.status(500).send('Internal Server Error');
+      });
+
+      if (missingKeys.length > 0) {
+        // Fetch missing keys from Firestore in batches
+        const batchSize = 10;
+        for (let i = 0; i < missingKeys.length; i += batchSize) {
+          const batchKeys = missingKeys.slice(i, i + batchSize);
+          const batchDocs = await Promise.all(
+            batchKeys.map((cellKey) =>
+              db.collection('cells').doc(cellKey).get()
+            )
+          );
+
+          batchDocs.forEach((doc, index) => {
+            const cellKey = batchKeys[index];
+            if (doc.exists) {
+              const data = doc.data();
+              const validData = {
+                positions: data.positions || [],
+                redPositions: data.redPositions || [],
+                greenPositions: data.greenPositions || [],
+                bluePositions: data.bluePositions || [],
+                purplePositions: data.purplePositions || [],
+                greenMoonPositions: data.greenMoonPositions || [],
+                purpleMoonPositions: data.purpleMoonPositions || [],
+              };
+              results[cellKey] = validData;
+              cache.set(cellKey, validData);
+
+              fileQueue.push(async () => {
+                const cellData = await readCellDataFile();
+                cellData[cellKey] = validData;
+                await writeCellDataFile(cellData);
+              });
+            } else {
+              results[cellKey] = null;
+            }
+          });
         }
       }
-    );
+    }
+
+    res.json(results);
   } catch (error) {
-    console.error(`Error loading cell data for ${cellKey}:`, error);
+    console.error(`Error loading cell data:`, error);
     res.status(500).send('Internal Server Error');
   }
 });
 
-// Helper function to delete documents in batches
 const deleteDocumentsInBatches = async (collectionRef, batchSize = 10) => {
   const snapshot = await collectionRef.get();
   const totalDocs = snapshot.size;
@@ -156,17 +167,13 @@ const deleteDocumentsInBatches = async (collectionRef, batchSize = 10) => {
   }
 };
 
-// Endpoint to delete all cell data
 app.delete('/delete-all-cells', async (req, res) => {
   try {
-    // Delete all documents in the 'cells' collection in Firestore
     const cellsCollection = db.collection('cells');
     await deleteDocumentsInBatches(cellsCollection);
 
-    // Clear the cache
     cache.flushAll();
 
-    // Clear the local file
     await writeCellDataFile({});
 
     res.send('All cell data deleted successfully');
@@ -176,7 +183,6 @@ app.delete('/delete-all-cells', async (req, res) => {
   }
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');
