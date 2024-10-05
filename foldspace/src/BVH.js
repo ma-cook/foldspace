@@ -8,17 +8,18 @@ class BVHNode {
 }
 
 class BVH {
-  constructor(objects) {
-    this.root = this.buildBVH(objects);
+  constructor(objects, maxDepth = 20) {
+    this.maxDepth = maxDepth;
+    this.root = this.buildBVH(objects, 0);
   }
 
-  buildBVH(objects) {
+  buildBVH(objects, depth) {
     if (objects.length === 0) return null;
 
     // Compute bounding box for all objects
     const boundingBox = this.computeBoundingBox(objects);
 
-    if (objects.length === 1) {
+    if (objects.length === 1 || depth >= this.maxDepth) {
       return new BVHNode(boundingBox, null, null, objects);
     }
 
@@ -26,8 +27,8 @@ class BVH {
     const [leftObjects, rightObjects] = this.splitObjectsSAH(objects);
 
     // Recursively build BVH for each group
-    const leftNode = this.buildBVH(leftObjects);
-    const rightNode = this.buildBVH(rightObjects);
+    const leftNode = this.buildBVH(leftObjects, depth + 1);
+    const rightNode = this.buildBVH(rightObjects, depth + 1);
 
     return new BVHNode(boundingBox, leftNode, rightNode);
   }

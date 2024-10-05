@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import cellCache from './cellCache';
-import generateNewPositions from './generateNewPositions';
 import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
@@ -28,29 +27,9 @@ const updatePositions = (setPositions, newPositions) => {
   setPositions((prevPositions) => [...prevPositions, ...newPositions]);
 };
 
-const fetchCellDataInBatches = async (cellKeys) => {
-  try {
-    const response = await fetch('http://localhost:5000/get-sphere-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cellKeys }),
-    });
+const worker = new Worker(new URL('./cellWorker.js', import.meta.url));
 
-    if (response.ok) {
-      return await response.json();
-    } else {
-      console.error('Error fetching cell data:', response.statusText);
-      return {};
-    }
-  } catch (error) {
-    console.error('Error fetching cell data:', error);
-    return {};
-  }
-};
-
-const loadCell = async (
+const loadCell = (
   x,
   z,
   loadDetail,
@@ -79,111 +58,53 @@ const loadCell = async (
     return newSet;
   });
 
-  try {
-    const cellKeysToLoad = [cellKey]; // Collect cell keys to load
-    const cellData = await fetchCellDataInBatches(cellKeysToLoad);
+  worker.postMessage({
+    cellKey,
+    cellKeysToLoad: [cellKey],
+    loadDetail,
+  });
 
-    if (cellData[cellKey]) {
-      const savedPositions = cellData[cellKey];
+  worker.onmessage = async (event) => {
+    const { cellKey, newPositions, loadDetail, savedPositions } = event.data;
 
-      // Ensure the data structure is valid
-      const validPositions = savedPositions.positions || {};
-      const newPositions = createVector3Array(validPositions.positions);
+    cellCache[cellKey] = newPositions;
+    updatePositions(setPositions, newPositions);
 
-      cellCache[cellKey] = newPositions;
-      updatePositions(setPositions, newPositions);
+    if (loadDetail && savedPositions) {
+      const positions = savedPositions.positions || {};
+      const newRedPositions = createVector3Array(positions.redPositions);
+      const newGreenPositions = createVector3Array(positions.greenPositions);
+      const newBluePositions = createVector3Array(positions.bluePositions);
+      const newPurplePositions = createVector3Array(positions.purplePositions);
+      const newGreenMoonPositions = createVector3Array(
+        positions.greenMoonPositions
+      );
+      const newPurpleMoonPositions = createVector3Array(
+        positions.purpleMoonPositions
+      );
 
-      if (loadDetail) {
-        const newRedPositions = createVector3Array(validPositions.redPositions);
-        const newGreenPositions = createVector3Array(
-          validPositions.greenPositions
-        );
-        const newBluePositions = createVector3Array(
-          validPositions.bluePositions
-        );
-        const newPurplePositions = createVector3Array(
-          validPositions.purplePositions
-        );
-        const newGreenMoonPositions = createVector3Array(
-          validPositions.greenMoonPositions
-        );
-        const newPurpleMoonPositions = createVector3Array(
-          validPositions.purpleMoonPositions
-        );
-
-        updatePositions(setRedPositions, newRedPositions);
-        updatePositions(setGreenPositions, newGreenPositions);
-        updatePositions(setBluePositions, newBluePositions);
-        updatePositions(setPurplePositions, newPurplePositions);
-        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
-        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
-      }
-
-      setLoadedCells((prevLoadedCells) => {
-        const updatedLoadedCells = new Set(prevLoadedCells);
-        updatedLoadedCells.add(cellKey);
-        return updatedLoadedCells;
-      });
-    } else {
-      const {
-        newPositions,
-        newRedPositions,
-        newGreenPositions,
-        newBluePositions,
-        newPurplePositions,
-        newGreenMoonPositions,
-        newPurpleMoonPositions,
-      } = generateNewPositions(x, z);
-
-      cellCache[cellKey] = newPositions;
-      updatePositions(setPositions, newPositions);
-
-      if (loadDetail) {
-        updatePositions(setRedPositions, newRedPositions);
-        updatePositions(setGreenPositions, newGreenPositions);
-        updatePositions(setBluePositions, newBluePositions);
-        updatePositions(setPurplePositions, newPurplePositions);
-        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
-        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
-      }
-
-      setLoadedCells((prevLoadedCells) => {
-        const updatedLoadedCells = new Set(prevLoadedCells);
-        updatedLoadedCells.add(cellKey);
-        return updatedLoadedCells;
-      });
-
-      await saveCellData(cellKey, {
-        positions: newPositions,
-        redPositions: newRedPositions,
-        greenPositions: newGreenPositions,
-        bluePositions: newBluePositions,
-        purplePositions: newPurplePositions,
-        greenMoonPositions: newGreenMoonPositions,
-        purpleMoonPositions: newPurpleMoonPositions,
-      });
-
-      // Update the state with the newly generated positions
-      updatePositions(setPositions, newPositions);
-      if (loadDetail) {
-        updatePositions(setRedPositions, newRedPositions);
-        updatePositions(setGreenPositions, newGreenPositions);
-        updatePositions(setBluePositions, newBluePositions);
-        updatePositions(setPurplePositions, newPurplePositions);
-        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
-        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
-      }
+      updatePositions(setRedPositions, newRedPositions);
+      updatePositions(setGreenPositions, newGreenPositions);
+      updatePositions(setBluePositions, newBluePositions);
+      updatePositions(setPurplePositions, newPurplePositions);
+      updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+      updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
     }
-  } catch (error) {
-    console.error(`Error loading cell data for ${cellKey}:`, error);
-  } finally {
+
+    setLoadedCells((prevLoadedCells) => {
+      const updatedLoadedCells = new Set(prevLoadedCells);
+      updatedLoadedCells.add(cellKey);
+      return updatedLoadedCells;
+    });
+
     setLoadingCells((prev) => {
       const newSet = new Set(prev);
       newSet.delete(cellKey);
       return newSet;
     });
+
     swapBuffers();
-  }
+  };
 };
 
 export default loadCell;

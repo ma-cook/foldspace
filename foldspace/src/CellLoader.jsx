@@ -106,11 +106,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
             loadedCells,
             new Set(loadingQueue.map((item) => item.cellKey)),
             setLoadingQueue
-          ).finally(() => {
-            setLoadingQueue((prevQueue) =>
-              prevQueue.filter((item) => item.cellKey !== cellKey)
-            );
-          });
+          );
         });
       });
     }
