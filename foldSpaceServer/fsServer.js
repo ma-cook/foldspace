@@ -35,7 +35,6 @@ const readCellDataFile = async () => {
     const data = await fs.readFile(dataFilePath, 'utf-8');
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading cell data file:', error);
     return {};
   }
 };
@@ -43,16 +42,13 @@ const readCellDataFile = async () => {
 const writeCellDataFile = async (data) => {
   try {
     await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error('Error writing cell data file:', error);
-  }
+  } catch (error) {}
 };
 
 const fileQueue = async.queue(async (task, callback) => {
   try {
     await task();
   } catch (error) {
-    console.error('Error processing task in queue:', error);
   } finally {
     if (callback) callback();
   }
