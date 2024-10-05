@@ -25,7 +25,6 @@ const fetchCellDataInBatches = async (cellKeys) => {
 
     if (response.ok) {
       const data = await response.json();
-      console.log('Fetched cell data:', data);
       return data;
     } else {
       console.error('Error fetching cell data:', response.statusText);
