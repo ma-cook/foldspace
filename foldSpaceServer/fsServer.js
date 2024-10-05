@@ -115,12 +115,6 @@ app.post('/get-sphere-data', async (req, res) => {
               const data = doc.data();
               const validData = {
                 positions: data.positions || [],
-                redPositions: data.redPositions || [],
-                greenPositions: data.greenPositions || [],
-                bluePositions: data.bluePositions || [],
-                purplePositions: data.purplePositions || [],
-                greenMoonPositions: data.greenMoonPositions || [],
-                purpleMoonPositions: data.purpleMoonPositions || [],
               };
               results[cellKey] = validData;
               cache.set(cellKey, validData);
