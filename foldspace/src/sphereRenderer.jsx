@@ -27,7 +27,7 @@ import { BVH } from './BVH'; // Import BVH class
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
   const planeMeshRefs = useRef(
-    Array(10)
+    Array(1)
       .fill(null)
       .map(() => React.createRef())
   );

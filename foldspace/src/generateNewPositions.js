@@ -27,14 +27,14 @@ const generateNewPositions = (x, z) => {
     const positions = [];
     for (let i = 0; i < count; i++) {
       const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-      const posY = Math.floor(Math.random() * 10) * 5000;
+      const posY = Math.floor(Math.random() * 15) * 5000;
       const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
       positions.push(new THREE.Vector3(posX, posY, posZ));
     }
     return positions;
   };
 
-  const positions = generateRandomPositions(225, x, z);
+  const positions = generateRandomPositions(300, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
