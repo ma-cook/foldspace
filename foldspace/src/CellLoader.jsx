@@ -17,7 +17,7 @@ import {
   UNLOAD_DETAIL_DISTANCE,
 } from './config';
 import * as THREE from 'three';
-import { buildBVH, queryBVH } from './cellBVH';
+import { BVH, BVHNode, buildBVH, queryBVH } from './BVH';
 
 // Utility Functions
 const calculateDistance = (x1, z1, x2, z2) => {
