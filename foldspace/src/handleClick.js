@@ -15,6 +15,9 @@ export const handleMouseDown = (
   purpleInstancedMeshRef,
   greenMoonInstancedMeshRef,
   purpleMoonInstancedMeshRef,
+  atmosRef,
+  atmos2Ref,
+  atmos3Ref,
   isMouseDown,
   lastMoveTimestamp
 ) => {
@@ -31,6 +34,9 @@ export const handleMouseDown = (
       purpleInstancedMeshRef?.current,
       greenMoonInstancedMeshRef?.current,
       purpleMoonInstancedMeshRef?.current,
+      atmosRef?.current,
+      atmos2Ref?.current,
+      atmos3Ref?.current,
       ...Object.values(sphereRefs).map((ref) => ref?.current),
     ].filter(Boolean)
   );
@@ -55,6 +61,9 @@ export const handleMouseUp = (
   purpleInstancedMeshRef,
   greenMoonInstancedMeshRef,
   purpleMoonInstancedMeshRef,
+  atmosRef,
+  atmos2Ref,
+  atmos3Ref,
   isMouseDown,
   lastMoveTimestamp,
   isDragging,
@@ -91,6 +100,9 @@ export const handleMouseUp = (
       purpleInstancedMeshRef?.current,
       greenMoonInstancedMeshRef?.current,
       purpleMoonInstancedMeshRef?.current,
+      atmosRef?.current,
+      atmos2Ref?.current,
+      atmos3Ref?.current,
       ...Object.values(sphereRefs).map((ref) => ref?.current),
     ].filter(Boolean);
 
@@ -158,6 +170,15 @@ export const handleMouseUp = (
             instanceMatrix
           );
           console.log('A purple moon sphere was clicked');
+        } else if (intersects[0].object === atmosRef?.current) {
+          atmosRef.current.getMatrixAt(instanceId, instanceMatrix);
+          console.log('An atmos sphere was clicked');
+        } else if (intersects[0].object === atmos2Ref?.current) {
+          atmos2Ref.current.getMatrixAt(instanceId, instanceMatrix);
+          console.log('An atmos2 sphere was clicked');
+        } else if (intersects[0].object === atmos3Ref?.current) {
+          atmos3Ref.current.getMatrixAt(instanceId, instanceMatrix);
+          console.log('An atmos3 sphere was clicked');
         }
 
         const instancePosition = new THREE.Vector3().setFromMatrixPosition(

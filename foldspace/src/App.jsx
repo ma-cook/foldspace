@@ -12,14 +12,11 @@ import { useStore } from './store';
 import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './components/sphereRenderer';
-import PlaneMesh from './PlaneMesh';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
 import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
-
-const GRID_SIZE = 100000;
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
@@ -174,32 +171,6 @@ const App = React.memo(() => {
             loadCell={loadCellCallback}
             unloadCell={unloadCellCallback}
           />
-          {[...loadedCells].map((cellKey, index) => {
-            if (typeof cellKey !== 'string') {
-              console.error(`Invalid cellKey: ${cellKey}`);
-              return null;
-            }
-
-            const [x, z] = cellKey.split(',').map(Number);
-
-            const positions = Array(10)
-              .fill()
-              .map((_, i) => [x * GRID_SIZE, i * 5000, z * GRID_SIZE]);
-            return (
-              <PlaneMesh
-                key={`${cellKey}-${index}`}
-                positions={positions}
-                sphereRefs={{}}
-                instancedMeshRef={{}}
-                redInstancedMeshRef={{}}
-                greenInstancedMeshRef={{}}
-                blueInstancedMeshRef={{}}
-                purpleInstancedMeshRef={{}}
-                greenMoonInstancedMeshRef={{}}
-                cellKey={cellKey}
-              />
-            );
-          })}
         </Suspense>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}

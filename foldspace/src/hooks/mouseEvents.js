@@ -1,4 +1,3 @@
-// mouseEvents.js
 import { throttle } from 'lodash';
 import { handleMouseDown, handleMouseUp } from '../handleClick';
 import { useStore } from '../store';
@@ -30,6 +29,9 @@ export const createMouseHandlers = (
       sphereRefs.purple,
       sphereRefs.greenMoon,
       sphereRefs.purpleMoon,
+      sphereRefs.atmos,
+      sphereRefs.atmos2,
+      sphereRefs.atmos3,
       isMouseDown,
       lastMoveTimestamp
     );
@@ -52,6 +54,9 @@ export const createMouseHandlers = (
       sphereRefs.purple,
       sphereRefs.greenMoon,
       sphereRefs.purpleMoon,
+      sphereRefs.atmos,
+      sphereRefs.atmos2,
+      sphereRefs.atmos3,
       isMouseDown,
       lastMoveTimestamp,
       isDragging,
