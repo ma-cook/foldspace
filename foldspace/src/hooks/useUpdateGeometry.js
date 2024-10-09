@@ -32,7 +32,7 @@ export const useUpdateGeometry = (cameraRef, positions, bvh) => {
     };
 
     updateGeometry();
-    const interval = setInterval(updateGeometry, 1000); // Check every second
+    const interval = setInterval(updateGeometry, 100); // Check every second
 
     return () => clearInterval(interval);
   }, [cameraRef, positions, bvh]);

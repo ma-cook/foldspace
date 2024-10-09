@@ -71,7 +71,7 @@ export const handleMouseUp = (
     console.log('Current time:', currentTime);
 
     if (
-      currentTime - lastMoveTimestamp.current < 30 ||
+      currentTime - lastMoveTimestamp.current < 0 ||
       mouseDownDuration > 200
     ) {
       console.log('Mouse down duration too short or too long');
