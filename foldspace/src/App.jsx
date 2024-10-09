@@ -11,7 +11,7 @@ import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
 import { Stats, Environment } from '@react-three/drei';
 import CustomCamera from './CustomCamera';
-import SphereRenderer from './sphereRenderer';
+import SphereRenderer from './components/sphereRenderer';
 import PlaneMesh from './PlaneMesh';
 import CellLoader from './CellLoader';
 import Loader from './Loader';

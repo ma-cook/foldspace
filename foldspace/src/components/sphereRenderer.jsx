@@ -1,19 +1,15 @@
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  forwardRef,
-  useCallback,
-} from 'react';
-import PlaneMesh from './PlaneMesh';
-import { MemoizedSphere } from './Sphere';
-import { useStore } from './store';
-import { DETAIL_DISTANCE, UNLOAD_DETAIL_DISTANCE } from './config';
+import React, { useRef, useEffect, forwardRef } from 'react';
+import PlaneMesh from '../PlaneMesh';
+import { MemoizedSphere } from '../Sphere';
+import { useStore } from '../store';
 import {
   useFilteredPositions,
   useSpherePools,
   useSphereMaterials,
-} from './hooks';
+} from '../hooks';
+import { useBVH } from '../hooks/useBVH';
+import { useUpdateGeometry } from '../hooks/useUpdateGeometry';
+import { useClearDetailedSpheres } from '../hooks/useClearDetailedSpheres';
 import {
   sphereGeometry,
   lessDetailedSphereGeometry,
@@ -21,8 +17,8 @@ import {
   atmosMaterial,
   atmosMaterial2,
   moonMaterial,
-} from './SphereData';
-import { BVH } from './BVH'; // Import BVH class
+} from '../SphereData';
+import { DETAIL_DISTANCE } from '../config';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -66,10 +62,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const bvh = useStore((state) => state.bvh[activeBuffer]);
 
-  useEffect(() => {
-    // Build BVH when positions change
-    useStore.getState().setBVH(new BVH(positions), activeBuffer);
-  }, [positions, activeBuffer]);
+  useBVH(positions, activeBuffer);
 
   const filteredRedPositions = useFilteredPositions(
     redPositions,
@@ -152,59 +145,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     };
   }, []);
 
-  const clearDetailedSpheres = useCallback(() => {
-    const clearPositionsByDistance = (positions, maxDistance) => {
-      if (!cameraRef.current) return positions;
-      const cameraPosition = cameraRef.current.position;
-      return positions.filter((pos) => {
-        const distance = cameraPosition.distanceTo(pos);
-        return distance >= maxDistance;
-      });
-    };
-
-    const clearedRedPositions = clearPositionsByDistance(
-      redPositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedGreenPositions = clearPositionsByDistance(
-      greenPositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedBluePositions = clearPositionsByDistance(
-      bluePositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedPurplePositions = clearPositionsByDistance(
-      purplePositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedGreenMoonPositions = clearPositionsByDistance(
-      greenMoonPositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedPurpleMoonPositions = clearPositionsByDistance(
-      purpleMoonPositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-    const clearedYellowPositions = clearPositionsByDistance(
-      filteredPositions,
-      UNLOAD_DETAIL_DISTANCE
-    );
-
-    useStore.getState().setRedPositions(clearedRedPositions, activeBuffer);
-    useStore.getState().setGreenPositions(clearedGreenPositions, activeBuffer);
-    useStore.getState().setBluePositions(clearedBluePositions, activeBuffer);
-    useStore
-      .getState()
-      .setPurplePositions(clearedPurplePositions, activeBuffer);
-    useStore
-      .getState()
-      .setGreenMoonPositions(clearedGreenMoonPositions, activeBuffer);
-    useStore
-      .getState()
-      .setPurpleMoonPositions(clearedPurpleMoonPositions, activeBuffer);
-    useStore.getState().setPositions(clearedYellowPositions, activeBuffer);
-  }, [
+  const clearDetailedSpheres = useClearDetailedSpheres(
     cameraRef,
     redPositions,
     greenPositions,
@@ -213,8 +154,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     greenMoonPositions,
     purpleMoonPositions,
     filteredPositions,
-    activeBuffer,
-  ]);
+    activeBuffer
+  );
 
   useEffect(() => {
     useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
@@ -225,40 +166,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     useStore.getState().setSphereRefs('someCellKey', sphereRefs);
   }, []);
 
-  const [detailedPositions, setDetailedPositions] = useState([]);
-  const [lessDetailedPositions, setLessDetailedPositions] = useState([]);
-
-  useEffect(() => {
-    const updateGeometry = () => {
-      if (!cameraRef.current || !bvh) return;
-      const cameraPosition = cameraRef.current.position;
-      const detailBoundingBox = {
-        min: {
-          x: cameraPosition.x - DETAIL_DISTANCE,
-          y: cameraPosition.y - DETAIL_DISTANCE,
-          z: cameraPosition.z - DETAIL_DISTANCE,
-        },
-        max: {
-          x: cameraPosition.x + DETAIL_DISTANCE,
-          y: cameraPosition.y + DETAIL_DISTANCE,
-          z: cameraPosition.z + DETAIL_DISTANCE,
-        },
-      };
-
-      const newDetailedPositions = bvh.query(detailBoundingBox);
-      const newLessDetailedPositions = positions.filter(
-        (pos) => !newDetailedPositions.includes(pos)
-      );
-
-      setDetailedPositions(newDetailedPositions);
-      setLessDetailedPositions(newLessDetailedPositions);
-    };
-
-    updateGeometry();
-    const interval = setInterval(updateGeometry, 1000); // Check every second
-
-    return () => clearInterval(interval);
-  }, [cameraRef, positions, bvh]);
+  const { detailedPositions, lessDetailedPositions } = useUpdateGeometry(
+    cameraRef,
+    positions,
+    bvh
+  );
 
   return (
     <>
