@@ -85,14 +85,26 @@ export const useStore = create((set) => ({
     }),
   setCurrentPlaneIndex: (index) => set(() => ({ currentPlaneIndex: index })),
   setTarget: ({ x, y, z }) =>
-    set((state) => ({
-      vec: new THREE.Vector3(x, y, z),
-      lookAt: new THREE.Vector3(x, y, z),
-    })),
+    set((state) => {
+      const cameraRef = state.cameraRef.current;
+      if (cameraRef) {
+        cameraRef.position.set(x, y, z);
+      }
+      return {
+        vec: new THREE.Vector3(x, y, z),
+        lookAt: new THREE.Vector3(x, y, z),
+      };
+    }),
   setLookAt: ({ x, y, z }) =>
-    set((state) => ({
-      lookAt: new THREE.Vector3(x, y, z),
-    })),
+    set((state) => {
+      const cameraRef = state.cameraRef.current;
+      if (cameraRef) {
+        cameraRef.lookAt(x, y, z);
+      }
+      return {
+        lookAt: new THREE.Vector3(x, y, z),
+      };
+    }),
   setRotation: ({ x, y, z }) =>
     set((state) => ({
       rotation: new THREE.Euler(x, y, z),
