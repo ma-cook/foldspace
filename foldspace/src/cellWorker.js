@@ -2,6 +2,8 @@ importScripts(
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
 );
 
+const cellCache = {};
+
 const createVector3Array = (positions) => {
   if (!positions) {
     return [];
@@ -14,25 +16,43 @@ const createVector3Array = (positions) => {
 };
 
 const fetchCellDataInBatches = async (cellKeys) => {
+  const cachedData = {};
+  const keysToFetch = [];
+
+  cellKeys.forEach((key) => {
+    if (cellCache[key]) {
+      cachedData[key] = cellCache[key];
+    } else {
+      keysToFetch.push(key);
+    }
+  });
+
+  if (keysToFetch.length === 0) {
+    return cachedData;
+  }
+
   try {
     const response = await fetch('http://localhost:5000/get-sphere-data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ cellKeys }),
+      body: JSON.stringify({ cellKeys: keysToFetch }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      return data;
+      keysToFetch.forEach((key) => {
+        cellCache[key] = data[key];
+      });
+      return { ...cachedData, ...data };
     } else {
       console.error('Error fetching cell data:', response.statusText);
-      return {};
+      return cachedData;
     }
   } catch (error) {
     console.error('Error fetching cell data:', error);
-    return {};
+    return cachedData;
   }
 };
 
