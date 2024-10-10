@@ -13,6 +13,7 @@ export const useSphereMaterials = () => {
       green: atmosMaterial.clone(),
       blue: atmosMaterial2.clone(),
       purple: sphereMaterial.clone(),
+      brown: sphereMaterial.clone(),
       greenMoon: moonMaterial.clone(),
       purpleMoon: moonMaterial.clone(),
     };

@@ -41,6 +41,7 @@ const loadCell = (
   setGreenPositions,
   setBluePositions,
   setPurplePositions,
+  setBrownPositions,
   setGreenMoonPositions,
   setPurpleMoonPositions,
   setLoadedCells,
@@ -76,6 +77,7 @@ const loadCell = (
       const newGreenPositions = createVector3Array(positions.greenPositions);
       const newBluePositions = createVector3Array(positions.bluePositions);
       const newPurplePositions = createVector3Array(positions.purplePositions);
+      const newBrownPositions = createVector3Array(positions.brownPositions);
       const newGreenMoonPositions = createVector3Array(
         positions.greenMoonPositions
       );
@@ -87,6 +89,7 @@ const loadCell = (
       updatePositions(setGreenPositions, newGreenPositions);
       updatePositions(setBluePositions, newBluePositions);
       updatePositions(setPurplePositions, newPurplePositions);
+      updatePositions(setBrownPositions, newBrownPositions);
       updatePositions(setGreenMoonPositions, newGreenMoonPositions);
       updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
     }

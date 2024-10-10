@@ -12,6 +12,7 @@ import {
   greenSphereMaterial,
   blueSphereMaterial,
   purpleSphereMaterial,
+  brownSphereMaterial,
   moonMaterial,
 } from './SphereData';
 
@@ -56,6 +57,11 @@ export const useSpherePools = (geometry) => {
       ),
       purple: new SpherePool(
         () => createInstancedMesh(geometry, purpleSphereMaterial),
+        10,
+        100
+      ),
+      brown: new SpherePool(
+        () => createInstancedMesh(geometry, brownSphereMaterial),
         10,
         100
       ),

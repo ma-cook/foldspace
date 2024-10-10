@@ -25,6 +25,7 @@ const App = React.memo(() => {
   const greenPositions = useStore((state) => state.greenPositions);
   const bluePositions = useStore((state) => state.bluePositions);
   const purplePositions = useStore((state) => state.purplePositions);
+  const brownPositions = useStore((state) => state.brownPositions); // Add brown positions
   const greenMoonPositions = useStore((state) => state.greenMoonPositions);
   const purpleMoonPositions = useStore((state) => state.purpleMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
@@ -33,6 +34,7 @@ const App = React.memo(() => {
   const setGreenPositions = useStore((state) => state.setGreenPositions);
   const setBluePositions = useStore((state) => state.setBluePositions);
   const setPurplePositions = useStore((state) => state.setPurplePositions);
+  const setBrownPositions = useStore((state) => state.setBrownPositions); // Add setBrownPositions
   const setGreenMoonPositions = useStore(
     (state) => state.setGreenMoonPositions
   );
@@ -61,6 +63,7 @@ const App = React.memo(() => {
         setGreenPositions,
         setBluePositions,
         setPurplePositions,
+        setBrownPositions, // Add setBrownPositions
         setGreenMoonPositions,
         setPurpleMoonPositions,
         setLoadedCells,
@@ -75,6 +78,7 @@ const App = React.memo(() => {
       setGreenPositions,
       setBluePositions,
       setPurplePositions,
+      setBrownPositions, // Add setBrownPositions
       setGreenMoonPositions,
       setPurpleMoonPositions,
       setLoadedCells,
@@ -129,6 +133,7 @@ const App = React.memo(() => {
         setGreenPositions([]);
         setBluePositions([]);
         setPurplePositions([]);
+        setBrownPositions([]); // Clear brown positions
         setGreenMoonPositions([]);
         setPurpleMoonPositions([]);
       } else {
@@ -155,6 +160,7 @@ const App = React.memo(() => {
             greenPositions={greenPositions}
             bluePositions={bluePositions}
             purplePositions={purplePositions}
+            brownPositions={brownPositions} // Pass brown positions
             greenMoonPositions={greenMoonPositions}
             purpleMoonPositions={purpleMoonPositions}
           />
@@ -173,8 +179,8 @@ const App = React.memo(() => {
           />
         </Suspense>
       </Canvas>
-      {/* {loadingCells.size > 0 && <LoadingMessage />}
-      <button onClick={handleDeleteAllCells}>Delete All Cells</button> */}
+      {loadingCells.size > 0 && <LoadingMessage />}
+      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
     </div>
   );
 });

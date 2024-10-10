@@ -20,6 +20,7 @@ export const useStore = create((set) => ({
   greenPositions: [[], []], // Double buffer for green sphere positions
   bluePositions: [[], []], // Double buffer for blue sphere positions
   purplePositions: [[], []],
+  brownPositions: [[], []],
   greenMoonPositions: [[], []],
   purpleMoonPositions: [[], []], // Double buffer for purple sphere positions
   activeBuffer: 0, // Index of the active buffer
@@ -228,6 +229,29 @@ export const useStore = create((set) => ({
     });
   },
 
+  setBrownPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.brownPositions[state.activeBuffer])
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.brownPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { brownPositions: updatedPositions };
+    });
+  },
+
   setGreenMoonPositions: (positions) => {
     set((state) => {
       const newPositions =
@@ -315,6 +339,9 @@ export const useStore = create((set) => ({
       ].filter(
         (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
+      const newBrownPositions = state.brownPositions[state.activeBuffer].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
 
       const newGreenMoonPositions = state.greenMoonPositions[
         state.activeBuffer
@@ -334,6 +361,7 @@ export const useStore = create((set) => ({
       const updatedGreenPositions = [...state.greenPositions];
       const updatedBluePositions = [...state.bluePositions];
       const updatedPurplePositions = [...state.purplePositions];
+      const updatedBrownositions = [...state.brownPositions];
       const updatedGreenMoonPositions = [...state.greenMoonPositions];
       const updatedPurpleMoonPositions = [...state.purpleMoonPositions];
 
@@ -342,6 +370,7 @@ export const useStore = create((set) => ({
       updatedGreenPositions[nextBuffer] = newGreenPositions;
       updatedBluePositions[nextBuffer] = newBluePositions;
       updatedPurplePositions[nextBuffer] = newPurplePositions;
+      updatedBrownPositions[nextBuffer] = newBrownPositions;
       updatedGreenMoonPositions[nextBuffer] = newGreenMoonPositions;
       updatedPurpleMoonPositions[nextBuffer] = newPurpleMoonPositions;
 
@@ -351,6 +380,7 @@ export const useStore = create((set) => ({
         greenPositions: updatedGreenPositions,
         bluePositions: updatedBluePositions,
         purplePositions: updatedPurplePositions,
+        brownPositions: updatedBrownPositions,
         greenMoonPositions: updatedGreenMoonPositions,
         purpleMoonPositions: updatedPurpleMoonPositions,
       };

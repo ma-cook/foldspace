@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-export const sphereGeometry = new THREE.SphereGeometry(40, 40, 40);
-export const lessDetailedSphereGeometry = new THREE.SphereGeometry(40, 5, 5);
+export const sphereGeometry = new THREE.SphereGeometry(60, 40, 40);
+export const lessDetailedSphereGeometry = new THREE.SphereGeometry(60, 5, 5);
 
 export const sphereMaterial = new THREE.MeshStandardMaterial({
   color: 'yellow',
@@ -39,6 +39,10 @@ export const blueSphereMaterial = new THREE.MeshStandardMaterial({
 
 export const purpleSphereMaterial = new THREE.MeshStandardMaterial({
   color: 'purple',
+});
+
+export const brownSphereMaterial = new THREE.MeshStandardMaterial({
+  color: 'brown',
 });
 
 export const getSpherePositions = (flattenedPositions) => {
@@ -82,10 +86,21 @@ export const getSpherePositions = (flattenedPositions) => {
     );
   });
 
+  const brownSpherePositions = flattenedPositions.map((position) => {
+    const offset = 400 + Math.random() * 50; // Random offset between 300 and 350
+    const angle = Math.random() * 2 * Math.PI; // Random angle
+    return new THREE.Vector3(
+      position.x + offset * Math.cos(angle),
+      position.y,
+      position.z + offset * Math.sin(angle)
+    );
+  });
+
   return {
     redSpherePositions,
     greenSpherePositions,
     blueSpherePositions,
     purpleSpherePositions,
+    brownSpherePositions,
   };
 };

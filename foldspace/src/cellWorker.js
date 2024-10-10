@@ -63,6 +63,7 @@ const generateNewPositions = (x, z) => {
   const newGreenPositions = [];
   const newBluePositions = [];
   const newPurplePositions = [];
+  const newBrownPositions = [];
   const newGreenMoonPositions = [];
   const newPurpleMoonPositions = [];
 
@@ -97,10 +98,11 @@ const generateNewPositions = (x, z) => {
 
   positions.forEach((position) => {
     newPositions.push(position);
-    newRedPositions.push(calculateRandomOrbitPosition(position, 300, 400));
-    newGreenPositions.push(calculateRandomOrbitPosition(position, 500, 600));
-    newBluePositions.push(calculateRandomOrbitPosition(position, 600, 700));
-    newPurplePositions.push(calculateRandomOrbitPosition(position, 800, 1000));
+    newRedPositions.push(calculateRandomOrbitPosition(position, 400, 500));
+    newGreenPositions.push(calculateRandomOrbitPosition(position, 700, 850));
+    newBluePositions.push(calculateRandomOrbitPosition(position, 1000, 1100));
+    newPurplePositions.push(calculateRandomOrbitPosition(position, 1250, 1300));
+    newBrownPositions.push(calculateRandomOrbitPosition(position, 1450, 1600));
   });
 
   newGreenPositions.forEach((greenPosition) => {
@@ -121,6 +123,7 @@ const generateNewPositions = (x, z) => {
     newGreenPositions,
     newBluePositions,
     newPurplePositions,
+    newBrownPositions,
     newGreenMoonPositions,
     newPurpleMoonPositions,
   };
@@ -169,6 +172,7 @@ self.onmessage = async (event) => {
         newGreenPositions,
         newBluePositions,
         newPurplePositions,
+        newBrownPositions,
         newGreenMoonPositions,
         newPurpleMoonPositions,
       } = generateNewPositions(x, z);
@@ -180,6 +184,7 @@ self.onmessage = async (event) => {
         greenPositions: newGreenPositions,
         bluePositions: newBluePositions,
         purplePositions: newPurplePositions,
+        brownPositions: newBrownPositions,
         greenMoonPositions: newGreenMoonPositions,
         purpleMoonPositions: newPurpleMoonPositions,
       });
@@ -191,6 +196,7 @@ self.onmessage = async (event) => {
         newGreenPositions,
         newBluePositions,
         newPurplePositions,
+        newBrownPositions,
         newGreenMoonPositions,
         newPurpleMoonPositions,
         loadDetail,

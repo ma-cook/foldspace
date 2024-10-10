@@ -1,10 +1,4 @@
-import React, {
-  useRef,
-  useEffect,
-  forwardRef,
-  useCallback,
-  useMemo,
-} from 'react';
+import React, { useRef, useEffect, forwardRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useStore } from '../store';
 import { MemoizedSphere } from '../Sphere';
@@ -26,6 +20,24 @@ import {
 } from '../SphereData';
 import { DETAIL_DISTANCE } from '../config';
 import { createMouseHandlers } from '../hooks/mouseEvents';
+import * as THREE from 'three';
+
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  varying vec2 vUv;
+  void main() {
+  float dist = length(vUv - vec2(0.3, 0.9));
+    float alpha = smoothstep(0.3, 0.9, length(vUv - 0.5));
+    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha); // Yellow color with alpha
+  }
+`;
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -39,6 +51,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     green: useRef(),
     blue: useRef(),
     purple: useRef(),
+    brown: useRef(), // Add reference for brown sphere
     centralDetailed: useRef(),
     centralLessDetailed: useRef(),
   }).current;
@@ -65,6 +78,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const purplePositions = useStore(
     (state) => state.purplePositions[activeBuffer]
   );
+  const brownPositions = useStore(
+    (state) => state.brownPositions[activeBuffer]
+  ); // Add brown positions
   const greenMoonPositions = useStore(
     (state) => state.greenMoonPositions[activeBuffer]
   );
@@ -95,6 +111,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
+  const filteredBrownPositions = useFilteredPositions(
+    brownPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  ); // Add filtered brown positions
   const filteredGreenMoonPositions = useFilteredPositions(
     greenMoonPositions,
     cameraRef,
@@ -127,6 +148,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'green',
       'blue',
       'purple',
+      'brown', // Add brown sphere to the list
       'greenMoon',
       'purpleMoon',
     ].map((color) => {
@@ -142,6 +164,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           'green',
           'blue',
           'purple',
+          'brown', // Add brown sphere to the list
           'greenMoon',
           'purpleMoon',
         ][index];
@@ -162,6 +185,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     greenPositions,
     bluePositions,
     purplePositions,
+    brownPositions, // Add brown positions
     greenMoonPositions,
     purpleMoonPositions,
     filteredPositions,
@@ -330,6 +354,14 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
+        key={`brown-${sphereGeometry.uuid}`} // Add brown sphere
+        ref={sphereRefs.brown}
+        positions={filteredBrownPositions}
+        material={sphereMaterials.brown}
+        geometry={sphereGeometry}
+        scale={[0.4, 0.4, 0.4]}
+      />
+      <MemoizedSphere
         key={`purpleMoon-${sphereGeometry.uuid}`}
         ref={sphereRefs.purpleMoon}
         positions={filteredPurpleMoonPositions}
@@ -338,6 +370,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         frustumCulled={false}
         scale={[0.05, 0.05, 0.05]}
       />
+      {filteredBrownPositions.map((position, index) => (
+        <mesh
+          key={`ring-${index}`}
+          position={position}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <ringGeometry args={[50, 40, 32]} />
+          <shaderMaterial
+            vertexShader={vertexShader}
+            fragmentShader={fragmentShader}
+            transparent
+            side={THREE.DoubleSide} // Make shader visible on both sides
+          />
+        </mesh>
+      ))}
     </>
   );
 });

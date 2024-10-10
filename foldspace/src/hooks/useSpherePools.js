@@ -30,6 +30,7 @@ export const useSpherePools = (geometry = sphereGeometry) => {
       red: new ObjectPool(createInstancedMesh),
       green: new ObjectPool(createInstancedMesh),
       blue: new ObjectPool(createInstancedMesh),
+      brown: new ObjectPool(createInstancedMesh),
       purple: new ObjectPool(createInstancedMesh),
       greenMoon: new ObjectPool(createInstancedMesh),
       purpleMoon: new ObjectPool(createInstancedMesh),
