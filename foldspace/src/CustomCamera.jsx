@@ -45,25 +45,6 @@ const CustomCamera = forwardRef((props, ref) => {
     }
   }, [vec, target, camera, ref, setCameraPosition]);
 
-  // Memoize the handleCameraMove function
-  const handleCameraMove = useCallback(() => {
-    setCameraPosition(camera.position.x, camera.position.y, camera.position.z);
-  }, [camera.position, setCameraPosition]);
-
-  // Update the camera position in the store whenever the camera moves
-  useEffect(() => {
-    const controls = controlsRef.current;
-    if (controls) {
-      controls.addEventListener('change', handleCameraMove);
-    }
-
-    return () => {
-      if (controls) {
-        controls.removeEventListener('change', handleCameraMove);
-      }
-    };
-  }, [handleCameraMove]);
-
   // Memoize the camera position and lookAt values
   const memoizedCameraPosition = useMemo(
     () => cameraPosition,

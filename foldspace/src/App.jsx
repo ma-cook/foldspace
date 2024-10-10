@@ -173,8 +173,8 @@ const App = React.memo(() => {
           />
         </Suspense>
       </Canvas>
-      {loadingCells.size > 0 && <LoadingMessage />}
-      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
+      {/* {loadingCells.size > 0 && <LoadingMessage />}
+      <button onClick={handleDeleteAllCells}>Delete All Cells</button> */}
     </div>
   );
 });
