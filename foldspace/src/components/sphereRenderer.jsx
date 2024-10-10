@@ -33,9 +33,39 @@ const vertexShader = `
 const fragmentShader = `
   varying vec2 vUv;
   void main() {
-  float dist = length(vUv - vec2(0.3, 0.9));
-    float alpha = smoothstep(0.3, 0.9, length(vUv - 0.5));
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha); // Yellow color with alpha
+    float dist = length(vUv - vec2(0.5, 0.5));
+    float alpha = smoothstep(0.3, 0.5, dist); // Adjust the range for blurring effect
+    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0 - alpha); // Yellow color with alpha
+  }
+`;
+
+const dotVertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const dotFragmentShader = `
+  varying vec2 vUv;
+  void main() {
+    float dist = length(vUv - vec2(0.5, 0.5));
+    float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
+    float dotSpacing = 0.1; // Adjust the spacing between dots
+    float dotSize = 0.02; // Adjust the size of the dots
+
+    // Calculate the position of the dot
+    float dotDist = mod(dist, dotSpacing);
+    float dotAlpha = step(dotDist, dotSize);
+
+    // Ensure dots appear in a ring
+    float ringAlpha = step(0.48, dist) * step(dist, 0.52);
+
+    // Combine the dot pattern with the ring
+    float alpha = dotAlpha * ringAlpha;
+
+    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha); // White color with alpha
   }
 `;
 
@@ -277,6 +307,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         geometry={sphereGeometry}
         frustumCulled={false}
       />
+      {detailedPositions.map((position, index) => (
+        <mesh
+          key={`ring-${index}`}
+          position={position}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <ringGeometry args={[2990, 3010, 64]} />
+          <shaderMaterial
+            vertexShader={dotVertexShader}
+            fragmentShader={dotFragmentShader}
+            transparent
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
       <MemoizedSphere
         key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`}
         ref={sphereRefs.centralLessDetailed}

@@ -87,6 +87,7 @@ export const useSphereMaterials = () => {
       green: greenSphereMaterial,
       blue: blueSphereMaterial,
       purple: purpleSphereMaterial,
+      brown: brownSphereMaterial,
       greenMoon: moonMaterial,
       purpleMoon: moonMaterial,
     }),

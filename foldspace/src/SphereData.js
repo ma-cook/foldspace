@@ -4,7 +4,7 @@ export const sphereGeometry = new THREE.SphereGeometry(60, 40, 40);
 export const lessDetailedSphereGeometry = new THREE.SphereGeometry(60, 5, 5);
 
 export const sphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'yellow',
+  color: 'orange',
 });
 
 export const moonMaterial = new THREE.MeshStandardMaterial({
@@ -42,7 +42,7 @@ export const purpleSphereMaterial = new THREE.MeshStandardMaterial({
 });
 
 export const brownSphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'brown',
+  color: 'grey',
 });
 
 export const getSpherePositions = (flattenedPositions) => {
