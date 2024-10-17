@@ -361,7 +361,7 @@ export const useStore = create((set) => ({
       const updatedGreenPositions = [...state.greenPositions];
       const updatedBluePositions = [...state.bluePositions];
       const updatedPurplePositions = [...state.purplePositions];
-      const updatedBrownositions = [...state.brownPositions];
+      const updatedBrownPositions = [...state.brownPositions];
       const updatedGreenMoonPositions = [...state.greenMoonPositions];
       const updatedPurpleMoonPositions = [...state.purpleMoonPositions];
 

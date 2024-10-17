@@ -8,6 +8,8 @@ import {
   moonMaterial,
   atmosMaterial,
   atmosMaterial2,
+  sphereMaterial,
+  brownSphereMaterial, // Add brown sphere material
   lessDetailedSphereGeometry,
 } from './SphereData';
 
@@ -33,7 +35,8 @@ const unloadCell = (
   sphereRendererRef,
   swapBuffers,
   sphereGeometry,
-  lessDetailedSphereGeometry
+  lessDetailedSphereGeometry,
+  ringGeometry // Add ring geometry parameter
 ) => {
   const cellKey = `${x},${z}`;
   if (!loadedCells.has(cellKey)) return;
@@ -65,10 +68,13 @@ const unloadCell = (
   disposeMaterial(moonMaterial);
   disposeMaterial(atmosMaterial);
   disposeMaterial(atmosMaterial2);
+  disposeMaterial(sphereMaterial); // Dispose of sphere material
+  disposeMaterial(brownSphereMaterial); // Dispose of brown sphere material
 
   // Dispose of geometries if they are not shared
   disposeGeometry(sphereGeometry);
   disposeGeometry(lessDetailedSphereGeometry);
+  disposeGeometry(ringGeometry); // Dispose of ring geometry
 
   swapBuffers(); // Swap buffers after unloading cell data
 

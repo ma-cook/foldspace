@@ -16,8 +16,8 @@ import {
   DETAIL_DISTANCE,
   UNLOAD_DETAIL_DISTANCE,
 } from './config';
-import * as THREE from 'three';
-import { BVH, BVHNode, buildBVH, queryBVH } from './BVH';
+
+import { buildBVH, queryBVH } from './BVH';
 
 // Utility Functions
 const calculateDistance = (x1, z1, x2, z2) => {
@@ -98,7 +98,7 @@ const useLoadingQueue = (
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
-      const batchSize = 10;
+      const batchSize = 20; // Increase batch size for better performance
       const batch = loadingQueue.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
@@ -228,7 +228,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   });
 
   useEffect(() => {
-    const debouncedCheckCells = debounce(checkCellsAroundCamera, 10); // Increase debounce time to reduce frequency
+    const debouncedCheckCells = debounce(checkCellsAroundCamera, 11); // Increase debounce time to reduce frequency
     debouncedCheckCells();
     return () => {
       debouncedCheckCells.cancel();

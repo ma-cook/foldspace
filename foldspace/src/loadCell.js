@@ -1,26 +1,25 @@
 import * as THREE from 'three';
 import cellCache from './cellCache';
-import saveCellData from './saveCellData';
 
 const createVector3Array = (positions) => {
-  if (!positions) {
-    return [];
-  }
   if (!Array.isArray(positions)) {
     return [];
   }
-  positions.forEach((pos, index) => {
-    if (typeof pos !== 'object' || pos === null) {
-    } else if (!('x' in pos) || !('y' in pos) || !('z' in pos)) {
-      console.warn(
-        `Element at index ${index} is missing x, y, or z properties:`,
-        pos
-      );
-    }
-  });
-  const result = positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
 
-  return result;
+  return positions.reduce((acc, pos, index) => {
+    if (
+      pos &&
+      typeof pos === 'object' &&
+      'x' in pos &&
+      'y' in pos &&
+      'z' in pos
+    ) {
+      acc.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+    } else {
+      console.warn(`Element at index ${index} is invalid:`, pos);
+    }
+    return acc;
+  }, []);
 };
 
 const updatePositions = (setPositions, newPositions) => {

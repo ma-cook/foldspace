@@ -42,7 +42,7 @@ export const purpleSphereMaterial = new THREE.MeshStandardMaterial({
 });
 
 export const brownSphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'grey',
+  color: '#B99F4A',
 });
 
 export const getSpherePositions = (flattenedPositions) => {

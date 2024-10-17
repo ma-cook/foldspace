@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, forwardRef } from 'react';
+// src/components/sphereRenderer.jsx
+import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useStore } from '../store';
 import { MemoizedSphere } from '../Sphere';
@@ -21,53 +22,12 @@ import {
 import { DETAIL_DISTANCE } from '../config';
 import { createMouseHandlers } from '../hooks/mouseEvents';
 import * as THREE from 'three';
-
-const vertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const fragmentShader = `
-  varying vec2 vUv;
-  void main() {
-    float dist = length(vUv - vec2(0.5, 0.5));
-    float alpha = smoothstep(0.3, 0.5, dist); // Adjust the range for blurring effect
-    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0 - alpha); // Yellow color with alpha
-  }
-`;
-
-const dotVertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const dotFragmentShader = `
-  varying vec2 vUv;
-  void main() {
-    float dist = length(vUv - vec2(0.5, 0.5));
-    float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
-    float dotSpacing = 0.1; // Adjust the spacing between dots
-    float dotSize = 0.02; // Adjust the size of the dots
-
-    // Calculate the position of the dot
-    float dotDist = mod(dist, dotSpacing);
-    float dotAlpha = step(dotDist, dotSize);
-
-    // Ensure dots appear in a ring
-    float ringAlpha = step(0.48, dist) * step(dist, 0.52);
-
-    // Combine the dot pattern with the ring
-    float alpha = dotAlpha * ringAlpha;
-
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha); // White color with alpha
-  }
-`;
+import {
+  vertexShader,
+  fragmentShader,
+  dotVertexShader,
+  dotFragmentShader,
+} from '../shaders';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -81,7 +41,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     green: useRef(),
     blue: useRef(),
     purple: useRef(),
-    brown: useRef(), // Add reference for brown sphere
+    brown: useRef(),
     centralDetailed: useRef(),
     centralLessDetailed: useRef(),
   }).current;
@@ -110,7 +70,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const brownPositions = useStore(
     (state) => state.brownPositions[activeBuffer]
-  ); // Add brown positions
+  );
   const greenMoonPositions = useStore(
     (state) => state.greenMoonPositions[activeBuffer]
   );
@@ -145,7 +105,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     brownPositions,
     cameraRef,
     DETAIL_DISTANCE
-  ); // Add filtered brown positions
+  );
   const filteredGreenMoonPositions = useFilteredPositions(
     greenMoonPositions,
     cameraRef,
@@ -178,7 +138,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'green',
       'blue',
       'purple',
-      'brown', // Add brown sphere to the list
+      'brown',
       'greenMoon',
       'purpleMoon',
     ].map((color) => {
@@ -194,7 +154,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           'green',
           'blue',
           'purple',
-          'brown', // Add brown sphere to the list
+          'brown',
           'greenMoon',
           'purpleMoon',
         ][index];
@@ -215,7 +175,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     greenPositions,
     bluePositions,
     purplePositions,
-    brownPositions, // Add brown positions
+    brownPositions,
     greenMoonPositions,
     purpleMoonPositions,
     filteredPositions,
@@ -399,7 +359,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`brown-${sphereGeometry.uuid}`} // Add brown sphere
+        key={`brown-${sphereGeometry.uuid}`}
         ref={sphereRefs.brown}
         positions={filteredBrownPositions}
         material={sphereMaterials.brown}
@@ -426,7 +386,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
             vertexShader={vertexShader}
             fragmentShader={fragmentShader}
             transparent
-            side={THREE.DoubleSide} // Make shader visible on both sides
+            side={THREE.DoubleSide}
           />
         </mesh>
       ))}
