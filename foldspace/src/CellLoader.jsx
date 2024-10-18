@@ -4,7 +4,6 @@ import React, {
   useCallback,
   useRef,
   useReducer,
-  useMemo,
 } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { debounce } from 'lodash';
@@ -22,7 +21,7 @@ import { buildBVH, queryBVH } from './BVH';
 // Utility Functions
 const calculateDistance = (x1, z1, x2, z2) => {
   const dx = x1 - x2;
-  const dz = z1 - z2;
+  const dz = x1 - x2;
   return Math.sqrt(dx * dx + dz * dz);
 };
 
@@ -98,7 +97,7 @@ const useLoadingQueue = (
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
-      const batchSize = 20; // Increase batch size for better performance
+      const batchSize = 300; // Increase batch size for better performance
       const batch = loadingQueue.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
@@ -228,7 +227,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   });
 
   useEffect(() => {
-    const debouncedCheckCells = debounce(checkCellsAroundCamera, 11); // Increase debounce time to reduce frequency
+    const debouncedCheckCells = debounce(checkCellsAroundCamera, 5); // Increase debounce time to reduce frequency
     debouncedCheckCells();
     return () => {
       debouncedCheckCells.cancel();
@@ -237,7 +236,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
   useEffect(() => {
     if (loadingQueue.length === 0) {
-      setCurrentLoadDistance(150000);
+      setCurrentLoadDistance(100000);
     }
   }, [loadingQueue]);
 

@@ -9,7 +9,14 @@ import React, {
 } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
-import { Stats, Environment } from '@react-three/drei';
+import {
+  Stats,
+  Environment,
+  Bvh,
+  AdaptiveDpr,
+  AdaptiveEvents,
+  PerformanceMonitor,
+} from '@react-three/drei';
 import CustomCamera from './CustomCamera';
 import SphereRenderer from './components/sphereRenderer';
 import CellLoader from './CellLoader';
@@ -48,6 +55,7 @@ const App = React.memo(() => {
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
   const [backgroundColor, setBackgroundColor] = useState('white');
+  const [dpr, setDpr] = useState(2);
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -55,8 +63,8 @@ const App = React.memo(() => {
         x,
         z,
         true, // Pass loadDetail
-        new Set(loadedCells), // Ensure loadedCells is a Set
-        new Set(loadingCells), // Ensure loadingCells is a Set
+        loadedCells, // Ensure loadedCells is a Set
+        loadingCells, // Ensure loadingCells is a Set
         setLoadingCells,
         setPositions,
         setRedPositions,
@@ -91,7 +99,7 @@ const App = React.memo(() => {
       unloadCell(
         x,
         z,
-        new Set(loadedCells), // Ensure loadedCells is a Set
+        loadedCells, // Ensure loadedCells is a Set
         setLoadedCells,
         removeAllPositions,
         removeSphereRefs,
@@ -121,9 +129,12 @@ const App = React.memo(() => {
 
   const handleDeleteAllCells = async () => {
     try {
-      const response = await fetch('http://localhost:5000/delete-all-cells', {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        'https://foldspace-6483c.cloudFunctions.net/delete-all-cells',
+        {
+          method: 'DELETE',
+        }
+      );
       if (response.ok) {
         console.log('All cell data deleted successfully');
         // Clear local state if needed
@@ -147,37 +158,44 @@ const App = React.memo(() => {
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas>
-        <Suspense fallback={<Loader />}>
-          <Stats />
-          <ambientLight />
-          <SphereRenderer
-            cameraRef={cameraRef}
-            ref={sphereRendererRef}
-            flattenedPositions={
-              Array.isArray(flattenedPositions) ? flattenedPositions : []
-            }
-            redPositions={redPositions}
-            greenPositions={greenPositions}
-            bluePositions={bluePositions}
-            purplePositions={purplePositions}
-            brownPositions={brownPositions} // Pass brown positions
-            greenMoonPositions={greenMoonPositions}
-            purpleMoonPositions={purpleMoonPositions}
-          />
-          <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
-          <Environment
-            preset="forest"
-            background
-            backgroundBlurriness={0.8}
-            backgroundIntensity={0.007}
-          />
-          <CustomCamera ref={cameraRef} />
-          <CellLoader
-            cameraRef={cameraRef}
-            loadCell={loadCellCallback}
-            unloadCell={unloadCellCallback}
-          />
-        </Suspense>
+        <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
+
+        <AdaptiveEvents />
+        <Bvh firstHitOnly>
+          <Suspense fallback={<Loader />}>
+            <PerformanceMonitor flipflops={3} onFallback={() => setDpr(1)} />
+
+            <Stats />
+            <ambientLight />
+            <SphereRenderer
+              cameraRef={cameraRef}
+              ref={sphereRendererRef}
+              flattenedPositions={
+                Array.isArray(flattenedPositions) ? flattenedPositions : []
+              }
+              redPositions={redPositions}
+              greenPositions={greenPositions}
+              bluePositions={bluePositions}
+              purplePositions={purplePositions}
+              brownPositions={brownPositions} // Pass brown positions
+              greenMoonPositions={greenMoonPositions}
+              purpleMoonPositions={purpleMoonPositions}
+            />
+
+            <Environment
+              preset="forest"
+              background
+              backgroundBlurriness={0.8}
+              backgroundIntensity={0.007}
+            />
+            <CustomCamera ref={cameraRef} />
+            <CellLoader
+              cameraRef={cameraRef}
+              loadCell={loadCellCallback}
+              unloadCell={unloadCellCallback}
+            />
+          </Suspense>
+        </Bvh>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}
       <button onClick={handleDeleteAllCells}>Delete All Cells</button>

@@ -1,3 +1,4 @@
+const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
@@ -5,14 +6,6 @@ const path = require('path');
 const NodeCache = require('node-cache');
 const async = require('async');
 const bodyParser = require('body-parser');
-const app = express();
-
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(cors());
-
-const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`Server is running on port ${port}`));
-
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
 
@@ -22,6 +15,10 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const cache = new NodeCache({ stdTTL: 600 });
+
+const app = express();
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(cors());
 
 const dataFilePath = path.join(__dirname, 'data', 'cells.json');
 
@@ -177,3 +174,5 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');
 });
+
+exports.api = functions.https.onRequest(app);

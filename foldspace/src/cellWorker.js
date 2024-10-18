@@ -11,8 +11,7 @@ const createVector3Array = (positions) => {
   if (!Array.isArray(positions)) {
     return [];
   }
-  const result = positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
-  return result;
+  return positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
 };
 
 const fetchCellDataInBatches = async (cellKeys) => {
@@ -32,13 +31,16 @@ const fetchCellDataInBatches = async (cellKeys) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/get-sphere-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cellKeys: keysToFetch }),
-    });
+    const response = await fetch(
+      'https://foldspace-6483c.cloudFunctions.net/get-sphere-data',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cellKeys: keysToFetch }),
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -131,13 +133,16 @@ const generateNewPositions = (x, z) => {
 
 const saveCellData = async (cellKey, positions) => {
   try {
-    const response = await fetch('http://localhost:5000/save-sphere-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cellKey, positions }),
-    });
+    const response = await fetch(
+      'https://foldspace-6483c.cloudFunctions.net/save-sphere-data',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cellKey, positions }),
+      }
+    );
 
     if (!response.ok) {
       console.error('Error saving cell data:', response.statusText);
