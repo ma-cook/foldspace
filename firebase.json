@@ -22,5 +22,6 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "predeploy": ["npm --prefix foldspace run build"]
 }
