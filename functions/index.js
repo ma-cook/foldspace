@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const os = require('os'); // Import the os module
 const NodeCache = require('node-cache');
 const async = require('async');
 const bodyParser = require('body-parser');
@@ -16,16 +17,7 @@ admin.initializeApp({
 const db = admin.firestore();
 const cache = new NodeCache({ stdTTL: 600 });
 
-const app = express();
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(cors());
-
-const dataFilePath = path.join(__dirname, 'data', 'cells.json');
-
-const fsSync = require('fs');
-if (!fsSync.existsSync(path.dirname(dataFilePath))) {
-  fsSync.mkdirSync(path.dirname(dataFilePath), { recursive: true });
-}
+const dataFilePath = path.join(os.tmpdir(), 'cells.json'); // Use the temporary directory
 
 const readCellDataFile = async () => {
   try {
@@ -50,6 +42,13 @@ const fileQueue = async.queue(async (task, callback) => {
     if (callback) callback();
   }
 }, 1);
+
+const app = express();
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(cors({ origin: true })); // Enable CORS for all origins
+
+// Explicitly handle OPTIONS requests
+app.options('*', cors({ origin: true }));
 
 app.post('/save-sphere-data', async (req, res) => {
   const { cellKey, positions } = req.body;
