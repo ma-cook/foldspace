@@ -14,9 +14,9 @@
     }
   ],
   "hosting": {
-    "public": "foldspace/dist",
+    "public": "client/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "predeploy": ["npm --prefix foldspace run build"],
+    "predeploy": ["npm --prefix client run build"],
     "rewrites": [
       {
         "source": "**",
