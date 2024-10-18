@@ -16,12 +16,12 @@
   "hosting": {
     "public": "foldspace/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "predeploy": ["npm --prefix foldspace run build"],
     "rewrites": [
       {
         "source": "**",
         "destination": "/index.html"
       }
     ]
-  },
-  "predeploy": ["npm --prefix foldspace run build"]
+  }
 }
