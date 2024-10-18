@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
-const os = require('os'); // Import the os module
+const os = require('os');
 const NodeCache = require('node-cache');
 const async = require('async');
 const bodyParser = require('body-parser');
@@ -17,7 +17,7 @@ admin.initializeApp({
 const db = admin.firestore();
 const cache = new NodeCache({ stdTTL: 600 });
 
-const dataFilePath = path.join(os.tmpdir(), 'cells.json'); // Use the temporary directory
+const dataFilePath = path.join(os.tmpdir(), 'cells.json');
 
 const readCellDataFile = async () => {
   try {
@@ -45,10 +45,12 @@ const fileQueue = async.queue(async (task, callback) => {
 
 const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
-app.use(cors({ origin: true })); // Enable CORS for all origins
+
+// Configure CORS to allow requests from specific origin
+app.use(cors({ origin: 'https://foldspace-6483c.web.app' }));
 
 // Explicitly handle OPTIONS requests
-app.options('*', cors({ origin: true }));
+app.options('*', cors({ origin: 'https://foldspace-6483c.web.app' }));
 
 app.post('/save-sphere-data', async (req, res) => {
   const { cellKey, positions } = req.body;
@@ -71,7 +73,6 @@ app.post('/get-sphere-data', async (req, res) => {
   const missingKeys = [];
 
   try {
-    // Check cache first
     cellKeys.forEach((cellKey) => {
       const cachedData = cache.get(cellKey);
       if (cachedData) {
@@ -84,7 +85,6 @@ app.post('/get-sphere-data', async (req, res) => {
     if (missingKeys.length > 0) {
       const cellData = await readCellDataFile();
 
-      // Check file cache
       missingKeys.forEach((cellKey) => {
         if (cellData[cellKey]) {
           cache.set(cellKey, cellData[cellKey]);
@@ -95,7 +95,6 @@ app.post('/get-sphere-data', async (req, res) => {
       });
 
       if (missingKeys.length > 0) {
-        // Fetch missing keys from Firestore in batches
         const batchSize = 10;
         for (let i = 0; i < missingKeys.length; i += batchSize) {
           const batchKeys = missingKeys.slice(i, i + batchSize);
