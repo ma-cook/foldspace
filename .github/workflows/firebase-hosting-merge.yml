@@ -18,7 +18,9 @@ jobs:
 
       # Create serviceAccountKey.json from secret
       - name: Create serviceAccountKey.json
-        run: echo "${{ secrets.SERVICE_ACCOUNT_KEY }}" > functions/serviceAccountKey.json
+        run: |
+          echo "${{ secrets.SERVICE_ACCOUNT_KEY }}" | base64 --decode > functions/serviceAccountKey.json
+        shell: bash
 
       # Install Firebase CLI
       - run: npm install -g firebase-tools
