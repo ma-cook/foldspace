@@ -16,6 +16,10 @@ jobs:
       # Install dependencies for functions
       - run: npm install --prefix functions
 
+      # Create serviceAccountKey.json from secret
+      - name: Create serviceAccountKey.json
+        run: echo "${{ secrets.SERVICE_ACCOUNT_KEY }}" > functions/serviceAccountKey.json
+
       # Install Firebase CLI
       - run: npm install -g firebase-tools
 

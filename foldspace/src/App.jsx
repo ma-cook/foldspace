@@ -25,8 +25,6 @@ import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
-//test deploy
-
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
   const positions = useStore((state) => state.positions);
