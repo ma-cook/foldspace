@@ -47,10 +47,17 @@ const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Configure CORS to allow requests from specific origin
-app.use(cors({ origin: 'https://foldspace-6483c.web.app' }));
+const corsOptions = {
+  origin: 'https://foldspace-6483c.web.app',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 // Explicitly handle OPTIONS requests
-app.options('*', cors({ origin: 'https://foldspace-6483c.web.app' }));
+app.options('*', cors(corsOptions));
 
 app.post('/save-sphere-data', async (req, res) => {
   const { cellKey, positions } = req.body;
@@ -64,6 +71,7 @@ app.post('/save-sphere-data', async (req, res) => {
     cache.set(cellKey, positions);
   });
 
+  res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
   res.send('Sphere data saved successfully');
 });
 
@@ -127,9 +135,11 @@ app.post('/get-sphere-data', async (req, res) => {
       }
     }
 
+    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.json(results);
   } catch (error) {
     console.error(`Error loading cell data:`, error);
+    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.status(500).send('Internal Server Error');
   }
 });
@@ -161,15 +171,18 @@ app.delete('/delete-all-cells', async (req, res) => {
 
     await writeCellDataFile({});
 
+    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.send('All cell data deleted successfully');
   } catch (error) {
     console.error('Error deleting all cell data:', error);
+    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.status(500).send('Internal Server Error');
   }
 });
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
+  res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
   res.status(500).send('Internal Server Error');
 });
 
