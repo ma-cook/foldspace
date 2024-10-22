@@ -37,6 +37,7 @@ const fetchCellDataInBatches = async (cellKeys) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': 'https://foldspace-6483c.web.app',
         },
         body: JSON.stringify({ cellKeys: keysToFetch }),
       }
