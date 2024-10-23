@@ -33,4 +33,4 @@ jobs:
           entryPoint: .
 
       - name: Deploy Functions
-        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
