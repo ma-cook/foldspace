@@ -18,7 +18,7 @@ jobs:
 
       # Create serviceAccountKey.json from secret
       - name: Create serviceAccountKey.json
-        run: echo "${{ secrets.SERVICE_ACCOUNT_KEY }}" > functions/serviceAccountKey.json
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > functions/serviceAccountKey.json
 
       # Install Firebase CLI
       - run: npm install -g firebase-tools
@@ -33,4 +33,4 @@ jobs:
           entryPoint: .
 
       - name: Deploy Functions
-        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
+        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
