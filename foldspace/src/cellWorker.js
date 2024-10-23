@@ -32,12 +32,11 @@ const fetchCellDataInBatches = async (cellKeys) => {
 
   try {
     const response = await fetch(
-      'https://foldspace-6483c.cloudFunctions.net/get-sphere-data',
+      'https://us-central1-foldspace-6483c.cloudfunctions.net/api',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': 'https://foldspace-6483c.web.app',
         },
         body: JSON.stringify({ cellKeys: keysToFetch }),
       }
@@ -135,7 +134,7 @@ const generateNewPositions = (x, z) => {
 const saveCellData = async (cellKey, positions) => {
   try {
     const response = await fetch(
-      'https://foldspace-6483c.cloudFunctions.net/save-sphere-data',
+      'https://us-central1-foldspace-6483c.cloudfunctions.net/api',
       {
         method: 'POST',
         headers: {

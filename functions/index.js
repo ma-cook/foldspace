@@ -46,9 +46,9 @@ const fileQueue = async.queue(async (task, callback) => {
 const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Configure CORS to allow requests from specific origin
+// Configure CORS to allow requests from any origin
 const corsOptions = {
-  origin: 'https://foldspace-6483c.web.app',
+  origin: true,
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,
@@ -59,7 +59,7 @@ app.use(cors(corsOptions));
 // Explicitly handle OPTIONS requests
 app.options('*', cors(corsOptions));
 
-app.post('/save-sphere-data', async (req, res) => {
+app.post('/save-sphere-data', cors(corsOptions), async (req, res) => {
   const { cellKey, positions } = req.body;
   const docRef = db.collection('cells').doc(cellKey);
   await docRef.set({ positions });
@@ -71,11 +71,10 @@ app.post('/save-sphere-data', async (req, res) => {
     cache.set(cellKey, positions);
   });
 
-  res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
   res.send('Sphere data saved successfully');
 });
 
-app.post('/get-sphere-data', async (req, res) => {
+app.post('/get-sphere-data', cors(corsOptions), async (req, res) => {
   const { cellKeys } = req.body;
   const results = {};
   const missingKeys = [];
@@ -135,34 +134,14 @@ app.post('/get-sphere-data', async (req, res) => {
       }
     }
 
-    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.json(results);
   } catch (error) {
     console.error(`Error loading cell data:`, error);
-    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.status(500).send('Internal Server Error');
   }
 });
 
-const deleteDocumentsInBatches = async (collectionRef, batchSize = 10) => {
-  const snapshot = await collectionRef.get();
-  const totalDocs = snapshot.size;
-  let deletedDocs = 0;
-
-  while (deletedDocs < totalDocs) {
-    const batch = db.batch();
-    const batchDocs = snapshot.docs.slice(deletedDocs, deletedDocs + batchSize);
-
-    batchDocs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-    deletedDocs += batchDocs.length;
-  }
-};
-
-app.delete('/delete-all-cells', async (req, res) => {
+app.delete('/delete-all-cells', cors(corsOptions), async (req, res) => {
   try {
     const cellsCollection = db.collection('cells');
     await deleteDocumentsInBatches(cellsCollection);
@@ -171,18 +150,15 @@ app.delete('/delete-all-cells', async (req, res) => {
 
     await writeCellDataFile({});
 
-    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.send('All cell data deleted successfully');
   } catch (error) {
     console.error('Error deleting all cell data:', error);
-    res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
     res.status(500).send('Internal Server Error');
   }
 });
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.set('Access-Control-Allow-Origin', 'https://foldspace-6483c.web.app');
   res.status(500).send('Internal Server Error');
 });
 
