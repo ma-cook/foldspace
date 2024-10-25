@@ -1,27 +1,37 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 
-const Sphere = React.forwardRef(
+const Sphere = forwardRef(
   ({ positions, material, geometry, scale = [1, 1, 1] }, ref) => {
+    const meshRef = useRef();
+
     useEffect(() => {
-      const mesh = ref.current;
+      const mesh = meshRef.current;
       if (mesh) {
         positions.forEach((position, index) => {
           const matrix = new THREE.Matrix4().compose(
-            position,
+            position instanceof THREE.Vector3
+              ? position
+              : new THREE.Vector3(...position),
             new THREE.Quaternion(),
             new THREE.Vector3(...scale)
           );
           mesh.setMatrixAt(index, matrix);
         });
         mesh.instanceMatrix.needsUpdate = true;
-        mesh.count = positions.length;
       }
     }, [positions, scale]);
 
     return (
       <instancedMesh
-        ref={ref}
+        ref={(node) => {
+          meshRef.current = node;
+          if (typeof ref === 'function') {
+            ref(node);
+          } else if (ref) {
+            ref.current = node;
+          }
+        }}
         args={[geometry, material, positions.length]}
         frustumCulled={false}
       />

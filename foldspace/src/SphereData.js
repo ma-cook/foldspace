@@ -4,7 +4,7 @@ export const sphereGeometry = new THREE.SphereGeometry(60, 40, 40);
 export const lessDetailedSphereGeometry = new THREE.SphereGeometry(60, 5, 5);
 
 export const sphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'orange',
+  color: '#efb843',
 });
 
 export const moonMaterial = new THREE.MeshStandardMaterial({
@@ -12,9 +12,9 @@ export const moonMaterial = new THREE.MeshStandardMaterial({
 });
 
 export const atmosMaterial = new THREE.MeshStandardMaterial({
-  color: 'orange',
+  color: '#f2e5c0',
   transparent: true,
-  opacity: 0.3,
+  opacity: 0.1,
   depthWrite: false, // Ensure it doesn't affect the depth buffer
 });
 

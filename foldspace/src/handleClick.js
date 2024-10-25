@@ -22,24 +22,11 @@ export const handleMouseDown = (
   lastMoveTimestamp
 ) => {
   isMouseDown.current = true;
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
   lastMoveTimestamp.current = Date.now();
-  const intersects = raycaster.intersectObjects(
-    [
-      instancedMeshRef?.current,
-      lessDetailedMeshRef?.current,
-      redInstancedMeshRef?.current,
-      greenInstancedMeshRef?.current,
-      blueInstancedMeshRef?.current,
-      purpleInstancedMeshRef?.current,
-      greenMoonInstancedMeshRef?.current,
-      purpleMoonInstancedMeshRef?.current,
-      atmosRef?.current,
-      atmos2Ref?.current,
-      atmos3Ref?.current,
-      ...Object.values(sphereRefs).map((ref) => ref?.current),
-    ].filter(Boolean)
-  );
+  console.log('handleMouseDown');
 };
 
 export const handleMouseUp = (
@@ -80,7 +67,12 @@ export const handleMouseUp = (
       return;
     }
 
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
+
+    // Adjust raycaster precision
+    raycaster.params.Points.threshold = 10; // Adjust this value as needed
 
     const objectsToIntersect = [
       instancedMeshRef?.current,
@@ -97,73 +89,35 @@ export const handleMouseUp = (
       ...Object.values(sphereRefs).map((ref) => ref?.current),
     ].filter(Boolean);
 
+    console.log('objectsToIntersect:', objectsToIntersect);
+
     const intersects = raycaster.intersectObjects(objectsToIntersect);
 
-    intersects.sort((a, b) => {
-      if (a.object === instancedMeshRef?.current) {
-        return -1;
-      } else if (b.object === instancedMeshRef?.current) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
+    console.log('handleMouseUp intersects:', intersects);
 
     if (intersects.length > 0) {
-      const { x, y, z } = intersects[0].point;
+      const intersectedObject = intersects[0].object;
       const instanceId = intersects[0].instanceId;
+      const instanceMatrix = new THREE.Matrix4();
+      const instancePosition = new THREE.Vector3();
 
-      if (instanceId !== undefined) {
-        const instanceMatrix = new THREE.Matrix4();
-
-        if (intersects[0].object === instancedMeshRef?.current) {
-          instancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === lessDetailedMeshRef?.current) {
-          lessDetailedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === redInstancedMeshRef?.current) {
-          redInstancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === greenInstancedMeshRef?.current) {
-          greenInstancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === blueInstancedMeshRef?.current) {
-          blueInstancedMeshRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === purpleInstancedMeshRef?.current) {
-          purpleInstancedMeshRef.current.getMatrixAt(
-            instanceId,
-            instanceMatrix
-          );
-        } else if (
-          intersects[0].object === greenMoonInstancedMeshRef?.current
-        ) {
-          greenMoonInstancedMeshRef.current.getMatrixAt(
-            instanceId,
-            instanceMatrix
-          );
-        } else if (
-          intersects[0].object === purpleMoonInstancedMeshRef?.current
-        ) {
-          purpleMoonInstancedMeshRef.current.getMatrixAt(
-            instanceId,
-            instanceMatrix
-          );
-        } else if (intersects[0].object === atmosRef?.current) {
-          atmosRef.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === atmos2Ref?.current) {
-          atmos2Ref.current.getMatrixAt(instanceId, instanceMatrix);
-        } else if (intersects[0].object === atmos3Ref?.current) {
-          atmos3Ref.current.getMatrixAt(instanceId, instanceMatrix);
-        }
-
-        const instancePosition = new THREE.Vector3().setFromMatrixPosition(
-          instanceMatrix
-        );
-
-        setTarget({
-          x: instancePosition.x + 100,
-          y: instancePosition.y + 280,
-          z: instancePosition.z + 380,
-        });
-        setLookAt(instancePosition);
+      if (intersectedObject.isInstancedMesh && instanceId !== undefined) {
+        intersectedObject.getMatrixAt(instanceId, instanceMatrix);
+        instancePosition.setFromMatrixPosition(instanceMatrix);
+      } else {
+        instancePosition.copy(intersectedObject.position);
       }
+
+      console.log('Moving to position:', instancePosition);
+
+      setTarget({
+        x: instancePosition.x + 100,
+        y: instancePosition.y + 280,
+        z: instancePosition.z + 380,
+      });
+      setLookAt(instancePosition);
+    } else {
+      console.log('No intersections found');
     }
   }
   isDragging.current = false;

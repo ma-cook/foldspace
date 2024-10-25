@@ -1,4 +1,3 @@
-// src/components/sphereRenderer.jsx
 import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useStore } from '../store';
@@ -28,6 +27,8 @@ import {
   dotVertexShader,
   dotFragmentShader,
 } from '../shaders';
+import { vertexSunShader, fragmentSunShader } from '../sunShader';
+import FakeGlowMaterial from '../FakeGlowMaterial';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -46,7 +47,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     centralLessDetailed: useRef(),
   }).current;
 
-  const { raycaster, mouse, camera, size } = useThree();
+  const { raycaster, mouse, camera, size, scene } = useThree();
   const setTarget = useStore((state) => state.setTarget);
   const setLookAt = useStore((state) => state.setLookAt);
 
@@ -266,29 +267,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={sphereMaterial}
         geometry={sphereGeometry}
         frustumCulled={false}
-      />
-      {detailedPositions.map((position, index) => (
-        <mesh
-          key={`ring-${index}`}
-          position={position}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <ringGeometry args={[2990, 3010, 64]} />
-          <shaderMaterial
-            vertexShader={dotVertexShader}
-            fragmentShader={dotFragmentShader}
-            transparent
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
-      <MemoizedSphere
-        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`}
-        ref={sphereRefs.centralLessDetailed}
-        positions={lessDetailedPositions}
-        material={sphereMaterial}
-        geometry={lessDetailedSphereGeometry}
-        frustumCulled={false}
+        scale={[0.8, 0.8, 0.8]}
       />
       <MemoizedSphere
         key={`atmos-${atmosMaterial.uuid}`}
@@ -296,17 +275,46 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         positions={filteredPositions}
         material={atmosMaterial}
         geometry={sphereGeometry}
-        frustumCulled={false}
-        scale={[1.4, 1.4, 1.4]}
       />
+      {detailedPositions.map((position, index) => (
+        <React.Fragment key={`detailed-${index}`}>
+          <mesh key={`sun-${index}`} position={position}>
+            <sphereGeometry args={[120, 120, 25]} />
+            <FakeGlowMaterial glowColor={'#d9b145'} />
+          </mesh>
+          <mesh
+            key={`torus-${index}`}
+            position={position}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <torusGeometry args={[3000, 20, 16, 70]} />
+            <FakeGlowMaterial glowColor={'#1a1a1a'} />
+          </mesh>
+        </React.Fragment>
+      ))}
+
+      <MemoizedSphere
+        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`}
+        ref={sphereRefs.centralLessDetailed}
+        positions={lessDetailedPositions}
+        material={sphereMaterial}
+        geometry={lessDetailedSphereGeometry}
+      />
+
       <MemoizedSphere
         key={`red-${sphereMaterials.red.uuid}`}
         ref={sphereRefs.red}
         positions={filteredRedPositions}
         material={sphereMaterials.red}
         geometry={sphereGeometry}
-        scale={[0.2, 0.2, 0.2]}
+        scale={[0.15, 0.15, 0.15]}
       />
+      {filteredRedPositions.map((position, index) => (
+        <mesh key={`distant-${index}`} position={position}>
+          <sphereGeometry args={[30, 30, 10]} />
+          <FakeGlowMaterial glowColor={'#be310e'} />
+        </mesh>
+      ))}
       <MemoizedSphere
         key={`atmos2-${sphereMaterials.green.uuid}`}
         ref={sphereRefs.atmos2}

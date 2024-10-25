@@ -7,8 +7,9 @@ import React, {
   useMemo,
   Suspense,
 } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { useStore } from './store';
+import { RGBELoader } from 'three-stdlib';
 import {
   Stats,
   Environment,
@@ -155,6 +156,17 @@ const App = React.memo(() => {
     }
   };
 
+  function CustomEnvironment() {
+    return (
+      <Environment
+        background
+        backgroundBlurriness={0.01}
+        backgroundIntensity={0.01}
+        files="/kloppenheim_02_puresky_4k.hdr"
+      />
+    );
+  }
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <Canvas>
@@ -181,13 +193,7 @@ const App = React.memo(() => {
               greenMoonPositions={greenMoonPositions}
               purpleMoonPositions={purpleMoonPositions}
             />
-
-            <Environment
-              preset="forest"
-              background
-              backgroundBlurriness={0.8}
-              backgroundIntensity={0.007}
-            />
+            <CustomEnvironment />
             <CustomCamera ref={cameraRef} />
             <CellLoader
               cameraRef={cameraRef}
@@ -198,7 +204,7 @@ const App = React.memo(() => {
         </Bvh>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}
-      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
+      {/* <button onClick={handleDeleteAllCells}>Delete All Cells</button> */}
     </div>
   );
 });

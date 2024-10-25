@@ -28,16 +28,16 @@ export const dotFragmentShader = `
   varying vec2 vUv;
   void main() {
     float dist = length(vUv - vec2(0.5, 0.5));
-    float angle = atan(vUv.y - 0.5, vUv.x - 0.6);
+    float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
     float dotSpacing = 0.1; // Adjust the spacing between dots
-    float dotSize = 0.01; // Adjust the size of the dots
+    float dotSize = 0.005; // Adjust the size of the dots
 
     // Calculate the position of the dot
     float dotDist = mod(dist, dotSpacing);
     float dotAlpha = step(dotDist, dotSize);
 
     // Ensure dots appear in a ring
-    float ringAlpha = step(0.48, dist) * step(dist, 0.52);
+    float ringAlpha = step(0.38, dist) * step(dist, 0.58);
 
     // Combine the dot pattern with the ring
     float alpha = dotAlpha * ringAlpha;
