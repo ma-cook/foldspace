@@ -31,6 +31,3 @@ jobs:
           channelId: live
           projectId: foldspace-6483c
           entryPoint: .
-
-      - name: Deploy Functions
-        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
