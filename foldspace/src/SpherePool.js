@@ -1,5 +1,5 @@
 class SpherePool {
-  constructor(createFunc, initialSize = 10, maxSize = 100) {
+  constructor(createFunc, initialSize = 100, maxSize = 1000) {
     this.createFunc = createFunc; // Function to create a new instanced mesh
     this.pool = []; // Pool of available instanced meshes
     this.maxSize = maxSize; // Maximum pool size

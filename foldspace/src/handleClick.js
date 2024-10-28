@@ -59,20 +59,12 @@ export const handleMouseUp = (
     const mouseDownDuration = Date.now() - lastMoveTimestamp.current;
     const currentTime = Date.now();
 
-    if (
-      currentTime - lastMoveTimestamp.current < 0 ||
-      mouseDownDuration > 200
-    ) {
-      isMouseDown.current = false;
-      return;
-    }
-
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
     // Adjust raycaster precision
-    raycaster.params.Points.threshold = 10; // Adjust this value as needed
+    raycaster.params.Points.threshold = 100; // Adjust this value as needed
 
     const objectsToIntersect = [
       instancedMeshRef?.current,

@@ -26,7 +26,7 @@ export const atmosMaterial2 = new THREE.MeshStandardMaterial({
 });
 
 export const redSphereMaterial = new THREE.MeshStandardMaterial({
-  color: 'red',
+  color: '#ff4d00',
 });
 
 export const greenSphereMaterial = new THREE.MeshStandardMaterial({

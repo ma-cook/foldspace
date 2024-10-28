@@ -173,7 +173,7 @@ const App = React.memo(() => {
         <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
         <AdaptiveEvents />
-        <Bvh firstHitOnly>
+        <Bvh>
           <Suspense fallback={<Loader />}>
             <PerformanceMonitor flipflops={3} onFallback={() => setDpr(1)} />
 
