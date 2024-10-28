@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
-import FakeGlowMaterial from './FakeGlowMaterial'; // Import the FakeGlowMaterial
 
 const Sphere = forwardRef(
   ({ positions, material, geometry, scale = [1, 1, 1] }, ref) => {

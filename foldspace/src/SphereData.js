@@ -21,7 +21,7 @@ export const atmosMaterial = new THREE.MeshStandardMaterial({
 export const atmosMaterial2 = new THREE.MeshStandardMaterial({
   color: 'white',
   transparent: true,
-  opacity: 0.2,
+  opacity: 0.7,
   depthWrite: false, // Ensure it doesn't affect the depth buffer
 });
 

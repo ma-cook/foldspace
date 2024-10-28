@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
+import PlaneMesh from '../PlaneMesh';
 import { useThree } from '@react-three/fiber';
-import { useStore } from '../store';
 import { MemoizedSphere } from '../Sphere';
+import { useStore } from '../store';
 import {
   useFilteredPositions,
   useSpherePools,
@@ -14,39 +15,33 @@ import {
   sphereGeometry,
   lessDetailedSphereGeometry,
   sphereMaterial,
+  atmosMaterial,
+  atmosMaterial2,
   moonMaterial,
-  purpleSphereMaterial,
 } from '../SphereData';
 import { DETAIL_DISTANCE } from '../config';
-import { createMouseHandlers } from '../hooks/mouseEvents';
-import * as THREE from 'three';
-import { vertexShader, fragmentShader } from '../shaders';
-import { bluePlanetShader } from '../bluePlanetShader ';
 import { sunShader } from '../sunShader';
+import { bluePlanetShader } from '../bluePlanetShader ';
 import FakeGlowMaterial from '../FakeGlowMaterial';
+import { vertexShader, fragmentShader } from '../shaders';
+import * as THREE from 'three';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
+  const planeMeshRef = useRef();
   const sphereRefs = useRef({
     atmos: useRef(),
+    atmos2: useRef(),
+    atmos3: useRef(),
+    greenMoon: useRef(),
+    purpleMoon: useRef(),
+    red: useRef(),
     green: useRef(),
     blue: useRef(),
     purple: useRef(),
-    brown: useRef(),
-    greenMoon: useRef(),
-    purpleMoon: useRef(),
-    centralDetailed: useRef(),
-    centralLessDetailed: useRef(),
+    centralDetailed: useRef(), // Separate ref for detailed central sphere
+    centralLessDetailed: useRef(), // Separate ref for less detailed central sphere
   }).current;
-
-  const { raycaster, mouse, camera, size, scene } = useThree();
-  const setTarget = useStore((state) => state.setTarget);
-  const setLookAt = useStore((state) => state.setLookAt);
-
-  const isMouseDown = useRef(false);
-  const lastMoveTimestamp = useRef(Date.now());
-  const isDragging = useRef(false);
-  const mouseMoved = useRef(false);
 
   const sphereMaterials = useSphereMaterials();
   const spherePools = useSpherePools(sphereGeometry);
@@ -61,14 +56,14 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const purplePositions = useStore(
     (state) => state.purplePositions[activeBuffer]
   );
-  const brownPositions = useStore(
-    (state) => state.brownPositions[activeBuffer]
-  );
   const greenMoonPositions = useStore(
     (state) => state.greenMoonPositions[activeBuffer]
   );
   const purpleMoonPositions = useStore(
     (state) => state.purpleMoonPositions[activeBuffer]
+  );
+  const brownPositions = useStore(
+    (state) => state.brownPositions[activeBuffer]
   );
   const bvh = useStore((state) => state.bvh[activeBuffer]);
 
@@ -94,11 +89,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
-  const filteredBrownPositions = useFilteredPositions(
-    brownPositions,
-    cameraRef,
-    DETAIL_DISTANCE
-  );
   const filteredGreenMoonPositions = useFilteredPositions(
     greenMoonPositions,
     cameraRef,
@@ -106,6 +96,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const filteredPurpleMoonPositions = useFilteredPositions(
     purpleMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
+  const filteredBrownPositions = useFilteredPositions(
+    brownPositions,
     cameraRef,
     DETAIL_DISTANCE
   );
@@ -131,7 +126,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'green',
       'blue',
       'purple',
-      'brown',
       'greenMoon',
       'purpleMoon',
     ].map((color) => {
@@ -147,7 +141,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           'green',
           'blue',
           'purple',
-          'brown',
           'greenMoon',
           'purpleMoon',
         ][index];
@@ -180,6 +173,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   }, [clearDetailedSpheres]);
 
   useEffect(() => {
+    // Set sphere refs in the store
     useStore.getState().setSphereRefs('someCellKey', sphereRefs);
   }, []);
 
@@ -188,67 +182,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     positions,
     bvh
   );
-
-  const { onMouseDown, onMouseUp, onMouseMove } = createMouseHandlers(
-    raycaster,
-    mouse,
-    camera,
-    sphereRefs,
-    setTarget,
-    setLookAt,
-    isMouseDown,
-    lastMoveTimestamp,
-    isDragging,
-    mouseMoved
-  );
-
-  useEffect(() => {
-    document.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mouseup', onMouseUp);
-    document.addEventListener('mousemove', onMouseMove);
-
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('mousemove', onMouseMove);
-      onMouseMove.cancel();
-    };
-  }, [
-    raycaster,
-    mouse,
-    camera,
-    setTarget,
-    setLookAt,
-    size,
-    sphereRefs,
-    onMouseDown,
-    onMouseUp,
-    onMouseMove,
-  ]);
-
-  useEffect(() => {
-    const unsubscribe = useStore.subscribe(
-      (state) => state.target,
-      (target) => {
-        console.log('Camera target updated:', target);
-        camera.position.set(target.x, target.y, target.z);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [camera]);
-
-  useEffect(() => {
-    const unsubscribe = useStore.subscribe(
-      (state) => state.lookAt,
-      (lookAt) => {
-        console.log('Camera lookAt updated:', lookAt);
-        camera.lookAt(lookAt.x, lookAt.y, lookAt.z);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [camera]);
 
   const memoizedDetailedPositions = useMemo(
     () => detailedPositions,
@@ -287,20 +220,43 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     [filteredPurpleMoonPositions]
   );
 
+  useEffect(() => {
+    const animate = () => {
+      sunShader.uniforms.time.value += 0.01;
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }, []);
+
   return (
     <>
+      <PlaneMesh
+        key={`plane`}
+        ref={ref}
+        sphereRefs={sphereRefs}
+        lessDetailedMeshRef={sphereRefs.centralLessDetailed} // Use less detailed ref
+        instancedMeshRef={sphereRefs.centralDetailed} // Use detailed ref
+        redInstancedMeshRef={sphereRefs.red}
+        greenInstancedMeshRef={sphereRefs.green}
+        blueInstancedMeshRef={sphereRefs.blue}
+        purpleInstancedMeshRef={sphereRefs.purple}
+        greenMoonInstancedMeshRef={sphereRefs.greenMoon}
+        purpleMoonInstancedMeshRef={sphereRefs.purpleMoon} // Ensure this line is present
+      />
+
       <MemoizedSphere
-        key={`central-detailed-${sphereGeometry.uuid}`}
-        ref={sphereRefs.atmos}
+        key={`central${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.centralDetailed} // Use detailed ref
         positions={memoizedDetailedPositions}
         material={sunShader}
         geometry={sphereGeometry}
+        frustumCulled={false}
       />
       {memoizedDetailedPositions.map((position, index) => (
         <mesh
           key={`sunGlow-${index}`}
+          ref={sphereRefs.centralDetailed}
           position={position}
-          rotation={[-Math.PI / 2, 0, 0]}
           frustumCulled={false}
         >
           <sphereGeometry args={[130, 130, 15]} />
@@ -308,31 +264,32 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         </mesh>
       ))}
       <MemoizedSphere
-        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`}
-        ref={sphereRefs.centralLessDetailed}
+        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.centralLessDetailed} // Use less detailed ref
         positions={memoizedLessDetailedPositions}
         material={sphereMaterial}
         geometry={lessDetailedSphereGeometry}
+        frustumCulled={false}
       />
-
       <MemoizedSphere
-        key={`red-${sphereMaterials.red.uuid}`}
+        key={`red-${sphereMaterials.red.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.red}
         positions={memoizedFilteredRedPositions}
-        material={FakeGlowMaterial}
+        material={sphereMaterials.red}
         geometry={sphereGeometry}
-        scale={[0.15, 0.15, 0.15]}
+        scale={[0.2, 0.2, 0.2]}
       />
       <MemoizedSphere
-        key={`green-${sphereMaterials.green.uuid}`}
+        key={`green-${sphereMaterials.green.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.green}
         positions={memoizedFilteredGreenPositions}
         material={sphereMaterials.green}
         geometry={sphereGeometry}
-        scale={[0.15, 0.15, 0.15]}
+        scale={[0.2, 0.2, 0.2]}
       />
+
       <MemoizedSphere
-        key={`greenMoon-${sphereGeometry.uuid}`}
+        key={`greenMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.greenMoon}
         positions={memoizedFilteredGreenMoonPositions}
         material={moonMaterial}
@@ -341,12 +298,12 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
-        key={`blue-${sphereMaterials.blue.uuid}`}
+        key={`blue-${sphereMaterials.blue.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.blue}
-        positions={memoizedFilteredBluePositions}
+        positions={filteredBluePositions}
         material={bluePlanetShader}
         geometry={sphereGeometry}
-        scale={[0.15, 0.15, 0.15]}
+        scale={[0.2, 0.2, 0.2]}
       />
       {memoizedFilteredBluePositions.map((position, index) => (
         <mesh
@@ -359,12 +316,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         </mesh>
       ))}
       <MemoizedSphere
-        key={`purple-${sphereGeometry.uuid}`}
+        key={`purple-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purple}
         positions={memoizedFilteredPurplePositions}
         material={sphereMaterials.purple}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
+      />
+      <MemoizedSphere
+        key={`purpleMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        ref={sphereRefs.purpleMoon}
+        positions={memoizedFilteredPurpleMoonPositions}
+        material={moonMaterial}
+        geometry={sphereGeometry}
+        frustumCulled={false}
+        scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
         key={`brown-${sphereGeometry.uuid}`}
@@ -373,15 +339,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={sphereMaterials.brown}
         geometry={sphereGeometry}
         scale={[0.4, 0.4, 0.4]}
-      />
-      <MemoizedSphere
-        key={`purpleMoon-${sphereGeometry.uuid}`}
-        ref={sphereRefs.purpleMoon}
-        positions={memoizedFilteredPurpleMoonPositions}
-        material={moonMaterial}
-        geometry={sphereGeometry}
-        frustumCulled={false}
-        scale={[0.05, 0.05, 0.05]}
       />
       {memoizedFilteredBrownPositions.map((position, index) => (
         <mesh

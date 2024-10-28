@@ -21,7 +21,7 @@ export const fragmentSunShader = `
 
   void main() {
     vec3 sunColor = vec3(0.7, 0.3, 0.1);
-    float patchFactor = noise(vPosition * 0.1 + time * 0.9);
+    float patchFactor = noise(vPosition * 0.05 + time * 0.05); // Slowed down noise
     float yellowThreshold = 0.4;
     vec3 yellowColor = vec3(0.9, 0.55, 0.15);
     float blendFactor = smoothstep(yellowThreshold - 0.05, yellowThreshold + 0.05, patchFactor);
