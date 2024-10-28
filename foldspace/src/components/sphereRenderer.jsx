@@ -15,15 +15,12 @@ import {
   sphereGeometry,
   lessDetailedSphereGeometry,
   sphereMaterial,
-  atmosMaterial,
-  atmosMaterial2,
   moonMaterial,
 } from '../SphereData';
 import { DETAIL_DISTANCE } from '../config';
 import { sunShader } from '../sunShader';
-import { bluePlanetShader } from '../bluePlanetShader ';
-import FakeGlowMaterial from '../FakeGlowMaterial';
-import { vertexShader, fragmentShader } from '../shaders';
+import { createPlanetShader } from '../shaders/planetShader';
+import FakeGlowMaterial from '../shaders/FakeGlowMaterial';
 import * as THREE from 'three';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
@@ -41,6 +38,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     purple: useRef(),
     centralDetailed: useRef(), // Separate ref for detailed central sphere
     centralLessDetailed: useRef(), // Separate ref for less detailed central sphere
+    ring: useRef(), // Ref for ring instanced mesh
   }).current;
 
   const sphereMaterials = useSphereMaterials();
@@ -110,6 +108,17 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     DETAIL_DISTANCE
   );
 
+  const memoizedSphereMaterials = useMemo(
+    () => ({
+      green: createPlanetShader('#1c911e', '#0000FF'),
+      blue: createPlanetShader('#3b408a', '#8ac0f2'),
+      red: createPlanetShader('#4f090b', '#080807'),
+      purple: createPlanetShader('#140e01', '#cc6d14'),
+      brown: createPlanetShader('#4a403a', '#998a82'),
+    }),
+    []
+  );
+
   useEffect(() => {
     const newYellowPositions = flattenedPositions.filter(
       (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
@@ -130,7 +139,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'purpleMoon',
     ].map((color) => {
       const instancedMesh = spherePools[color].get();
-      instancedMesh.material = sphereMaterials[color];
+      instancedMesh.material = memoizedSphereMaterials[color];
       return instancedMesh;
     });
 
@@ -147,7 +156,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         spherePools[color].release(instancedMesh);
       });
     };
-  }, [flattenedPositions, sphereMaterials, spherePools]);
+  }, [flattenedPositions, memoizedSphereMaterials, spherePools]);
 
   useEffect(() => {
     return () => {
@@ -222,7 +231,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
 
   useEffect(() => {
     const animate = () => {
-      sunShader.uniforms.time.value += 0.01;
+      sunShader.uniforms.time.value += 0.0001;
       requestAnimationFrame(animate);
     };
     animate();
@@ -231,8 +240,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   return (
     <>
       <PlaneMesh
-        key={`plane`}
-        ref={ref}
+        key={`plane-`}
+        ref={planeMeshRef}
         sphereRefs={sphereRefs}
         lessDetailedMeshRef={sphereRefs.centralLessDetailed} // Use less detailed ref
         instancedMeshRef={sphereRefs.centralDetailed} // Use detailed ref
@@ -275,19 +284,30 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         key={`red-${sphereMaterials.red.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.red}
         positions={memoizedFilteredRedPositions}
-        material={sphereMaterials.red}
+        material={memoizedSphereMaterials.red}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
+      {memoizedFilteredRedPositions.map((position, index) => (
+        <mesh key={`redPlanetAtmos-${index}`} position={position}>
+          <sphereGeometry args={[25, 25, 10]} />
+          <FakeGlowMaterial glowColor="#754446" />
+        </mesh>
+      ))}
       <MemoizedSphere
         key={`green-${sphereMaterials.green.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.green}
         positions={memoizedFilteredGreenPositions}
-        material={sphereMaterials.green}
+        material={memoizedSphereMaterials.green}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
-
+      {memoizedFilteredGreenPositions.map((position, index) => (
+        <mesh key={`greenPlanetAtmos-${index}`} position={position}>
+          <sphereGeometry args={[25, 25, 10]} />
+          <FakeGlowMaterial glowColor="#658555" />
+        </mesh>
+      ))}
       <MemoizedSphere
         key={`greenMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.greenMoon}
@@ -301,28 +321,30 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         key={`blue-${sphereMaterials.blue.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.blue}
         positions={filteredBluePositions}
-        material={bluePlanetShader}
+        material={memoizedSphereMaterials.blue}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
       {memoizedFilteredBluePositions.map((position, index) => (
-        <mesh
-          key={`bluePlanetAtmos-${index}`}
-          position={position}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
+        <mesh key={`bluePlanetAtmos-${index}`} position={position}>
           <sphereGeometry args={[20, 20, 10]} />
-          <FakeGlowMaterial glowColor="#b1e3f0" />
+          <FakeGlowMaterial glowColor="#7ba5ad" />
         </mesh>
       ))}
       <MemoizedSphere
         key={`purple-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purple}
         positions={memoizedFilteredPurplePositions}
-        material={sphereMaterials.purple}
+        material={memoizedSphereMaterials.purple}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
+      {memoizedFilteredPurplePositions.map((position, index) => (
+        <mesh key={`purplePlanetAtmos-${index}`} position={position}>
+          <sphereGeometry args={[17, 17, 10]} />
+          <FakeGlowMaterial glowColor="#cf8123" />
+        </mesh>
+      ))}
       <MemoizedSphere
         key={`purpleMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.purpleMoon}
@@ -336,23 +358,14 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         key={`brown-${sphereGeometry.uuid}`}
         ref={sphereRefs.brown}
         positions={memoizedFilteredBrownPositions}
-        material={sphereMaterials.brown}
+        material={memoizedSphereMaterials.brown}
         geometry={sphereGeometry}
         scale={[0.4, 0.4, 0.4]}
       />
       {memoizedFilteredBrownPositions.map((position, index) => (
-        <mesh
-          key={`ring-${index}`}
-          position={position}
-          rotation={[-Math.PI / 2, 0, 0]}
-        >
-          <ringGeometry args={[50, 40, 32]} />
-          <shaderMaterial
-            vertexShader={vertexShader}
-            fragmentShader={fragmentShader}
-            transparent
-            side={THREE.DoubleSide}
-          />
+        <mesh key={`brownPlanetAtmos-${index}`} position={position}>
+          <sphereGeometry args={[50, 50, 10]} />
+          <FakeGlowMaterial glowColor="#7d6f6f" />
         </mesh>
       ))}
     </>

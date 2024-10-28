@@ -21,12 +21,12 @@ import { Color, DoubleSide, AdditiveBlending } from 'three';
  */
 const FakeGlowMaterial = ({
   falloff = 0.1,
-  glowInternalRadius = 6.0,
+  glowInternalRadius = 5.0,
   glowColor = '#00ff00',
-  glowSharpness = 1,
+  glowSharpness = 0.1,
   side = 'THREE.FrontSide',
   depthTest = true,
-  opacity = 1.0,
+  opacity = 0.8,
 }) => {
   const FakeGlowMaterial = useMemo(() => {
     return shaderMaterial(

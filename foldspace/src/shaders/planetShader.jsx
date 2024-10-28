@@ -14,6 +14,8 @@ export const fragmentSunShader = `
   varying vec3 vNormal;
   varying vec3 vPosition;
   uniform float time;
+  uniform vec3 primaryColor;
+  uniform vec3 secondaryColor;
 
   // Simplex noise function
   vec4 permute(vec4 x) {
@@ -94,20 +96,22 @@ export const fragmentSunShader = `
   }
 
   void main() {
-    vec3 darkBlue = vec3(0.0, 0.0, 0.5); // Dark blue color
-    vec3 lightBlue = vec3(0.5, 0.5, 1.0); // Light blue color
     float patchFactor = noise(vPosition * 0.1 + time * 0.1); // Decrease frequency for larger blobs
     float threshold = 0.2;
     float blendFactor = smoothstep(threshold - 0.6, threshold + 0.6, patchFactor);
-    vec3 finalColor = mix(darkBlue, lightBlue, blendFactor);
+    vec3 finalColor = mix(primaryColor, secondaryColor, blendFactor);
     gl_FragColor = vec4(finalColor, 0.5);
   }
 `;
 
-export const bluePlanetShader = new THREE.ShaderMaterial({
-  vertexShader: vertexSunShader,
-  fragmentShader: fragmentSunShader,
-  uniforms: {
-    time: { value: 0.0 },
-  },
-});
+export const createPlanetShader = (primaryColor, secondaryColor) => {
+  return new THREE.ShaderMaterial({
+    vertexShader: vertexSunShader,
+    fragmentShader: fragmentSunShader,
+    uniforms: {
+      time: { value: 0.0 },
+      primaryColor: { value: new THREE.Color(primaryColor) },
+      secondaryColor: { value: new THREE.Color(secondaryColor) },
+    },
+  });
+};

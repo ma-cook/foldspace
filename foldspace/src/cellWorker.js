@@ -28,8 +28,8 @@ const fetchCellDataInBatches = async (cellKeys) => {
 
   if (keysToFetch.length === 0) {
     return cachedData;
-  }
-
+  } //http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data
+  //https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data
   try {
     const response = await fetch(
       'https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data',

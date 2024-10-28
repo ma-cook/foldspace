@@ -1,47 +1,31 @@
-// src/shaders.js
-export const vertexShader = `
-  varying vec2 vUv;
+import * as THREE from 'three';
+
+export const vertexRingShader = `
+  attribute vec3 instancePosition;
+  attribute vec3 instanceScale;
+  varying vec3 vNormal;
+  varying vec3 vPosition;
   void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vNormal = normalize(normalMatrix * normal);
+    vec3 pos = position * instanceScale + instancePosition;
+    vPosition = (modelMatrix * vec4(pos, 1.0)).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
   }
 `;
 
-export const fragmentShader = `
-  varying vec2 vUv;
+export const fragmentRingShader = `
+  varying vec3 vNormal;
+  varying vec3 vPosition;
   void main() {
-    float dist = length(vUv - vec2(0.5, 0.5)); // Center the distance calculation
-    float alpha = smoothstep(0.2, 0.7, dist); // Adjust the range for blurring effect
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0 - alpha); // White color with alpha
+    float dist = length(vPosition);
+    float alpha = smoothstep(0.2, 0.7, dist);
+    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0 - alpha);
   }
 `;
 
-export const dotVertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-export const dotFragmentShader = `
-  varying vec2 vUv;
-  void main() {
-    float dist = length(vUv - vec2(0.5, 0.5));
-    float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
-    float dotSpacing = 0.1; // Adjust the spacing between dots
-    float dotSize = 0.005; // Adjust the size of the dots
-
-    // Calculate the position of the dot
-    float dotDist = mod(dist, dotSpacing);
-    float dotAlpha = step(dotDist, dotSize);
-
-    // Ensure dots appear in a ring
-    float ringAlpha = step(0.38, dist) * step(dist, 0.58);
-
-    // Combine the dot pattern with the ring
-    float alpha = dotAlpha * ringAlpha;
-
-    gl_FragColor = vec4(0.6, 0.6, 0.6, alpha); // Grey color with alpha
-  }
-`;
+export const ringShaderMaterial = new THREE.ShaderMaterial({
+  vertexShader: vertexRingShader,
+  fragmentShader: fragmentRingShader,
+  transparent: true,
+  side: THREE.DoubleSide,
+});
