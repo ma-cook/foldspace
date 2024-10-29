@@ -2,7 +2,10 @@ import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 
 const Sphere = forwardRef(
-  ({ positions, material, geometry, scale = [1, 1, 1] }, ref) => {
+  (
+    { positions, material, geometry, scale = [1, 1, 1], rotation = [0, 0, 0] },
+    ref
+  ) => {
     const meshRef = useRef();
 
     useEffect(() => {
@@ -27,19 +30,23 @@ const Sphere = forwardRef(
           material.customInstancePositions = customInstancePositions;
         }
 
+        const quaternion = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(...rotation)
+        );
+
         positions.forEach((position, index) => {
           const matrix = new THREE.Matrix4().compose(
             position instanceof THREE.Vector3
               ? position
               : new THREE.Vector3(...position),
-            new THREE.Quaternion(),
+            quaternion,
             new THREE.Vector3(...scale)
           );
           mesh.setMatrixAt(index, matrix);
         });
         mesh.instanceMatrix.needsUpdate = true;
       }
-    }, [positions, scale, material]);
+    }, [positions, scale, rotation, material]);
 
     return (
       <instancedMesh
