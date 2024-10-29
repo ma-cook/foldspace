@@ -54,6 +54,24 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+const deleteDocumentsInBatches = async (collectionRef) => {
+  const snapshot = await collectionRef.get();
+  const batchSize = 50; // Firestore limits batch size to 500
+  let batch = db.batch(); // Use let instead of const
+
+  snapshot.docs.forEach((doc, index) => {
+    batch.delete(doc.ref);
+    if ((index + 1) % batchSize === 0) {
+      batch.commit();
+      batch = db.batch(); // Reassign batch
+    }
+  });
+
+  if (snapshot.size % batchSize !== 0) {
+    await batch.commit();
+  }
+};
+
 app.use(cors(corsOptions));
 
 // Explicitly handle OPTIONS requests
