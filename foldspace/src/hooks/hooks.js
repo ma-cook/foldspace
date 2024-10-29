@@ -2,10 +2,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { createInstancedMesh } from './utils';
-import { DETAIL_DISTANCE, UNLOAD_DETAIL_DISTANCE } from './config';
-import SpherePool from './SpherePool';
-import { useStore } from './store';
+import { createInstancedMesh } from '../utils';
+import { DETAIL_DISTANCE, UNLOAD_DETAIL_DISTANCE } from '../config';
+import SpherePool from '../SpherePool';
+import { useStore } from '../store';
 import {
   sphereMaterial,
   redSphereMaterial,
@@ -14,7 +14,9 @@ import {
   purpleSphereMaterial,
   brownSphereMaterial,
   moonMaterial,
-} from './SphereData';
+  lessDetailedSphereGeometry,
+  torusGeometry,
+} from '../SphereData';
 
 export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
   const [filteredPositions, setFilteredPositions] = useState([]);
@@ -75,7 +77,18 @@ export const useSpherePools = (geometry) => {
         10,
         100
       ),
+      lessDetailed: new SpherePool(
+        () => createInstancedMesh(lessDetailedSphereGeometry, sphereMaterial),
+        10,
+        100
+      ),
+      brownRing: new SpherePool(
+        () => createInstancedMesh(torusGeometry, sphereMaterial),
+        10,
+        100
+      ),
     }),
+
     [geometry]
   );
 };
