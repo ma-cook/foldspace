@@ -127,7 +127,7 @@ const App = React.memo(() => {
   const handleDeleteAllCells = async () => {
     try {
       const response = await fetch(
-        'https://foldspace-6483c.cloudFunctions.net/api/delete-all-cells',
+        'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/delete-all-cells',
         {
           method: 'DELETE',
         }
