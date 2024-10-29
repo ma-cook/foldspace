@@ -28,8 +28,8 @@ const fetchCellDataInBatches = async (cellKeys) => {
 
   if (keysToFetch.length === 0) {
     return cachedData;
-  } //http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data
-  //https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data
+  }
+
   try {
     const response = await fetch(
       'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data',
@@ -155,60 +155,62 @@ const saveCellData = async (cellKey, positions) => {
 };
 
 self.onmessage = async (event) => {
-  const { cellKey, cellKeysToLoad, loadDetail } = event.data;
+  const { cellKeysToLoad, loadDetail } = event.data;
 
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
 
-    if (cellData[cellKey]) {
-      const savedPositions = cellData[cellKey];
-      const validPositions = savedPositions.positions || {};
-      const newPositions = createVector3Array(validPositions.positions);
+    const results = cellKeysToLoad.map((cellKey) => {
+      if (cellData[cellKey]) {
+        const savedPositions = cellData[cellKey];
+        const validPositions = savedPositions.positions || {};
+        const newPositions = createVector3Array(validPositions.positions);
 
-      const result = { cellKey, newPositions, loadDetail, savedPositions };
-      self.postMessage(result);
-    } else {
-      // Parse cellKey into x and z coordinates
-      const [x, z] = cellKey.split(',').map(Number);
+        return { cellKey, newPositions, loadDetail, savedPositions };
+      } else {
+        // Parse cellKey into x and z coordinates
+        const [x, z] = cellKey.split(',').map(Number);
 
-      const {
-        newPositions,
-        newRedPositions,
-        newGreenPositions,
-        newBluePositions,
-        newPurplePositions,
-        newBrownPositions,
-        newGreenMoonPositions,
-        newPurpleMoonPositions,
-      } = generateNewPositions(x, z);
+        const {
+          newPositions,
+          newRedPositions,
+          newGreenPositions,
+          newBluePositions,
+          newPurplePositions,
+          newBrownPositions,
+          newGreenMoonPositions,
+          newPurpleMoonPositions,
+        } = generateNewPositions(x, z);
 
-      // Save the newly generated positions
-      await saveCellData(cellKey, {
-        positions: newPositions,
-        redPositions: newRedPositions,
-        greenPositions: newGreenPositions,
-        bluePositions: newBluePositions,
-        purplePositions: newPurplePositions,
-        brownPositions: newBrownPositions,
-        greenMoonPositions: newGreenMoonPositions,
-        purpleMoonPositions: newPurpleMoonPositions,
-      });
+        // Save the newly generated positions
+        saveCellData(cellKey, {
+          positions: newPositions,
+          redPositions: newRedPositions,
+          greenPositions: newGreenPositions,
+          bluePositions: newBluePositions,
+          purplePositions: newPurplePositions,
+          brownPositions: newBrownPositions,
+          greenMoonPositions: newGreenMoonPositions,
+          purpleMoonPositions: newPurpleMoonPositions,
+        });
 
-      const result = {
-        cellKey,
-        newPositions,
-        newRedPositions,
-        newGreenPositions,
-        newBluePositions,
-        newPurplePositions,
-        newBrownPositions,
-        newGreenMoonPositions,
-        newPurpleMoonPositions,
-        loadDetail,
-      };
-      self.postMessage(result);
-    }
+        return {
+          cellKey,
+          newPositions,
+          newRedPositions,
+          newGreenPositions,
+          newBluePositions,
+          newPurplePositions,
+          newBrownPositions,
+          newGreenMoonPositions,
+          newPurpleMoonPositions,
+          loadDetail,
+        };
+      }
+    });
+
+    self.postMessage(results);
   } catch (error) {
-    console.error(`Error loading cell data for ${cellKey}:`, error);
+    console.error('Error loading cell data:', error);
   }
 };

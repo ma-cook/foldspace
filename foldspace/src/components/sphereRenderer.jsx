@@ -21,6 +21,7 @@ import { DETAIL_DISTANCE } from '../config';
 import { sunShader } from '../sunShader';
 import { createPlanetShader } from '../shaders/planetShader';
 import { ringShaderMaterial } from '../shaders';
+import { systemShaderMaterial } from '../shaders/systemShader';
 import FakeGlowMaterial from '../shaders/FakeGlowMaterial';
 import * as THREE from 'three';
 
@@ -40,6 +41,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     centralDetailed: useRef(), // Separate ref for detailed central sphere
     centralLessDetailed: useRef(), // Separate ref for less detailed central sphere
     brownRing: useRef(), // Ref for ring instanced mesh
+    systemRing: useRef(), // Ref for system ring instanced mesh
   }).current;
 
   const sphereMaterials = useSphereMaterials();
@@ -123,6 +125,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       sun: sunShader, // Add sunShader to memoized materials
       default: sphereMaterial,
       brownRing: ringShaderMaterial,
+      systemRing: systemShaderMaterial,
       moon: createPlanetShader('#858585', '#3b3b3b'), // Add sphereMaterial to memoized materials
     }),
     []
@@ -240,7 +243,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
 
   useEffect(() => {
     const animate = () => {
-      sunShader.uniforms.time.value += 0.0001;
+      sunShader.uniforms.time.value += 0.00005;
       requestAnimationFrame(animate);
     };
     animate();
@@ -261,7 +264,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         greenMoonInstancedMeshRef={sphereRefs.greenMoon}
         purpleMoonInstancedMeshRef={sphereRefs.purpleMoon} // Ensure this line is present
       />
-
+      <MemoizedSphere
+        key={`systemRing-${sphereGeometry.uuid}`}
+        ref={sphereRefs.systemRing}
+        positions={memoizedDetailedPositions}
+        material={memoizedSphereMaterials.systemRing}
+        geometry={torusGeometry}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[70, 70, 4]}
+      />
       <MemoizedSphere
         key={`central${sphereGeometry.uuid}`} // Force re-render when geometry changes
         ref={sphereRefs.centralDetailed} // Use detailed ref

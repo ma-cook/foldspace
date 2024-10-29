@@ -29,8 +29,7 @@ const updatePositions = (setPositions, newPositions) => {
 const worker = new Worker(new URL('./cellWorker.js', import.meta.url));
 
 const loadCell = (
-  x,
-  z,
+  cellKeysToLoad,
   loadDetail,
   loadedCells,
   loadingCells,
@@ -46,66 +45,88 @@ const loadCell = (
   setLoadedCells,
   swapBuffers
 ) => {
-  const cellKey = `${x},${z}`;
-  if (loadedCells.has(cellKey) || loadingCells.has(cellKey)) {
+  // Ensure cellKeysToLoad is an array
+  if (!Array.isArray(cellKeysToLoad)) {
+    cellKeysToLoad = [cellKeysToLoad];
+  }
+
+  // Ensure loadedCells is a Set
+  if (!(loadedCells instanceof Set)) {
+    if (Array.isArray(loadedCells)) {
+      loadedCells = new Set(loadedCells);
+    } else {
+      loadedCells = new Set();
+    }
+  }
+
+  const newCellKeys = cellKeysToLoad.filter(
+    (cellKey) => !loadedCells.has(cellKey) && !loadingCells.has(cellKey)
+  );
+
+  if (newCellKeys.length === 0) {
     return;
   }
 
   // Update loadingCells state synchronously
   setLoadingCells((prev) => {
     const newSet = new Set(prev);
-    newSet.add(cellKey);
+    newCellKeys.forEach((cellKey) => newSet.add(cellKey));
     return newSet;
   });
 
   worker.postMessage({
-    cellKey,
-    cellKeysToLoad: [cellKey],
+    cellKeysToLoad: newCellKeys,
     loadDetail,
   });
 
   worker.onmessage = async (event) => {
-    const { cellKey, newPositions, loadDetail, savedPositions } = event.data;
+    const results = event.data;
 
-    cellCache[cellKey] = newPositions;
-    updatePositions(setPositions, newPositions);
+    results.forEach((result) => {
+      const { cellKey, newPositions, loadDetail, savedPositions } = result;
 
-    if (loadDetail && savedPositions) {
-      const positions = savedPositions.positions || {};
-      const newRedPositions = createVector3Array(positions.redPositions);
-      const newGreenPositions = createVector3Array(positions.greenPositions);
-      const newBluePositions = createVector3Array(positions.bluePositions);
-      const newPurplePositions = createVector3Array(positions.purplePositions);
-      const newBrownPositions = createVector3Array(positions.brownPositions);
-      const newGreenMoonPositions = createVector3Array(
-        positions.greenMoonPositions
-      );
-      const newPurpleMoonPositions = createVector3Array(
-        positions.purpleMoonPositions
-      );
+      cellCache[cellKey] = newPositions;
+      updatePositions(setPositions, newPositions);
 
-      updatePositions(setRedPositions, newRedPositions);
-      updatePositions(setGreenPositions, newGreenPositions);
-      updatePositions(setBluePositions, newBluePositions);
-      updatePositions(setPurplePositions, newPurplePositions);
-      updatePositions(setBrownPositions, newBrownPositions);
-      updatePositions(setGreenMoonPositions, newGreenMoonPositions);
-      updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
-    }
+      if (loadDetail && savedPositions) {
+        const positions = savedPositions.positions || {};
+        const newRedPositions = createVector3Array(positions.redPositions);
+        const newGreenPositions = createVector3Array(positions.greenPositions);
+        const newBluePositions = createVector3Array(positions.bluePositions);
+        const newPurplePositions = createVector3Array(
+          positions.purplePositions
+        );
+        const newBrownPositions = createVector3Array(positions.brownPositions);
+        const newGreenMoonPositions = createVector3Array(
+          positions.greenMoonPositions
+        );
+        const newPurpleMoonPositions = createVector3Array(
+          positions.purpleMoonPositions
+        );
 
-    setLoadedCells((prevLoadedCells) => {
-      const updatedLoadedCells = new Set(prevLoadedCells);
-      updatedLoadedCells.add(cellKey);
-      return updatedLoadedCells;
+        updatePositions(setRedPositions, newRedPositions);
+        updatePositions(setGreenPositions, newGreenPositions);
+        updatePositions(setBluePositions, newBluePositions);
+        updatePositions(setPurplePositions, newPurplePositions);
+        updatePositions(setBrownPositions, newBrownPositions);
+        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
+      }
+
+      setLoadedCells((prevLoadedCells) => {
+        const updatedLoadedCells = new Set(prevLoadedCells);
+        updatedLoadedCells.add(cellKey);
+        return updatedLoadedCells;
+      });
+
+      setLoadingCells((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(cellKey);
+        return newSet;
+      });
+
+      swapBuffers();
     });
-
-    setLoadingCells((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(cellKey);
-      return newSet;
-    });
-
-    swapBuffers();
   };
 };
 

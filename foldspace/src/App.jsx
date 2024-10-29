@@ -2,19 +2,16 @@ import React, {
   useRef,
   useEffect,
   useState,
-  forwardRef,
   useCallback,
   useMemo,
   Suspense,
 } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
-import { RGBELoader } from 'three-stdlib';
 import {
   Stats,
   Environment,
   Bvh,
-  AdaptiveDpr,
   AdaptiveEvents,
   PerformanceMonitor,
 } from '@react-three/drei';
@@ -22,7 +19,7 @@ import CustomCamera from './CustomCamera';
 import SphereRenderer from './components/sphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import LoadingMessage from './LoadingMessage'; // Import LoadingMessage
+import LoadingMessage from './LoadingMessage';
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 
@@ -33,7 +30,7 @@ const App = React.memo(() => {
   const greenPositions = useStore((state) => state.greenPositions);
   const bluePositions = useStore((state) => state.bluePositions);
   const purplePositions = useStore((state) => state.purplePositions);
-  const brownPositions = useStore((state) => state.brownPositions); // Add brown positions
+  const brownPositions = useStore((state) => state.brownPositions);
   const greenMoonPositions = useStore((state) => state.greenMoonPositions);
   const purpleMoonPositions = useStore((state) => state.purpleMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
@@ -42,7 +39,7 @@ const App = React.memo(() => {
   const setGreenPositions = useStore((state) => state.setGreenPositions);
   const setBluePositions = useStore((state) => state.setBluePositions);
   const setPurplePositions = useStore((state) => state.setPurplePositions);
-  const setBrownPositions = useStore((state) => state.setBrownPositions); // Add setBrownPositions
+  const setBrownPositions = useStore((state) => state.setBrownPositions);
   const setGreenMoonPositions = useStore(
     (state) => state.setGreenMoonPositions
   );
@@ -61,8 +58,7 @@ const App = React.memo(() => {
   const loadCellCallback = useCallback(
     (x, z) =>
       loadCell(
-        x,
-        z,
+        [`${x},${z}`], // Ensure cellKeysToLoad is an array
         true, // Pass loadDetail
         loadedCells, // Ensure loadedCells is a Set
         loadingCells, // Ensure loadingCells is a Set
@@ -72,7 +68,7 @@ const App = React.memo(() => {
         setGreenPositions,
         setBluePositions,
         setPurplePositions,
-        setBrownPositions, // Add setBrownPositions
+        setBrownPositions,
         setGreenMoonPositions,
         setPurpleMoonPositions,
         setLoadedCells,
@@ -87,7 +83,7 @@ const App = React.memo(() => {
       setGreenPositions,
       setBluePositions,
       setPurplePositions,
-      setBrownPositions, // Add setBrownPositions
+      setBrownPositions,
       setGreenMoonPositions,
       setPurpleMoonPositions,
       setLoadedCells,
@@ -145,7 +141,7 @@ const App = React.memo(() => {
         setGreenPositions([]);
         setBluePositions([]);
         setPurplePositions([]);
-        setBrownPositions([]); // Clear brown positions
+        setBrownPositions([]);
         setGreenMoonPositions([]);
         setPurpleMoonPositions([]);
       } else {
@@ -189,7 +185,7 @@ const App = React.memo(() => {
               greenPositions={greenPositions}
               bluePositions={bluePositions}
               purplePositions={purplePositions}
-              brownPositions={brownPositions} // Pass brown positions
+              brownPositions={brownPositions}
               greenMoonPositions={greenMoonPositions}
               purpleMoonPositions={purpleMoonPositions}
             />
