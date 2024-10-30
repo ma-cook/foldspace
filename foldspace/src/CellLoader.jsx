@@ -97,7 +97,7 @@ const useLoadingQueue = (
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
-      const batchSize = 300; // Increase batch size for better performance
+      const batchSize = 1500; // Increase batch size for better performance
       const batch = loadingQueue.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
@@ -236,7 +236,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
   useEffect(() => {
     if (loadingQueue.length === 0) {
-      setCurrentLoadDistance(120000);
+      setCurrentLoadDistance(200000);
     }
   }, [loadingQueue]);
 

@@ -59,7 +59,7 @@ const fetchCellDataInBatches = async (cellKeys) => {
 };
 
 const generateNewPositions = (x, z) => {
-  const GRID_SIZE = 100000;
+  const GRID_SIZE = 150000;
   const newPositions = [];
   const newRedPositions = [];
   const newGreenPositions = [];
@@ -89,14 +89,14 @@ const generateNewPositions = (x, z) => {
     const positions = new Array(count);
     for (let i = 0; i < count; i++) {
       const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-      const posY = Math.floor(Math.random() * 15) * 5000;
+      const posY = Math.floor(Math.random() * 20) * 5000;
       const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
       positions[i] = new THREE.Vector3(posX, posY, posZ);
     }
     return positions;
   };
 
-  const positions = generateRandomPositions(300, x, z);
+  const positions = generateRandomPositions(425, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
