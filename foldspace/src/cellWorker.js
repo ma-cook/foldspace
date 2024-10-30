@@ -29,10 +29,12 @@ const fetchCellDataInBatches = async (cellKeys) => {
   if (keysToFetch.length === 0) {
     return cachedData;
   }
+  //http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data
+  //https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data
 
   try {
     const response = await fetch(
-      'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data',
+      'https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data',
       {
         method: 'POST',
         headers: {
@@ -137,7 +139,7 @@ const generateNewPositions = (x, z) => {
 const saveCellData = async (cellKey, positions) => {
   try {
     const response = await fetch(
-      'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/save-sphere-data',
+      'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
       {
         method: 'POST',
         headers: {
