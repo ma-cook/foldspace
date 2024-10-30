@@ -183,7 +183,7 @@ const queryBVH = (node, cameraPosition, loadDistance, result = []) => {
     ),
     new THREE.Vector3(
       cameraPosition.x + loadDistance,
-      75000,
+      150000,
       cameraPosition.z + loadDistance
     )
   );

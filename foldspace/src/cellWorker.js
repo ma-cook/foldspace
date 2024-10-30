@@ -59,7 +59,7 @@ const fetchCellDataInBatches = async (cellKeys) => {
 };
 
 const generateNewPositions = (x, z) => {
-  const GRID_SIZE = 100000;
+  const GRID_SIZE = 150000;
   const newPositions = [];
   const newRedPositions = [];
   const newGreenPositions = [];
@@ -68,6 +68,7 @@ const generateNewPositions = (x, z) => {
   const newBrownPositions = [];
   const newGreenMoonPositions = [];
   const newPurpleMoonPositions = [];
+  const newGasPositions = [];
 
   const calculateRandomOrbitPosition = (
     centralPosition,
@@ -89,22 +90,23 @@ const generateNewPositions = (x, z) => {
     const positions = new Array(count);
     for (let i = 0; i < count; i++) {
       const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-      const posY = Math.floor(Math.random() * 15) * 5000;
+      const posY = Math.floor(Math.random() * 20) * 5000;
       const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
       positions[i] = new THREE.Vector3(posX, posY, posZ);
     }
     return positions;
   };
 
-  const positions = generateRandomPositions(300, x, z);
+  const positions = generateRandomPositions(400, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
     newRedPositions.push(calculateRandomOrbitPosition(position, 400, 500));
-    newGreenPositions.push(calculateRandomOrbitPosition(position, 700, 850));
+    newGreenPositions.push(calculateRandomOrbitPosition(position, 700, 800));
     newBluePositions.push(calculateRandomOrbitPosition(position, 1000, 1100));
     newPurplePositions.push(calculateRandomOrbitPosition(position, 1250, 1300));
     newBrownPositions.push(calculateRandomOrbitPosition(position, 1450, 1600));
+    newGasPositions.push(calculateRandomOrbitPosition(position, 1800, 1900));
   });
 
   newGreenPositions.forEach((greenPosition) => {
@@ -128,6 +130,7 @@ const generateNewPositions = (x, z) => {
     newBrownPositions,
     newGreenMoonPositions,
     newPurpleMoonPositions,
+    newGasPositions,
   };
 };
 
@@ -180,6 +183,7 @@ self.onmessage = async (event) => {
           newBrownPositions,
           newGreenMoonPositions,
           newPurpleMoonPositions,
+          newGasPositions,
         } = generateNewPositions(x, z);
 
         // Save the newly generated positions
@@ -192,6 +196,7 @@ self.onmessage = async (event) => {
           brownPositions: newBrownPositions,
           greenMoonPositions: newGreenMoonPositions,
           purpleMoonPositions: newPurpleMoonPositions,
+          gasPositions: newGasPositions,
         });
 
         return {
@@ -204,6 +209,7 @@ self.onmessage = async (event) => {
           newBrownPositions,
           newGreenMoonPositions,
           newPurpleMoonPositions,
+          newGasPositions,
           loadDetail,
         };
       }

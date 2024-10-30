@@ -1,22 +1,8 @@
-// hooks.js
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { createInstancedMesh } from '../utils';
-import { DETAIL_DISTANCE, UNLOAD_DETAIL_DISTANCE } from '../config';
 import SpherePool from '../SpherePool';
-import { useStore } from '../store';
-import {
-  sphereMaterial,
-  redSphereMaterial,
-  greenSphereMaterial,
-  blueSphereMaterial,
-  purpleSphereMaterial,
-  brownSphereMaterial,
-  moonMaterial,
-  lessDetailedSphereGeometry,
-  torusGeometry,
-} from '../SphereData';
+import { createInstancedMesh } from '../utils';
+import { lessDetailedSphereGeometry, torusGeometry } from '../SphereData';
 
 export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
   const [filteredPositions, setFilteredPositions] = useState([]);
@@ -37,73 +23,26 @@ export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
 export const useSpherePools = (geometry) => {
   return useMemo(
     () => ({
-      default: new SpherePool(
-        () => createInstancedMesh(geometry, sphereMaterial),
-        10,
-        100
-      ),
-      red: new SpherePool(
-        () => createInstancedMesh(geometry, redSphereMaterial),
-        10,
-        100
-      ),
-      green: new SpherePool(
-        () => createInstancedMesh(geometry, greenSphereMaterial),
-        10,
-        100
-      ),
-      blue: new SpherePool(
-        () => createInstancedMesh(geometry, blueSphereMaterial),
-        10,
-        100
-      ),
-      purple: new SpherePool(
-        () => createInstancedMesh(geometry, purpleSphereMaterial),
-        10,
-        100
-      ),
-      brown: new SpherePool(
-        () => createInstancedMesh(geometry, brownSphereMaterial),
-        10,
-        100
-      ),
-      greenMoon: new SpherePool(
-        () => createInstancedMesh(geometry, moonMaterial),
-        10,
-        100
-      ),
-      purpleMoon: new SpherePool(
-        () => createInstancedMesh(geometry, moonMaterial),
-        10,
-        100
-      ),
+      red: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      green: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      blue: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      purple: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      brown: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      greenMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      purpleMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      gas: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+
       lessDetailed: new SpherePool(
-        () => createInstancedMesh(lessDetailedSphereGeometry, sphereMaterial),
+        () => createInstancedMesh(lessDetailedSphereGeometry),
         10,
         100
       ),
       brownRing: new SpherePool(
-        () => createInstancedMesh(torusGeometry, sphereMaterial),
+        () => createInstancedMesh(torusGeometry),
         10,
         100
       ),
     }),
-
     [geometry]
-  );
-};
-
-export const useSphereMaterials = () => {
-  return useMemo(
-    () => ({
-      red: redSphereMaterial,
-      green: greenSphereMaterial,
-      blue: blueSphereMaterial,
-      purple: purpleSphereMaterial,
-      brown: brownSphereMaterial,
-      greenMoon: moonMaterial,
-      purpleMoon: moonMaterial,
-    }),
-    []
   );
 };

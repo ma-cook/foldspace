@@ -1,20 +1,14 @@
 import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
 import PlaneMesh from '../PlaneMesh';
-import { useThree } from '@react-three/fiber';
 import { MemoizedSphere } from '../Sphere';
 import { useStore } from '../store';
-import {
-  useFilteredPositions,
-  useSpherePools,
-  useSphereMaterials,
-} from '../hooks/hooks';
+import { useFilteredPositions, useSpherePools } from '../hooks/hooks';
 import { useBVH } from '../hooks/useBVH';
 import { useUpdateGeometry } from '../hooks/useUpdateGeometry';
 import { useClearDetailedSpheres } from '../hooks/useClearDetailedSpheres';
 import {
   sphereGeometry,
   lessDetailedSphereGeometry,
-  sphereMaterial,
   torusGeometry,
 } from '../SphereData';
 import { DETAIL_DISTANCE } from '../config';
@@ -22,29 +16,25 @@ import { sunShader } from '../sunShader';
 import { createPlanetShader } from '../shaders/planetShader';
 import { ringShaderMaterial } from '../shaders';
 import { systemShaderMaterial } from '../shaders/systemShader';
-import FakeGlowMaterial from '../shaders/FakeGlowMaterial';
 import * as THREE from 'three';
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
   const planeMeshRef = useRef();
   const sphereRefs = useRef({
-    atmos: useRef(),
-    atmos2: useRef(),
-    atmos3: useRef(),
     greenMoon: useRef(),
     purpleMoon: useRef(),
     red: useRef(),
     green: useRef(),
     blue: useRef(),
     purple: useRef(),
-    centralDetailed: useRef(), // Separate ref for detailed central sphere
-    centralLessDetailed: useRef(), // Separate ref for less detailed central sphere
-    brownRing: useRef(), // Ref for ring instanced mesh
-    systemRing: useRef(), // Ref for system ring instanced mesh
+    gas: useRef(),
+    centralDetailed: useRef(),
+    centralLessDetailed: useRef(),
+    brownRing: useRef(),
+    systemRing: useRef(),
   }).current;
 
-  const sphereMaterials = useSphereMaterials();
   const spherePools = useSpherePools(
     sphereGeometry,
     lessDetailedSphereGeometry,
@@ -70,6 +60,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const brownPositions = useStore(
     (state) => state.brownPositions[activeBuffer]
   );
+  const gasPositions = useStore((state) => state.gasPositions[activeBuffer]);
   const bvh = useStore((state) => state.bvh[activeBuffer]);
 
   useBVH(positions, activeBuffer);
@@ -109,6 +100,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
+  const filteredGasPositions = useFilteredPositions(
+    gasPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
   const filteredPositions = useFilteredPositions(
     positions,
     cameraRef,
@@ -122,11 +118,12 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       red: createPlanetShader('#4f090b', '#080807'),
       purple: createPlanetShader('#140e01', '#cc6d14'),
       brown: createPlanetShader('#4a403a', '#998a82'),
-      sun: sunShader, // Add sunShader to memoized materials
-      default: sphereMaterial,
+      gas: createPlanetShader('#f743a6', '#f743a6'),
+      sun: sunShader,
       brownRing: ringShaderMaterial,
       systemRing: systemShaderMaterial,
-      moon: createPlanetShader('#858585', '#3b3b3b'), // Add sphereMaterial to memoized materials
+      distantSun: createPlanetShader('#fadc46', '#f7bb43'),
+      moon: createPlanetShader('#858585', '#3b3b3b'),
     }),
     []
   );
@@ -149,6 +146,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'purple',
       'greenMoon',
       'purpleMoon',
+      'gas',
     ].map((color) => {
       const instancedMesh = spherePools[color].get();
       instancedMesh.material = memoizedSphereMaterials[color];
@@ -164,6 +162,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           'purple',
           'greenMoon',
           'purpleMoon',
+          'gas',
         ][index];
         spherePools[color].release(instancedMesh);
       });
@@ -185,6 +184,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     brownPositions,
     greenMoonPositions,
     purpleMoonPositions,
+    gasPositions,
     filteredPositions,
     activeBuffer
   );
@@ -240,6 +240,10 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     () => filteredPurpleMoonPositions,
     [filteredPurpleMoonPositions]
   );
+  const memoizedFilteredGasPositions = useMemo(
+    () => filteredGasPositions,
+    [filteredGasPositions]
+  );
 
   useEffect(() => {
     const animate = () => {
@@ -255,14 +259,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         key={`plane-`}
         ref={planeMeshRef}
         sphereRefs={sphereRefs}
-        lessDetailedMeshRef={sphereRefs.centralLessDetailed} // Use less detailed ref from pool
-        instancedMeshRef={sphereRefs.centralDetailed} // Use detailed ref
+        lessDetailedMeshRef={sphereRefs.centralLessDetailed}
+        instancedMeshRef={sphereRefs.centralDetailed}
         redInstancedMeshRef={sphereRefs.red}
         greenInstancedMeshRef={sphereRefs.green}
         blueInstancedMeshRef={sphereRefs.blue}
         purpleInstancedMeshRef={sphereRefs.purple}
         greenMoonInstancedMeshRef={sphereRefs.greenMoon}
-        purpleMoonInstancedMeshRef={sphereRefs.purpleMoon} // Ensure this line is present
+        purpleMoonInstancedMeshRef={sphereRefs.purpleMoon}
+        gasInstancedMeshRef={sphereRefs.gas}
       />
       <MemoizedSphere
         key={`systemRing-${sphereGeometry.uuid}`}
@@ -274,41 +279,39 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[70, 70, 4]}
       />
       <MemoizedSphere
-        key={`central${sphereGeometry.uuid}`} // Force re-render when geometry changes
-        ref={sphereRefs.centralDetailed} // Use detailed ref
+        key={`central${sphereGeometry.uuid}`}
+        ref={sphereRefs.centralDetailed}
         positions={memoizedDetailedPositions}
-        material={memoizedSphereMaterials.sun} // Use memoized sunShader
+        material={memoizedSphereMaterials.sun}
         geometry={sphereGeometry}
         frustumCulled={false}
       />
       <MemoizedSphere
-        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`} // Force re-render when geometry changes
-        ref={sphereRefs.centralLessDetailed} // Use less detailed ref from pool
+        key={`central-less-detailed-${lessDetailedSphereGeometry.uuid}`}
+        ref={sphereRefs.centralLessDetailed}
         positions={memoizedLessDetailedPositions}
-        material={memoizedSphereMaterials.default} // Use memoized sphereMaterial
+        material={memoizedSphereMaterials.distantSun}
         geometry={lessDetailedSphereGeometry}
         frustumCulled={false}
       />
       <MemoizedSphere
-        key={`red-${sphereMaterials.red.uuid}`} // Force re-render when geometry changes
+        key={`red`}
         ref={sphereRefs.red}
         positions={memoizedFilteredRedPositions}
         material={memoizedSphereMaterials.red}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
-
       <MemoizedSphere
-        key={`green-${sphereMaterials.green.uuid}`} // Force re-render when geometry changes
+        key={`green`}
         ref={sphereRefs.green}
         positions={memoizedFilteredGreenPositions}
         material={memoizedSphereMaterials.green}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
-
       <MemoizedSphere
-        key={`greenMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        key={`greenMoon`}
         ref={sphereRefs.greenMoon}
         positions={memoizedFilteredGreenMoonPositions}
         material={memoizedSphereMaterials.moon}
@@ -317,25 +320,23 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
-        key={`blue-${sphereMaterials.blue.uuid}`} // Force re-render when geometry changes
+        key={`blue`}
         ref={sphereRefs.blue}
         positions={memoizedFilteredBluePositions}
         material={memoizedSphereMaterials.blue}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
-
       <MemoizedSphere
-        key={`purple-${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        key={`purple`}
         ref={sphereRefs.purple}
         positions={memoizedFilteredPurplePositions}
         material={memoizedSphereMaterials.purple}
         geometry={sphereGeometry}
         scale={[0.2, 0.2, 0.2]}
       />
-
       <MemoizedSphere
-        key={`purpleMoon-${sphereGeometry.uuid}`} // Force re-render when geometry changes
+        key={`purpleMoon`}
         ref={sphereRefs.purpleMoon}
         positions={memoizedFilteredPurpleMoonPositions}
         material={memoizedSphereMaterials.moon}
@@ -344,7 +345,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
-        key={`brown-${sphereGeometry.uuid}`}
+        key={`brown`}
         ref={sphereRefs.brown}
         positions={memoizedFilteredBrownPositions}
         material={memoizedSphereMaterials.brown}
@@ -352,13 +353,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[0.4, 0.4, 0.4]}
       />
       <MemoizedSphere
-        key={`brownRing-${sphereGeometry.uuid}`}
+        key={`brownRing`}
         ref={sphereRefs.brownRing}
         positions={memoizedFilteredBrownPositions}
         material={memoizedSphereMaterials.brownRing}
         geometry={torusGeometry}
         rotation={[-Math.PI / 2, 0, 0]}
         scale={[1, 1, 1]}
+      />
+      <MemoizedSphere
+        key={`gas`}
+        ref={sphereRefs.gas}
+        positions={memoizedFilteredGasPositions}
+        material={memoizedSphereMaterials.gas}
+        geometry={sphereGeometry}
+        scale={[0.5, 0.5, 0.5]}
       />
     </>
   );

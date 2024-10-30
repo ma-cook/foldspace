@@ -5,6 +5,8 @@ import React, {
   useCallback,
   useMemo,
   Suspense,
+  useTransition,
+  useDeferredValue,
 } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useStore } from './store';
@@ -31,6 +33,7 @@ const App = React.memo(() => {
   const bluePositions = useStore((state) => state.bluePositions);
   const purplePositions = useStore((state) => state.purplePositions);
   const brownPositions = useStore((state) => state.brownPositions);
+  const gasPositions = useStore((state) => state.gasPositions);
   const greenMoonPositions = useStore((state) => state.greenMoonPositions);
   const purpleMoonPositions = useStore((state) => state.purpleMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
@@ -46,6 +49,7 @@ const App = React.memo(() => {
   const setPurpleMoonPositions = useStore(
     (state) => state.setPurpleMoonPositions
   );
+  const setGasPositions = useStore((state) => state.setGasPositions);
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
   const swapBuffers = useStore((state) => state.swapBuffers);
@@ -53,7 +57,8 @@ const App = React.memo(() => {
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
   const [backgroundColor, setBackgroundColor] = useState('white');
-  const [dpr, setDpr] = useState(2);
+  const [isPending, startTransition] = useTransition();
+  const deferredPositions = useDeferredValue(positions);
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -71,6 +76,7 @@ const App = React.memo(() => {
         setBrownPositions,
         setGreenMoonPositions,
         setPurpleMoonPositions,
+        setGasPositions,
         setLoadedCells,
         swapBuffers
       ),
@@ -86,6 +92,7 @@ const App = React.memo(() => {
       setBrownPositions,
       setGreenMoonPositions,
       setPurpleMoonPositions,
+      setGasPositions,
       setLoadedCells,
       swapBuffers,
     ]
@@ -115,14 +122,14 @@ const App = React.memo(() => {
 
   const flattenedPositions = useMemo(() => {
     if (
-      Array.isArray(positions) &&
-      positions.length > 0 &&
-      Array.isArray(positions[0])
+      Array.isArray(deferredPositions) &&
+      deferredPositions.length > 0 &&
+      Array.isArray(deferredPositions[0])
     ) {
-      return positions.flat();
+      return deferredPositions.flat();
     }
-    return positions;
-  }, [positions]);
+    return deferredPositions;
+  }, [deferredPositions]);
 
   const handleDeleteAllCells = async () => {
     try {
@@ -144,6 +151,7 @@ const App = React.memo(() => {
         setBrownPositions([]);
         setGreenMoonPositions([]);
         setPurpleMoonPositions([]);
+        setGasPositions([]);
       } else {
         console.error('Failed to delete all cell data');
       }
@@ -165,14 +173,11 @@ const App = React.memo(() => {
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
-      <Canvas>
+      <Canvas gl={{ stencil: true }}>
         <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
-        <AdaptiveEvents />
         <Bvh>
           <Suspense fallback={<Loader />}>
-            <PerformanceMonitor flipflops={3} onFallback={() => setDpr(1)} />
-
             <Stats />
             <ambientLight />
             <SphereRenderer
@@ -188,6 +193,7 @@ const App = React.memo(() => {
               brownPositions={brownPositions}
               greenMoonPositions={greenMoonPositions}
               purpleMoonPositions={purpleMoonPositions}
+              gasPositions={gasPositions}
             />
             <CustomEnvironment />
             <CustomCamera ref={cameraRef} />

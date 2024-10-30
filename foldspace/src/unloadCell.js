@@ -1,17 +1,5 @@
 import cellCache from './cellCache';
 import { useStore } from './store';
-import {
-  redSphereMaterial,
-  greenSphereMaterial,
-  blueSphereMaterial,
-  purpleSphereMaterial,
-  moonMaterial,
-  atmosMaterial,
-  atmosMaterial2,
-  sphereMaterial,
-  brownSphereMaterial, // Add brown sphere material
-  lessDetailedSphereGeometry,
-} from './SphereData';
 
 export const disposeMaterial = (material) => {
   if (material && typeof material.dispose === 'function') {
@@ -61,15 +49,6 @@ const unloadCell = (
   }
 
   // Dispose of materials and geometries
-  disposeMaterial(redSphereMaterial);
-  disposeMaterial(greenSphereMaterial);
-  disposeMaterial(blueSphereMaterial);
-  disposeMaterial(purpleSphereMaterial);
-  disposeMaterial(moonMaterial);
-  disposeMaterial(atmosMaterial);
-  disposeMaterial(atmosMaterial2);
-  disposeMaterial(sphereMaterial); // Dispose of sphere material
-  disposeMaterial(brownSphereMaterial); // Dispose of brown sphere material
 
   // Dispose of geometries if they are not shared
   disposeGeometry(sphereGeometry);
