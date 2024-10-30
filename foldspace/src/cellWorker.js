@@ -29,12 +29,10 @@ const fetchCellDataInBatches = async (cellKeys) => {
   if (keysToFetch.length === 0) {
     return cachedData;
   }
-  //http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data
-  //https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data
 
   try {
     const response = await fetch(
-      'https://us-central1-foldspace-6483c.cloudfunctions.net/api/get-sphere-data',
+      'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/get-sphere-data',
       {
         method: 'POST',
         headers: {
@@ -70,7 +68,6 @@ const generateNewPositions = (x, z) => {
   const newBrownPositions = [];
   const newGreenMoonPositions = [];
   const newPurpleMoonPositions = [];
-  const newGasPositions = [];
 
   const calculateRandomOrbitPosition = (
     centralPosition,
@@ -99,16 +96,15 @@ const generateNewPositions = (x, z) => {
     return positions;
   };
 
-  const positions = generateRandomPositions(400, x, z);
+  const positions = generateRandomPositions(425, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
     newRedPositions.push(calculateRandomOrbitPosition(position, 400, 500));
-    newGreenPositions.push(calculateRandomOrbitPosition(position, 700, 800));
+    newGreenPositions.push(calculateRandomOrbitPosition(position, 700, 850));
     newBluePositions.push(calculateRandomOrbitPosition(position, 1000, 1100));
     newPurplePositions.push(calculateRandomOrbitPosition(position, 1250, 1300));
     newBrownPositions.push(calculateRandomOrbitPosition(position, 1450, 1600));
-    newGasPositions.push(calculateRandomOrbitPosition(position, 1800, 1900));
   });
 
   newGreenPositions.forEach((greenPosition) => {
@@ -132,14 +128,13 @@ const generateNewPositions = (x, z) => {
     newBrownPositions,
     newGreenMoonPositions,
     newPurpleMoonPositions,
-    newGasPositions,
   };
 };
 
 const saveCellData = async (cellKey, positions) => {
   try {
     const response = await fetch(
-      'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
+      'http://127.0.0.1:5001/foldspace-6483c/us-central1/api/save-sphere-data',
       {
         method: 'POST',
         headers: {
@@ -185,7 +180,6 @@ self.onmessage = async (event) => {
           newBrownPositions,
           newGreenMoonPositions,
           newPurpleMoonPositions,
-          newGasPositions,
         } = generateNewPositions(x, z);
 
         // Save the newly generated positions
@@ -198,7 +192,6 @@ self.onmessage = async (event) => {
           brownPositions: newBrownPositions,
           greenMoonPositions: newGreenMoonPositions,
           purpleMoonPositions: newPurpleMoonPositions,
-          gasPositions: newGasPositions,
         });
 
         return {
@@ -211,7 +204,6 @@ self.onmessage = async (event) => {
           newBrownPositions,
           newGreenMoonPositions,
           newPurpleMoonPositions,
-          newGasPositions,
           loadDetail,
         };
       }
