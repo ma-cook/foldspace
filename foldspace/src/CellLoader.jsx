@@ -21,7 +21,7 @@ import { buildBVH, queryBVH } from './BVH';
 // Utility Functions
 const calculateDistance = (x1, z1, x2, z2) => {
   const dx = x1 - x2;
-  const dz = x1 - x2;
+  const dz = z1 - z2;
   return Math.sqrt(dx * dx + dz * dz);
 };
 
@@ -97,7 +97,7 @@ const useLoadingQueue = (
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.length > 0) {
-      const batchSize = 1500; // Increase batch size for better performance
+      const batchSize = 100; // Increase batch size for better performance
       const batch = loadingQueue.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
@@ -164,7 +164,10 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     );
 
     nearbyCells.forEach((cellKey) => {
-      if (!loadedCells.has(cellKey)) {
+      if (
+        !loadedCells.has(cellKey) &&
+        !loadingQueue.some((item) => item.cellKey === cellKey)
+      ) {
         const [newX, newZ] = cellKey.split(',').map(Number);
         const distance = calculateDistance(
           cameraPosition.x,
@@ -214,6 +217,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   }, [
     cameraRef,
     loadedCells,
+    loadingQueue, // Include loadingQueue in dependencies
     currentLoadDistance,
     unloadCell,
     unloadDetailedSpheres,
@@ -222,9 +226,12 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     dispatch,
   ]);
 
-  useFrame(() => {
-    processLoadingQueue();
-  });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      processLoadingQueue();
+    }, 100); // Run every 100 milliseconds
+    return () => clearInterval(interval);
+  }, [processLoadingQueue]);
 
   useEffect(() => {
     const debouncedCheckCells = debounce(checkCellsAroundCamera, 5); // Increase debounce time to reduce frequency
@@ -236,7 +243,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
   useEffect(() => {
     if (loadingQueue.length === 0) {
-      setCurrentLoadDistance(200000);
+      setCurrentLoadDistance(300000);
     }
   }, [loadingQueue]);
 

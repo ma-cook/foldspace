@@ -59,7 +59,7 @@ const fetchCellDataInBatches = async (cellKeys) => {
 };
 
 const generateNewPositions = (x, z) => {
-  const GRID_SIZE = 150000;
+  const GRID_SIZE = 200000;
   const newPositions = [];
   const newRedPositions = [];
   const newGreenPositions = [];
@@ -96,7 +96,7 @@ const generateNewPositions = (x, z) => {
     return positions;
   };
 
-  const positions = generateRandomPositions(425, x, z);
+  const positions = generateRandomPositions(500, x, z);
 
   positions.forEach((position) => {
     newPositions.push(position);
