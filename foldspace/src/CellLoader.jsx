@@ -234,7 +234,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   }, [processLoadingQueue]);
 
   useEffect(() => {
-    const debouncedCheckCells = debounce(checkCellsAroundCamera, 5); // Increase debounce time to reduce frequency
+    const debouncedCheckCells = debounce(checkCellsAroundCamera, 10); // Increase debounce time to reduce frequency
     debouncedCheckCells();
     return () => {
       debouncedCheckCells.cancel();
