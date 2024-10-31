@@ -84,21 +84,51 @@ const useLoadingQueue = (
   unloadCell,
   unloadDetailedSpheres
 ) => {
+  const initialState = {
+    items: [],
+    cellKeys: new Set(),
+  };
+
   const [loadingQueue, dispatch] = useReducer((state, action) => {
     switch (action.type) {
       case 'ADD_TO_QUEUE':
-        return [...state, ...action.payload];
+        const newItems = action.payload.filter(
+          (item) => !state.cellKeys.has(item.cellKey)
+        );
+
+        if (newItems.length === 0) return state; // No new items to add
+
+        const updatedItems = [...state.items, ...newItems];
+        const updatedCellKeys = new Set(state.cellKeys);
+        newItems.forEach((item) => updatedCellKeys.add(item.cellKey));
+
+        return {
+          items: updatedItems,
+          cellKeys: updatedCellKeys,
+        };
+
       case 'REMOVE_FROM_QUEUE':
-        return state.filter((item) => !action.payload.includes(item.cellKey));
+        const itemsToRemove = new Set(action.payload);
+        const remainingItems = state.items.filter(
+          (item) => !itemsToRemove.has(item.cellKey)
+        );
+        const remainingCellKeys = new Set(
+          remainingItems.map((item) => item.cellKey)
+        );
+        return {
+          items: remainingItems,
+          cellKeys: remainingCellKeys,
+        };
+
       default:
         return state;
     }
-  }, []);
+  }, initialState);
 
   const processLoadingQueue = useCallback(() => {
-    if (loadingQueue.length > 0) {
-      const batchSize = 100; // Increase batch size for better performance
-      const batch = loadingQueue.slice(0, batchSize);
+    if (loadingQueue.items.length > 0) {
+      const batchSize = 100; // Adjust batch size as needed
+      const batch = loadingQueue.items.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
         requestIdleCallback(() => {
@@ -107,7 +137,7 @@ const useLoadingQueue = (
             newZ,
             loadDetail,
             loadedCells,
-            new Set(loadingQueue.map((item) => item.cellKey)),
+            loadingQueue.cellKeys, // Pass cellKeys Set if needed
             dispatch
           );
           setLoadedCells((prevLoadedCells) => {
@@ -123,7 +153,13 @@ const useLoadingQueue = (
         payload: batch.map((item) => item.cellKey),
       });
     }
-  }, [loadingQueue, loadCell, loadedCells, setLoadedCells]);
+  }, [
+    loadingQueue.items,
+    loadingQueue.cellKeys,
+    loadCell,
+    loadedCells,
+    setLoadedCells,
+  ]);
 
   return { loadingQueue, dispatch, processLoadingQueue };
 };
@@ -166,7 +202,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     nearbyCells.forEach((cellKey) => {
       if (
         !loadedCells.has(cellKey) &&
-        !loadingQueue.some((item) => item.cellKey === cellKey)
+        !loadingQueue.cellKeys.has(cellKey) // Use Set for efficient lookup
       ) {
         const [newX, newZ] = cellKey.split(',').map(Number);
         const distance = calculateDistance(
@@ -217,7 +253,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   }, [
     cameraRef,
     loadedCells,
-    loadingQueue, // Include loadingQueue in dependencies
+    loadingQueue.cellKeys, // Include cellKeys in dependencies
     currentLoadDistance,
     unloadCell,
     unloadDetailedSpheres,
@@ -225,6 +261,10 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     updateCells,
     dispatch,
   ]);
+
+  useFrame(() => {
+    checkCellsAroundCamera();
+  });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -234,18 +274,10 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   }, [processLoadingQueue]);
 
   useEffect(() => {
-    const debouncedCheckCells = debounce(checkCellsAroundCamera, 10); // Increase debounce time to reduce frequency
-    debouncedCheckCells();
-    return () => {
-      debouncedCheckCells.cancel();
-    };
-  }, [cameraRef, checkCellsAroundCamera]);
-
-  useEffect(() => {
-    if (loadingQueue.length === 0) {
+    if (loadingQueue.items.length === 0) {
       setCurrentLoadDistance(300000);
     }
-  }, [loadingQueue]);
+  }, [loadingQueue.items]);
 
   return null;
 });
