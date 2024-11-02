@@ -43,6 +43,9 @@ const loadCell = (
   setGreenMoonPositions,
   setPurpleMoonPositions,
   setGasPositions,
+  setRedMoonPositions,
+  setGasMoonPositions,
+  setBrownMoonPositions,
   setLoadedCells,
   swapBuffers
 ) => {
@@ -105,6 +108,15 @@ const loadCell = (
           positions.purpleMoonPositions
         );
         const newGasPositions = createVector3Array(positions.gasPositions);
+        const newRedMoonPositions = createVector3Array(
+          positions.redMoonPositions
+        );
+        const newGasMoonPositions = createVector3Array(
+          positions.gasMoonPositions
+        );
+        const newBrownMoonPositions = createVector3Array(
+          positions.brownMoonPositions
+        );
 
         updatePositions(setRedPositions, newRedPositions);
         updatePositions(setGreenPositions, newGreenPositions);
@@ -114,6 +126,9 @@ const loadCell = (
         updatePositions(setGreenMoonPositions, newGreenMoonPositions);
         updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
         updatePositions(setGasPositions, newGasPositions);
+        updatePositions(setRedMoonPositions, newRedMoonPositions);
+        updatePositions(setGasMoonPositions, newGasMoonPositions);
+        updatePositions(setBrownMoonPositions, newBrownMoonPositions);
       }
 
       setLoadedCells((prevLoadedCells) => {

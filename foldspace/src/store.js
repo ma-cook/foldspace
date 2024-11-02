@@ -16,14 +16,17 @@ export const useStore = create((set) => ({
   rotation: new THREE.Euler(),
   currentPlaneIndex: 0,
   positions: [[], []], // Double buffer for yellow sphere positions
-  redPositions: [[], []], // Double buffer for red sphere positions
-  greenPositions: [[], []], // Double buffer for green sphere positions
-  bluePositions: [[], []], // Double buffer for blue sphere positions
+  redPositions: [[], []],
+  greenPositions: [[], []],
+  bluePositions: [[], []],
   purplePositions: [[], []],
   brownPositions: [[], []],
   greenMoonPositions: [[], []],
   purpleMoonPositions: [[], []],
-  gasPositions: [[], []], // Double buffer for purple sphere positions
+  gasPositions: [[], []],
+  redMoonPositions: [[], []],
+  gasMoonPositions: [[], []],
+  brownMoonPositions: [[], []],
   activeBuffer: 0, // Index of the active buffer
   cameraPosition: [0, 50, 100],
   sphereRefs: {},
@@ -322,6 +325,75 @@ export const useStore = create((set) => ({
     });
   },
 
+  setRedMoonPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.redMoonPositions[state.activeBuffer])
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.redMoonPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { redMoonPositions: updatedPositions };
+    });
+  },
+
+  setGasMoonPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.gasMoonPositions[state.activeBuffer])
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.gasMoonPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { gasMoonPositions: updatedPositions };
+    });
+  },
+
+  setBrownMoonPositions: (positions) => {
+    set((state) => {
+      const newPositions =
+        typeof positions === 'function'
+          ? positions(state.brownMoonPositions[state.activeBuffer])
+          : positions;
+
+      const uniquePositions = Array.isArray(newPositions)
+        ? Array.from(
+            new Set(
+              newPositions.map((pos) => ensureVector3(pos).toArray().toString())
+            )
+          ).map((posStr) => new THREE.Vector3(...posStr.split(',').map(Number)))
+        : [];
+
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const updatedPositions = [...state.brownMoonPositions];
+      updatedPositions[nextBuffer] = uniquePositions;
+
+      return { brownMoonPositions: updatedPositions };
+    });
+  },
+
   swapBuffers: () =>
     set((state) => ({
       activeBuffer: (state.activeBuffer + 1) % 2,
@@ -384,6 +456,24 @@ export const useStore = create((set) => ({
         (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
       );
 
+      const newRedMoonPositions = state.redMoonPositions[
+        state.activeBuffer
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
+
+      const newGasMoonPositions = state.gasMoonPositions[
+        state.activeBuffer
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
+
+      const newBrownMoonPositions = state.brownMoonPositions[
+        state.activeBuffer
+      ].filter(
+        (pos) => !positionsSet.has(ensureVector3(pos).toArray().toString())
+      );
+
       const nextBuffer = (state.activeBuffer + 1) % 2;
       const updatedPositions = [...state.positions];
       const updatedRedPositions = [...state.redPositions];
@@ -394,6 +484,9 @@ export const useStore = create((set) => ({
       const updatedGreenMoonPositions = [...state.greenMoonPositions];
       const updatedPurpleMoonPositions = [...state.purpleMoonPositions];
       const updatedGasPositions = [...state.gasPositions];
+      const updatedRedMoonPositions = [...state.redMoonPositions];
+      const updatedGasMoonPositions = [...state.gasMoonPositions];
+      const updatedBrownMoonPositions = [...state.brownMoonPositions];
 
       updatedPositions[nextBuffer] = newPositions;
       updatedRedPositions[nextBuffer] = newRedPositions;
@@ -404,6 +497,9 @@ export const useStore = create((set) => ({
       updatedGreenMoonPositions[nextBuffer] = newGreenMoonPositions;
       updatedPurpleMoonPositions[nextBuffer] = newPurpleMoonPositions;
       updatedGasPositions[nextBuffer] = newGasPositions;
+      updatedRedMoonPositions[nextBuffer] = newRedMoonPositions;
+      updatedGasMoonPositions[nextBuffer] = newGasMoonPositions;
+      updatedBrownMoonPositions[nextBuffer] = newBrownMoonPositions;
 
       return {
         positions: updatedPositions,
@@ -415,6 +511,9 @@ export const useStore = create((set) => ({
         greenMoonPositions: updatedGreenMoonPositions,
         purpleMoonPositions: updatedPurpleMoonPositions,
         gasPositions: updatedGasPositions,
+        redMoonPositions: updatedRedMoonPositions,
+        gasMoonPositions: updatedGasMoonPositions,
+        brownMoonPositions: updatedBrownMoonPositions,
       };
     });
   },

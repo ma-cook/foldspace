@@ -23,24 +23,32 @@ export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
 export const useSpherePools = (geometry) => {
   return useMemo(
     () => ({
-      red: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      green: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      blue: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      purple: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      brown: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      greenMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      purpleMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
-      gas: new SpherePool(() => createInstancedMesh(geometry), 10, 100),
+      red: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      green: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      blue: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      purple: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      brown: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      greenMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      purpleMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      gas: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      redMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      gasMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
+      brownMoon: new SpherePool(() => createInstancedMesh(geometry), 10, 200),
 
       lessDetailed: new SpherePool(
         () => createInstancedMesh(lessDetailedSphereGeometry),
         10,
-        100
+        200
       ),
       brownRing: new SpherePool(
         () => createInstancedMesh(torusGeometry),
         10,
-        100
+        200
+      ),
+      systemRing: new SpherePool(
+        () => createInstancedMesh(torusGeometry),
+        10,
+        200
       ),
     }),
     [geometry]

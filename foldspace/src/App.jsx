@@ -36,6 +36,9 @@ const App = React.memo(() => {
   const gasPositions = useStore((state) => state.gasPositions);
   const greenMoonPositions = useStore((state) => state.greenMoonPositions);
   const purpleMoonPositions = useStore((state) => state.purpleMoonPositions);
+  const redMoonPositions = useStore((state) => state.redMoonPositions);
+  const gasMoonPositions = useStore((state) => state.gasMoonPositions);
+  const brownMoonPositions = useStore((state) => state.brownMoonPositions);
   const setLoadedCells = useStore((state) => state.setLoadedCells);
   const setPositions = useStore((state) => state.setPositions);
   const setRedPositions = useStore((state) => state.setRedPositions);
@@ -50,6 +53,11 @@ const App = React.memo(() => {
     (state) => state.setPurpleMoonPositions
   );
   const setGasPositions = useStore((state) => state.setGasPositions);
+  const setRedMoonPositions = useStore((state) => state.setRedMoonPositions);
+  const setGasMoonPositions = useStore((state) => state.setGasMoonPositions);
+  const setBrownMoonPositions = useStore(
+    (state) => state.setBrownMoonPositions
+  );
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
   const swapBuffers = useStore((state) => state.swapBuffers);
@@ -77,6 +85,9 @@ const App = React.memo(() => {
         setGreenMoonPositions,
         setPurpleMoonPositions,
         setGasPositions,
+        setRedMoonPositions,
+        setGasMoonPositions,
+        setBrownMoonPositions,
         setLoadedCells,
         swapBuffers
       ),
@@ -93,6 +104,9 @@ const App = React.memo(() => {
       setGreenMoonPositions,
       setPurpleMoonPositions,
       setGasPositions,
+      setRedMoonPositions,
+      setGasMoonPositions,
+      setBrownMoonPositions,
       setLoadedCells,
       swapBuffers,
     ]
@@ -152,6 +166,9 @@ const App = React.memo(() => {
         setGreenMoonPositions([]);
         setPurpleMoonPositions([]);
         setGasPositions([]);
+        setRedMoonPositions([]);
+        setGasMoonPositions([]);
+        setBrownMoonPositions([]);
       } else {
         console.error('Failed to delete all cell data');
       }
@@ -196,6 +213,9 @@ const App = React.memo(() => {
               greenMoonPositions={greenMoonPositions}
               purpleMoonPositions={purpleMoonPositions}
               gasPositions={gasPositions}
+              redMoonPositions={redMoonPositions}
+              gasMoonPositions={gasMoonPositions}
+              brownMoonPositions={brownMoonPositions}
             />
             <CustomEnvironment />
             <CustomCamera ref={cameraRef} />

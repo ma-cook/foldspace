@@ -11,6 +11,9 @@ export const useClearDetailedSpheres = (
   greenMoonPositions,
   purpleMoonPositions,
   gasPosisitions,
+  redMoonPositions,
+  gasMoonPositions,
+  brownMoonPositions,
   filteredPositions,
   activeBuffer
 ) => {
@@ -56,6 +59,18 @@ export const useClearDetailedSpheres = (
       filteredPositions,
       UNLOAD_DETAIL_DISTANCE
     );
+    const clearedRedMoonPositions = clearPositionsByDistance(
+      redMoonPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+    const clearedGasMoonPositions = clearPositionsByDistance(
+      gasMoonPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
+    const clearedBrownMoonPositions = clearPositionsByDistance(
+      brownMoonPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
 
     useStore.getState().setRedPositions(clearedRedPositions, activeBuffer);
     useStore.getState().setGreenPositions(clearedGreenPositions, activeBuffer);
@@ -71,6 +86,15 @@ export const useClearDetailedSpheres = (
       .setPurpleMoonPositions(clearedPurpleMoonPositions, activeBuffer);
     useStore.getState().setPositions(clearedYellowPositions, activeBuffer);
     useStore.getState().setGasPositions(clearedGasPositions, activeBuffer);
+    useStore
+      .getState()
+      .setRedMoonPositions(clearedRedMoonPositions, activeBuffer);
+    useStore
+      .getState()
+      .setGasMoonPositions(clearedGasMoonPositions, activeBuffer);
+    useStore
+      .getState()
+      .setBrownMoonPositions(clearedBrownMoonPositions, activeBuffer);
   }, [
     cameraRef,
     redPositions,
@@ -80,6 +104,9 @@ export const useClearDetailedSpheres = (
     greenMoonPositions,
     purpleMoonPositions,
     gasPosisitions,
+    redMoonPositions,
+    gasMoonPositions,
+    brownMoonPositions,
     filteredPositions,
     activeBuffer,
   ]);

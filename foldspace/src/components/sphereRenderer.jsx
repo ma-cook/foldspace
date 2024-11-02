@@ -17,6 +17,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const sphereRefs = useRef({
     greenMoon: useRef(),
     purpleMoon: useRef(),
+    redMoon: useRef(),
+    gasMoon: useRef(),
+    brownMoon: useRef(),
     red: useRef(),
     green: useRef(),
     blue: useRef(),
@@ -26,6 +29,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     centralLessDetailed: useRef(),
     brownRing: useRef(),
     systemRing: useRef(),
+    gasRing: useRef(),
   }).current;
 
   const spherePools = useSpherePools(
@@ -54,6 +58,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     (state) => state.brownPositions[activeBuffer]
   );
   const gasPositions = useStore((state) => state.gasPositions[activeBuffer]);
+  const redMoonPositions = useStore(
+    (state) => state.redMoonPositions[activeBuffer]
+  );
+  const gasMoonPositions = useStore(
+    (state) => state.gasMoonPositions[activeBuffer]
+  );
+  const brownMoonPositions = useStore(
+    (state) => state.brownMoonPositions[activeBuffer]
+  );
   const bvh = useStore((state) => state.bvh[activeBuffer]);
 
   useBVH(positions, activeBuffer);
@@ -98,6 +111,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     cameraRef,
     DETAIL_DISTANCE
   );
+  const filteredRedMoonPositions = useFilteredPositions(
+    redMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
+  const filteredGasMoonPositions = useFilteredPositions(
+    gasMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
+  const filteredBrownMoonPositions = useFilteredPositions(
+    brownMoonPositions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
   const filteredPositions = useFilteredPositions(
     positions,
     cameraRef,
@@ -108,10 +136,10 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     () => ({
       green: getCachedShader('planet', '#1c911e', '#0000FF'),
       blue: getCachedShader('planet', '#3b408a', '#8ac0f2'),
-      red: getCachedShader('planet', '#4f090b', '#080807'),
-      purple: getCachedShader('planet', '#140e01', '#cc6d14'),
+      red: getCachedShader('planet', '#4f090b', '#ab2929'),
+      purple: getCachedShader('planet', '#805203', '#d17504'),
       brown: getCachedShader('planet', '#4a403a', '#998a82'),
-      gas: getCachedShader('planet', '#f743a6', '#f743a6'),
+      gas: getCachedShader('planet', '#e1e3a6', '#c2a7a7'),
       sun: getCachedShader('sun'),
       brownRing: getCachedShader('ring'),
       systemRing: getCachedShader('system'),
@@ -141,6 +169,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'greenMoon',
       'purpleMoon',
       'gas',
+      'redMoon',
+      'gasMoon',
+      'brownMoon',
     ].map((color) => {
       const instancedMesh = spherePools[color].get();
       instancedMesh.material = memoizedSphereMaterials[color];
@@ -158,6 +189,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           'greenMoon',
           'purpleMoon',
           'gas',
+          'redMoon',
+          'gasMoon',
+          'brownMoon',
         ][index];
         spherePools[color].release(instancedMesh);
       });
@@ -180,6 +214,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     greenMoonPositions,
     purpleMoonPositions,
     gasPositions,
+    redMoonPositions,
+    gasMoonPositions,
+    brownMoonPositions,
     filteredPositions,
     activeBuffer
   );
@@ -239,8 +276,23 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     () => filteredGasPositions,
     [filteredGasPositions]
   );
+  const memoizedFilteredRedMoonPositions = useMemo(
+    () => filteredRedMoonPositions,
+    [filteredRedMoonPositions]
+  );
+  const memoizedFilteredGasMoonPositions = useMemo(
+    () => filteredGasMoonPositions,
+    [filteredGasMoonPositions]
+  );
+  const memoizedFilteredBrownMoonPositions = useMemo(
+    () => filteredBrownMoonPositions,
+    [filteredBrownMoonPositions]
+  );
 
-  // Log gasPositions data
+  // Log brownMoonPositions data
+  useEffect(() => {
+    console.log('brownMoonPositions:', brownMoonPositions);
+  }, [brownMoonPositions]);
 
   useEffect(() => {
     const animate = () => {
@@ -266,6 +318,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         brownInstancedMeshRef={sphereRefs.brown}
         greenMoonInstancedMeshRef={sphereRefs.greenMoon}
         purpleMoonInstancedMeshRef={sphereRefs.purpleMoon}
+        redMoonInstancedMeshRef={sphereRefs.redMoon}
+        gasMoonInstancedMeshRef={sphereRefs.gasMoon}
+        brownMoonInstancedMeshRef={sphereRefs.brownMoon}
         gasInstancedMeshRef={sphereRefs.gas}
         brownRingInstancedMeshRef={sphereRefs.brownRing}
         systemRingInstancedMeshRef={sphereRefs.systemRing}
@@ -286,6 +341,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={memoizedSphereMaterials.sun}
         geometry={getCachedGeometry('sphere')}
         frustumCulled={false}
+        scale={[1.2, 1.2, 1.2]}
       />
       <MemoizedSphere
         key={`central-less-detailed-${
@@ -304,6 +360,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={memoizedSphereMaterials.red}
         geometry={getCachedGeometry('sphere')}
         scale={[0.2, 0.2, 0.2]}
+      />
+      <MemoizedSphere
+        key={`redMoon`}
+        ref={sphereRefs.redMoon}
+        positions={memoizedFilteredRedMoonPositions}
+        material={memoizedSphereMaterials.moon}
+        geometry={getCachedGeometry('sphere')}
+        frustumCulled={false}
+        scale={[0.05, 0.05, 0.05]}
       />
       <MemoizedSphere
         key={`green`}
@@ -365,12 +430,39 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[1, 1, 1]}
       />
       <MemoizedSphere
+        key={`brownMoon`}
+        ref={sphereRefs.brownMoon}
+        positions={memoizedFilteredBrownMoonPositions}
+        material={memoizedSphereMaterials.moon}
+        geometry={getCachedGeometry('sphere')}
+        frustumCulled={false}
+        scale={[0.1, 0.1, 0.1]}
+      />
+      <MemoizedSphere
         key={`gas`}
         ref={sphereRefs.gas}
         positions={memoizedFilteredGasPositions}
         material={memoizedSphereMaterials.gas}
         geometry={getCachedGeometry('sphere')}
-        scale={[0.8, 0.8, 0.8]}
+        scale={[0.6, 0.6, 0.6]}
+      />
+      <MemoizedSphere
+        key={`gasRing`}
+        ref={sphereRefs.gasRing}
+        positions={memoizedFilteredGasPositions}
+        material={memoizedSphereMaterials.brownRing}
+        geometry={getCachedGeometry('torus')}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[1.6, 1.6, 1.6]}
+      />
+      <MemoizedSphere
+        key={`gasMoon`}
+        ref={sphereRefs.gasMoon}
+        positions={memoizedFilteredGasMoonPositions}
+        material={memoizedSphereMaterials.moon}
+        geometry={getCachedGeometry('sphere')}
+        frustumCulled={false}
+        scale={[0.1, 0.1, 0.1]}
       />
     </>
   );

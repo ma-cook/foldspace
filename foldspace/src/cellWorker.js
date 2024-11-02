@@ -69,6 +69,9 @@ const generateNewPositions = (x, z) => {
   const newGreenMoonPositions = [];
   const newPurpleMoonPositions = [];
   const newGasPositions = [];
+  const newRedMoonPositions = [];
+  const newGasMoonPositions = [];
+  const newBrownMoonPositions = [];
 
   const calculateRandomOrbitPosition = (
     centralPosition,
@@ -111,13 +114,29 @@ const generateNewPositions = (x, z) => {
 
   newGreenPositions.forEach((greenPosition) => {
     newGreenMoonPositions.push(
-      calculateRandomOrbitPosition(greenPosition, 50, 50)
+      calculateRandomOrbitPosition(greenPosition, 90, 90)
     );
   });
 
   newPurplePositions.forEach((purplePosition) => {
     newPurpleMoonPositions.push(
-      calculateRandomOrbitPosition(purplePosition, 50, 50)
+      calculateRandomOrbitPosition(purplePosition, 90, 90)
+    );
+  });
+
+  newRedPositions.forEach((redPosition) => {
+    newRedMoonPositions.push(calculateRandomOrbitPosition(redPosition, 90, 90));
+  });
+
+  newGasPositions.forEach((gasPosition) => {
+    newGasMoonPositions.push(
+      calculateRandomOrbitPosition(gasPosition, 110, 110)
+    );
+  });
+
+  newBrownPositions.forEach((brownPosition) => {
+    newBrownMoonPositions.push(
+      calculateRandomOrbitPosition(brownPosition, 110, 110)
     );
   });
 
@@ -131,6 +150,9 @@ const generateNewPositions = (x, z) => {
     newGreenMoonPositions,
     newPurpleMoonPositions,
     newGasPositions,
+    newRedMoonPositions,
+    newGasMoonPositions,
+    newBrownMoonPositions,
   };
 };
 
@@ -184,6 +206,9 @@ self.onmessage = async (event) => {
           newGreenMoonPositions,
           newPurpleMoonPositions,
           newGasPositions,
+          newRedMoonPositions,
+          newGasMoonPositions,
+          newBrownMoonPositions,
         } = generateNewPositions(x, z);
 
         // Save the newly generated positions
@@ -197,6 +222,9 @@ self.onmessage = async (event) => {
           greenMoonPositions: newGreenMoonPositions,
           purpleMoonPositions: newPurpleMoonPositions,
           gasPositions: newGasPositions,
+          redMoonPositions: newRedMoonPositions,
+          gasMoonPositions: newGasMoonPositions,
+          brownMoonPositions: newBrownMoonPositions,
         });
 
         return {
@@ -210,6 +238,9 @@ self.onmessage = async (event) => {
           newGreenMoonPositions,
           newPurpleMoonPositions,
           newGasPositions,
+          newRedMoonPositions,
+          newGasMoonPositions,
+          newBrownMoonPositions,
           loadDetail,
         };
       }
