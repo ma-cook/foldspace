@@ -18,8 +18,8 @@ export const fragmentRingShader = `
   varying vec2 vUv;
   void main() {
     float dist = length(vUv - vec2(0.5, 0.5)); // Use uv coordinates for ring geometry
-    float alpha = smoothstep(0.6, 0.1, dist); // More transparent towards the center
-    vec3 color = mix(vec3(0.5, 0.5, 0.5), vec3(0.0, 0.0, 0.0), dist); // Gradient from white to grey
+    float alpha = smoothstep(0.6, 0.35, dist); // More transparent towards the center
+    vec3 color = mix(vec3(0.8, 0.8, 0.8), vec3(0.0, 0.0, 0.0), dist); // Gradient from white to grey
     gl_FragColor = vec4(color, alpha);
   }
 `;

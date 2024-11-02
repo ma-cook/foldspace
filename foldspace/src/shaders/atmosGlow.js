@@ -43,13 +43,14 @@ export const atmosGlowShader = new THREE.ShaderMaterial({
   fragmentShader: fragmentSunShader,
   uniforms: {
     glowColor: { value: new THREE.Color('#00ff00') },
-    falloffAmount: { value: 2 },
-    glowSharpness: { value: 0.1 },
+    falloffAmount: { value: 3 },
+    glowSharpness: { value: 1 },
     glowInternalRadius: { value: 0.5 },
     opacity: { value: 0.4 },
   },
   blending: THREE.AdditiveBlending,
   transparent: true,
   side: THREE.FrontSide,
-  depthTest: true,
+
+  depthWrite: false,
 });

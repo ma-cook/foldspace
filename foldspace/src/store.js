@@ -28,7 +28,7 @@ export const useStore = create((set) => ({
   gasMoonPositions: [[], []],
   brownMoonPositions: [[], []],
   activeBuffer: 0, // Index of the active buffer
-  cameraPosition: [0, 50, 100],
+  cameraPosition: [[-150786.12625276775, 5000, -97811.47099344924]],
   sphereRefs: {},
   planeMeshes: {}, // Add state to track plane meshes
   cameraRef: { current: null }, // Add cameraRef to the store
