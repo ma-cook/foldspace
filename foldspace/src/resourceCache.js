@@ -1,4 +1,3 @@
-// resourceCache.js
 import * as THREE from 'three';
 import {
   sphereGeometry,
@@ -10,6 +9,7 @@ import { sunShader } from './shaders/sunShader';
 import { createPlanetShader } from './shaders/planetShader';
 import { ringShaderMaterial } from './shaders/ringShader';
 import { systemShaderMaterial } from './shaders/systemShader';
+import { atmosGlowShader } from './shaders/atmosGlow';
 
 const geometryCache = {
   sphere: sphereGeometry,
@@ -41,8 +41,13 @@ export const getCachedGeometry = (type) => {
   return geometry;
 };
 
-export const getCachedShader = (type, primaryColor, secondaryColor) => {
-  const cacheKey = `${type}-${primaryColor}-${secondaryColor}`;
+export const getCachedShader = (
+  type,
+  primaryColor,
+  secondaryColor,
+  glowColor
+) => {
+  const cacheKey = `${type}-${primaryColor}-${secondaryColor}-${glowColor}`;
   if (shaderCache[cacheKey]) {
     return shaderCache[cacheKey];
   }
@@ -59,6 +64,10 @@ export const getCachedShader = (type, primaryColor, secondaryColor) => {
       break;
     case 'system':
       shader = systemShaderMaterial;
+      break;
+    case 'atmosGlow':
+      shader = atmosGlowShader.clone();
+      shader.uniforms.glowColor.value = new THREE.Color(glowColor);
       break;
     // Add other shader types as needed
     default:

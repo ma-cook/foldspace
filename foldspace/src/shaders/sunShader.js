@@ -36,4 +36,6 @@ export const sunShader = new THREE.ShaderMaterial({
   uniforms: {
     time: { value: 0.0 },
   },
+  blending: THREE.NormalBlending,
+  side: THREE.BackSide,
 });

@@ -4,9 +4,10 @@ import React, {
   useCallback,
   useRef,
   useReducer,
+  useMemo,
 } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { debounce } from 'lodash';
+import { throttle } from 'lodash';
 import { useStore } from './store';
 import {
   GRID_SIZE,
@@ -262,15 +263,21 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     dispatch,
   ]);
 
+  // Throttle the checkCellsAroundCamera function to reduce the frequency of updates
+  const throttledCheckCellsAroundCamera = useMemo(
+    () => throttle(checkCellsAroundCamera, 100),
+    [checkCellsAroundCamera]
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
       processLoadingQueue();
-    }, 500); // Run every 100 milliseconds
+    }, 500); // Run every 500 milliseconds
     return () => clearInterval(interval);
   }, [processLoadingQueue]);
 
   useFrame(() => {
-    checkCellsAroundCamera();
+    throttledCheckCellsAroundCamera();
   });
 
   useEffect(() => {

@@ -145,6 +145,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       systemRing: getCachedShader('system'),
       distantSun: getCachedShader('planet', '#fadc46', '#f7bb43'),
       moon: getCachedShader('planet', '#858585', '#3b3b3b'),
+      atmosGlow: getCachedShader('atmosGlow', null, null, '#f7bb43'),
     }),
     []
   );
@@ -289,11 +290,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     [filteredBrownMoonPositions]
   );
 
-  // Log brownMoonPositions data
-  useEffect(() => {
-    console.log('brownMoonPositions:', brownMoonPositions);
-  }, [brownMoonPositions]);
-
   useEffect(() => {
     const animate = () => {
       const sunShader = getCachedShader('sun');
@@ -342,6 +338,15 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         geometry={getCachedGeometry('sphere')}
         frustumCulled={false}
         scale={[1.2, 1.2, 1.2]}
+      />
+      <MemoizedSphere
+        key={`centralGlow${getCachedGeometry('sphere').uuid}`}
+        ref={sphereRefs.centralDetailed}
+        positions={memoizedDetailedPositions}
+        material={memoizedSphereMaterials.atmosGlow}
+        geometry={getCachedGeometry('sphere')}
+        frustumCulled={false}
+        scale={[2.1, 2.1, 2.1]}
       />
       <MemoizedSphere
         key={`central-less-detailed-${
