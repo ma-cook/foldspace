@@ -262,20 +262,20 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     dispatch,
   ]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      processLoadingQueue();
+    }, 500); // Run every 100 milliseconds
+    return () => clearInterval(interval);
+  }, [processLoadingQueue]);
+
   useFrame(() => {
     checkCellsAroundCamera();
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      processLoadingQueue();
-    }, 100); // Run every 100 milliseconds
-    return () => clearInterval(interval);
-  }, [processLoadingQueue]);
-
-  useEffect(() => {
     if (loadingQueue.items.length === 0) {
-      setCurrentLoadDistance(300000);
+      setCurrentLoadDistance(200000);
     }
   }, [loadingQueue.items]);
 

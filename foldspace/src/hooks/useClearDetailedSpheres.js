@@ -10,6 +10,7 @@ export const useClearDetailedSpheres = (
   purplePositions,
   greenMoonPositions,
   purpleMoonPositions,
+  gasPosisitions,
   filteredPositions,
   activeBuffer
 ) => {
@@ -51,6 +52,10 @@ export const useClearDetailedSpheres = (
       filteredPositions,
       UNLOAD_DETAIL_DISTANCE
     );
+    const clearedGasPositions = clearPositionsByDistance(
+      filteredPositions,
+      UNLOAD_DETAIL_DISTANCE
+    );
 
     useStore.getState().setRedPositions(clearedRedPositions, activeBuffer);
     useStore.getState().setGreenPositions(clearedGreenPositions, activeBuffer);
@@ -65,6 +70,7 @@ export const useClearDetailedSpheres = (
       .getState()
       .setPurpleMoonPositions(clearedPurpleMoonPositions, activeBuffer);
     useStore.getState().setPositions(clearedYellowPositions, activeBuffer);
+    useStore.getState().setGasPositions(clearedGasPositions, activeBuffer);
   }, [
     cameraRef,
     redPositions,
@@ -73,6 +79,7 @@ export const useClearDetailedSpheres = (
     purplePositions,
     greenMoonPositions,
     purpleMoonPositions,
+    gasPosisitions,
     filteredPositions,
     activeBuffer,
   ]);

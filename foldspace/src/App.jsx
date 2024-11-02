@@ -160,6 +160,8 @@ const App = React.memo(() => {
     }
   };
 
+  // Log gasPositions data
+
   function CustomEnvironment() {
     return (
       <Environment
@@ -206,7 +208,7 @@ const App = React.memo(() => {
         </Bvh>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}
-      {/* <button onClick={handleDeleteAllCells}>Delete All Cells</button> */}
+      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
     </div>
   );
 });

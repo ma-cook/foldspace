@@ -14,8 +14,12 @@ const PlaneMesh = React.forwardRef(
       greenInstancedMeshRef,
       blueInstancedMeshRef,
       purpleInstancedMeshRef,
+      brownInstancedMeshRef,
       greenMoonInstancedMeshRef,
       purpleMoonInstancedMeshRef,
+      gasInstancedMeshRef,
+      brownRingInstancedMeshRef,
+      systemRingInstancedMeshRef,
       positions = [], // Provide a default value for positions
       cellKey, // Add cellKey prop to identify the cell
     },
@@ -50,8 +54,12 @@ const PlaneMesh = React.forwardRef(
             greenInstancedMeshRef?.current,
             blueInstancedMeshRef?.current,
             purpleInstancedMeshRef?.current,
+            brownInstancedMeshRef?.current,
             greenMoonInstancedMeshRef?.current,
             purpleMoonInstancedMeshRef?.current,
+            gasInstancedMeshRef?.current,
+            brownRingInstancedMeshRef?.current,
+            systemRingInstancedMeshRef?.current,
             ...Object.values(sphereRefs).map((ref) => ref?.current),
           ].filter(Boolean)
         );
@@ -82,8 +90,12 @@ const PlaneMesh = React.forwardRef(
         greenInstancedMeshRef,
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
+        brownInstancedMeshRef,
         greenMoonInstancedMeshRef,
         purpleMoonInstancedMeshRef,
+        gasInstancedMeshRef,
+        brownRingInstancedMeshRef,
+        systemRingInstancedMeshRef,
       ]
     );
 
@@ -112,8 +124,12 @@ const PlaneMesh = React.forwardRef(
               greenInstancedMeshRef?.current, // Include greenInstancedMeshRef
               blueInstancedMeshRef?.current, // Include redInstancedMeshRef
               purpleInstancedMeshRef?.current,
+              gasInstancedMeshRef?.current,
               greenMoonInstancedMeshRef?.current,
               purpleMoonInstancedMeshRef?.current,
+              brownInstancedMeshRef?.current,
+              brownRingInstancedMeshRef?.current,
+              systemRingInstancedMeshRef?.current,
               ...Object.values(sphereRefs).map((ref) => ref?.current),
             ].filter(Boolean)
           );
@@ -203,6 +219,42 @@ const PlaneMesh = React.forwardRef(
                   instanceMatrix
                 );
                 console.log('A purple moon sphere was clicked');
+              } else if (
+                intersects[0].object === gasInstancedMeshRef?.current
+              ) {
+                // Check if the gas sphere was clicked
+                gasInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A gas sphere was clicked');
+              } else if (
+                intersects[0].object === brownInstancedMeshRef?.current
+              ) {
+                // Check if the brown sphere was clicked
+                brownInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A brown sphere was clicked');
+              } else if (
+                intersects[0].object === brownRingInstancedMeshRef?.current
+              ) {
+                // Check if the brown ring was clicked
+                brownRingInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A brown ring was clicked');
+              } else if (
+                intersects[0].object === systemRingInstancedMeshRef?.current
+              ) {
+                // Check if the system ring was clicked
+                systemRingInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A system ring was clicked');
               }
 
               const instancePosition =
@@ -235,8 +287,12 @@ const PlaneMesh = React.forwardRef(
         greenInstancedMeshRef,
         blueInstancedMeshRef,
         purpleInstancedMeshRef,
+        brownInstancedMeshRef,
         greenMoonInstancedMeshRef,
         purpleMoonInstancedMeshRef,
+        gasInstancedMeshRef,
+        brownRingInstancedMeshRef,
+        systemRingInstancedMeshRef,
       ]
     );
 

@@ -56,18 +56,18 @@ const corsOptions = {
 
 const deleteDocumentsInBatches = async (collectionRef) => {
   const snapshot = await collectionRef.get();
-  const batchSize = 50; // Firestore limits batch size to 500
+  const batchSize = 5; // Firestore limits batch size to 500
   let batch = db.batch(); // Use let instead of const
 
-  snapshot.docs.forEach((doc, index) => {
-    batch.delete(doc.ref);
-    if ((index + 1) % batchSize === 0) {
-      batch.commit();
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    batch.delete(snapshot.docs[i].ref);
+    if ((i + 1) % batchSize === 0) {
+      await batch.commit();
       batch = db.batch(); // Reassign batch
     }
-  });
+  }
 
-  if (snapshot.size % batchSize !== 0) {
+  if (snapshot.docs.length % batchSize !== 0) {
     await batch.commit();
   }
 };
@@ -120,7 +120,7 @@ app.post('/get-sphere-data', cors(corsOptions), async (req, res) => {
       });
 
       if (missingKeys.length > 0) {
-        const batchSize = 10;
+        const batchSize = 100;
         for (let i = 0; i < missingKeys.length; i += batchSize) {
           const batchKeys = missingKeys.slice(i, i + batchSize);
           const batchDocs = await Promise.all(

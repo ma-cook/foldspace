@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const vertexSunShader = `
+export const vertexPlanetShader = `
 #include <common>
 #include <fog_pars_vertex> // Include fog parameters for vertex shader
 
@@ -19,7 +19,7 @@ void main() {
 }
 `;
 
-export const fragmentSunShader = `
+export const fragmentPlanetShader = `
 #include <common>
 #include <fog_pars_fragment> // Include fog parameters for fragment shader
 
@@ -123,8 +123,8 @@ void main() {
 
 export const createPlanetShader = (primaryColor, secondaryColor) => {
   return new THREE.ShaderMaterial({
-    vertexShader: vertexSunShader,
-    fragmentShader: fragmentSunShader,
+    vertexShader: vertexPlanetShader,
+    fragmentShader: fragmentPlanetShader,
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib.fog, // Include fog uniforms
       {
