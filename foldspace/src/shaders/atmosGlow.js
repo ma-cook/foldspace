@@ -50,7 +50,7 @@ export const atmosGlowShader = new THREE.ShaderMaterial({
   },
   blending: THREE.AdditiveBlending,
   transparent: true,
-  side: THREE.FrontSide,
+  side: THREE.DoubleSide,
 
   depthWrite: false,
 });

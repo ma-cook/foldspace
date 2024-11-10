@@ -48,7 +48,8 @@ app.use(bodyParser.json({ limit: '10mb' }));
 
 // Configure CORS to allow requests from any origin
 const corsOptions = {
-  origin: true,
+  origin:
+    'https://orderofgalaxies.web.app' || 'https://foldspace-6483c.web.app/',
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,
@@ -178,6 +179,28 @@ app.delete('/delete-all-cells', cors(corsOptions), async (req, res) => {
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');
+});
+
+// New endpoint to save user data
+app.post('/saveuser', cors(corsOptions), async (req, res) => {
+  const { token, username } = req.body;
+
+  try {
+    // Verify the token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+
+    // Save the user data to Firestore
+    await db.collection('users').doc(uid).set({
+      username: username,
+      email: decodedToken.email,
+    });
+
+    res.status(200).send('User data saved successfully');
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 exports.api = functions.https.onRequest(app);
