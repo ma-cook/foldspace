@@ -47,11 +47,21 @@ const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
 
 // Configure CORS to allow requests from any origin
+const allowedOrigins = [
+  'https://orderofgalaxies.web.app',
+  'https://foldspace-6483c.web.app',
+];
+
 const corsOptions = {
-  origin:
-    'https://orderofgalaxies.web.app' || 'https://foldspace-6483c.web.app/',
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   optionsSuccessStatus: 204,
 };
 
@@ -181,26 +191,60 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal Server Error');
 });
 
-// New endpoint to save user data
-app.post('/saveuser', cors(corsOptions), async (req, res) => {
-  const { token, username } = req.body;
-
-  try {
-    // Verify the token
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const uid = decodedToken.uid;
-
-    // Save the user data to Firestore
-    await db.collection('users').doc(uid).set({
-      username: username,
-      email: decodedToken.email,
-    });
-
-    res.status(200).send('User data saved successfully');
-  } catch (error) {
-    console.error('Error saving user data:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
 exports.api = functions.https.onRequest(app);
+
+const API_KEY = functions.config().api.key;
+
+exports.saveuser = functions.https.onRequest(async (req, res) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    // Get origin from request
+    const origin = req.headers.origin;
+
+    // Check if origin is allowed
+    if (allowedOrigins.includes(origin)) {
+      res.set('Access-Control-Allow-Origin', origin);
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, x-api-key'
+      );
+      res.set('Access-Control-Max-Age', '3600');
+      res.status(204).send('');
+      return;
+    }
+  }
+
+  // Apply CORS middleware first
+  return cors(corsOptions)(req, res, async () => {
+    // Set CORS headers for actual request
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+      res.set('Access-Control-Allow-Origin', origin);
+    }
+
+    // Check for API key
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey !== API_KEY) {
+      res.status(401).send('Unauthorized');
+      return;
+    }
+
+    const { username, email } = req.body;
+
+    try {
+      const userRef = admin.firestore().collection('users').doc();
+      await userRef.set({
+        username,
+        email,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        sourceProject: 'orderofgalaxies',
+      });
+
+      res.status(200).json({ success: true, userId: userRef.id });
+    } catch (error) {
+      console.error('Error saving user:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+});

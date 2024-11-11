@@ -67,6 +67,7 @@ const App = React.memo(() => {
   const [backgroundColor, setBackgroundColor] = useState('white');
   const [isPending, startTransition] = useTransition();
   const deferredPositions = useDeferredValue(positions);
+  const [username, setUsername] = useState(null);
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -190,8 +191,46 @@ const App = React.memo(() => {
     );
   }
 
+  useEffect(() => {
+    // Get email from localStorage or auth state
+    const email = localStorage.getItem('userEmail'); // Or from auth state
+
+    if (email) {
+      // Query Firestore for user with matching email
+      const fetchUser = async () => {
+        try {
+          const usersRef = firebase.firestore().collection('users');
+          const snapshot = await usersRef.where('email', '==', email).get();
+
+          if (!snapshot.empty) {
+            const userData = snapshot.docs[0].data();
+            setUsername(userData.username);
+          }
+        } catch (error) {
+          console.error('Error fetching user:', error);
+        }
+      };
+
+      fetchUser();
+    }
+  }, []);
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
+      {username && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            zIndex: 1,
+            color: 'white',
+            fontSize: '14px',
+          }}
+        >
+          {username}
+        </div>
+      )}
       <Canvas gl={{ stencil: true }}>
         <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
