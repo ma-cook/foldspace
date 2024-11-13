@@ -186,6 +186,20 @@ app.delete('/delete-all-cells', cors(corsOptions), async (req, res) => {
   }
 });
 
+// New endpoint to verify ID token and issue custom token
+app.post('/verify-token', cors(corsOptions), async (req, res) => {
+  const idToken = req.body.token;
+  try {
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+    const customToken = await admin.auth().createCustomToken(uid);
+    res.json({ customToken });
+  } catch (error) {
+    console.error('Error verifying ID token:', error);
+    res.status(400).json({ error: 'Invalid ID token' });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');
