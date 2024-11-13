@@ -24,6 +24,7 @@ import Loader from './Loader';
 import LoadingMessage from './LoadingMessage';
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
+import { useAuth } from './hooks/useAuth';
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
