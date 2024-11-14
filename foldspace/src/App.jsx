@@ -95,8 +95,8 @@ const App = React.memo(() => {
           y: firstPlanet.y + 280,
           z: firstPlanet.z + 380,
         };
-        setTarget(newPosition.x, newPosition.y, newPosition.z);
-        setLookAt(firstPlanet.x, firstPlanet.y, firstPlanet.z);
+        setTarget(newPosition); // Pass the entire object
+        setLookAt({ x: firstPlanet.x, y: firstPlanet.y, z: firstPlanet.z }); // Ensure it's an object
       }
     } catch (error) {
       console.error('Error fetching owned planets:', error);
@@ -134,8 +134,9 @@ const App = React.memo(() => {
 
   useEffect(() => {
     if (user) {
-      assignGreenSphere(user.uid);
-      fetchOwnedPlanets(user.uid); // Fetch owned planets on user login
+      assignGreenSphere(user.uid).then(() => {
+        fetchOwnedPlanets(user.uid); // Ensure fetch is called after assigning
+      });
     }
   }, [user, setTarget, setLookAt]);
 
