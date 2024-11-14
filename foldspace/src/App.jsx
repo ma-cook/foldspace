@@ -63,6 +63,8 @@ const App = React.memo(() => {
   const removeAllPositions = useStore((state) => state.removeAllPositions);
   const removeSphereRefs = useStore((state) => state.removeSphereRefs);
   const swapBuffers = useStore((state) => state.swapBuffers);
+  const setCameraPosition = useStore((state) => state.setCameraPosition);
+  const setLookAt = useStore((state) => state.setLookAt);
   const cameraRef = useRef();
   const sphereRendererRef = useRef();
   const [loadingCells, setLoadingCells] = useState(new Set());
@@ -82,6 +84,19 @@ const App = React.memo(() => {
       }
       const data = await response.json();
       setOwnedPlanets(data.planets);
+
+      // Set camera position based on the first owned planet's coordinates plus the offset
+      if (data.planets.length > 0) {
+        const firstPlanet = data.planets[0];
+        const offset = { x: 100, y: 280, z: 380 };
+        const newPosition = {
+          x: firstPlanet.x + offset.x,
+          y: firstPlanet.y + offset.y,
+          z: firstPlanet.z + offset.z,
+        };
+        setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
+        setLookAt(firstPlanet.x, firstPlanet.y, firstPlanet.z);
+      }
     } catch (error) {
       console.error('Error fetching owned planets:', error);
     }
@@ -121,7 +136,7 @@ const App = React.memo(() => {
       assignGreenSphere(user.uid);
       fetchOwnedPlanets(user.uid); // Fetch owned planets on user login
     }
-  }, [user]);
+  }, [user, setCameraPosition, setLookAt]);
 
   const loadCellCallback = useCallback(
     (x, z) =>
