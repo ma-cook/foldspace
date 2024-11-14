@@ -70,6 +70,37 @@ const App = React.memo(() => {
   const [isPending, startTransition] = useTransition();
   const deferredPositions = useDeferredValue(positions);
   const { isAuthenticated, isLoading, user } = useAuth();
+
+  const assignGreenSphere = async (userId) => {
+    try {
+      const response = await fetch(
+        'http://localhost:5001/foldspace-6483c/us-central1/api/startingPlanet',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to assign ownership');
+      }
+
+      const data = await response.json();
+      console.log(data.message);
+    } catch (error) {
+      console.error('Error assigning ownership:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      assignGreenSphere(user.uid);
+    }
+  }, [user]);
+
   const loadCellCallback = useCallback(
     (x, z) =>
       loadCell(

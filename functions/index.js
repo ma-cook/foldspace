@@ -200,6 +200,91 @@ app.post('/verify-token', cors(corsOptions), async (req, res) => {
   }
 });
 
+// New endpoint to assign ownership of a green sphere to a new user
+app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const cellsSnapshot = await db.collection('cells').get();
+    let closestSphere = null;
+    let closestDistance = Infinity;
+
+    // Find the closest green sphere to [0,0,0]
+    cellsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const greenPositions = data.positions.greenPositions || [];
+
+      greenPositions.forEach((position) => {
+        const distance = Math.sqrt(
+          position.x * position.x +
+            position.y * position.y +
+            position.z * position.z
+        );
+
+        if (distance < closestDistance) {
+          closestSphere = { docId: doc.id, position };
+          closestDistance = distance;
+        }
+      });
+    });
+
+    if (!closestSphere) {
+      return res.status(404).json({ error: 'No green spheres available' });
+    }
+
+    // Check if the new sphere is within 25,000 units of any other user's sphere
+    const usersSnapshot = await db.collection('users').get();
+    let isTooClose = false;
+
+    usersSnapshot.forEach((userDoc) => {
+      const userData = userDoc.data();
+      const userSpheres = userData.spheres || [];
+
+      userSpheres.forEach((sphere) => {
+        const distance = Math.sqrt(
+          (sphere.x - closestSphere.position.x) ** 2 +
+            (sphere.y - closestSphere.position.y) ** 2 +
+            (sphere.z - closestSphere.position.z) ** 2
+        );
+
+        if (distance < 25000) {
+          isTooClose = true;
+        }
+      });
+    });
+
+    if (isTooClose) {
+      return res.status(400).json({
+        error: 'No green spheres available within the required distance',
+      });
+    }
+
+    // Assign ownership to the new user
+    const docRef = db.collection('cells').doc(closestSphere.docId);
+    const data = (await docRef.get()).data();
+    const updatedGreenPositions = data.positions.greenPositions.map((pos) =>
+      pos === closestSphere.position ? { ...pos, owner: userId } : pos
+    );
+
+    await docRef.update({
+      'positions.greenPositions': updatedGreenPositions,
+    });
+
+    // Update the user's document with the new sphere
+    const userRef = db.collection('users').doc(userId);
+    await userRef.set(
+      {
+        spheres: admin.firestore.FieldValue.arrayUnion(closestSphere.position),
+      },
+      { merge: true }
+    );
+
+    res.json({ message: 'Ownership assigned successfully' });
+  } catch (error) {
+    console.error('Error assigning ownership:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');
