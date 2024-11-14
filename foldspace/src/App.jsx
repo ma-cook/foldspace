@@ -69,7 +69,7 @@ const App = React.memo(() => {
   const [backgroundColor, setBackgroundColor] = useState('white');
   const [isPending, startTransition] = useTransition();
   const deferredPositions = useDeferredValue(positions);
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const loadCellCallback = useCallback(
     (x, z) =>
       loadCell(
@@ -202,6 +202,25 @@ const App = React.memo(() => {
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          padding: '5px 10px',
+          borderRadius: '5px',
+        }}
+      >
+        {user && (
+          <span style={{ marginRight: '10px' }}>
+            {user.displayName || user.email}
+          </span>
+        )}
+      </div>
       <Canvas gl={{ stencil: true }}>
         <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
