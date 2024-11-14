@@ -101,12 +101,16 @@ const App = React.memo(() => {
       );
 
       if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.error === 'User already has a starting planet') {
+          console.log('User already has a starting planet');
+          return;
+        }
         throw new Error('Failed to assign ownership');
       }
 
       const data = await response.json();
       console.log(data.message);
-      fetchOwnedPlanets(userId); // Fetch owned planets after assigning a new one
     } catch (error) {
       console.error('Error assigning ownership:', error);
     }

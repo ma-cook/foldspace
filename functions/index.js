@@ -204,6 +204,17 @@ app.post('/verify-token', cors(corsOptions), async (req, res) => {
 app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   const { userId } = req.body;
   try {
+    // Check if the user already has a starting planet
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (userData.spheres && userData.spheres.length > 0) {
+        return res
+          .status(400)
+          .json({ error: 'User already has a starting planet' });
+      }
+    }
+
     const cellsSnapshot = await db.collection('cells').get();
     let closestSphere = null;
     let closestDistance = Infinity;
