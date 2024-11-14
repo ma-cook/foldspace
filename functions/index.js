@@ -285,6 +285,22 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   }
 });
 
+app.get('/getUserPlanets', cors(corsOptions), async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const userData = userDoc.data();
+    const planets = userData.spheres || [];
+    res.json({ planets });
+  } catch (error) {
+    console.error('Error fetching user planets:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('Internal Server Error');

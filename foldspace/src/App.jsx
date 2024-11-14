@@ -70,6 +70,22 @@ const App = React.memo(() => {
   const [isPending, startTransition] = useTransition();
   const deferredPositions = useDeferredValue(positions);
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [ownedPlanets, setOwnedPlanets] = useState([]);
+
+  const fetchOwnedPlanets = async (userId) => {
+    try {
+      const response = await fetch(
+        `https://us-central1-foldspace-6483c.cloudfunctions.net/api/getUserPlanets?userId=${userId}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch owned planets');
+      }
+      const data = await response.json();
+      setOwnedPlanets(data.planets);
+    } catch (error) {
+      console.error('Error fetching owned planets:', error);
+    }
+  };
 
   const assignGreenSphere = async (userId) => {
     try {
@@ -90,6 +106,7 @@ const App = React.memo(() => {
 
       const data = await response.json();
       console.log(data.message);
+      fetchOwnedPlanets(userId); // Fetch owned planets after assigning a new one
     } catch (error) {
       console.error('Error assigning ownership:', error);
     }
@@ -98,6 +115,7 @@ const App = React.memo(() => {
   useEffect(() => {
     if (user) {
       assignGreenSphere(user.uid);
+      fetchOwnedPlanets(user.uid); // Fetch owned planets on user login
     }
   }, [user]);
 
@@ -240,16 +258,28 @@ const App = React.memo(() => {
           right: 10,
           zIndex: 1,
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
           backgroundColor: 'rgba(255, 255, 255, 0.8)',
           padding: '5px 10px',
           borderRadius: '5px',
         }}
       >
         {user && (
-          <span style={{ marginRight: '10px' }}>
-            {user.displayName || user.email}
-          </span>
+          <>
+            <span style={{ marginRight: '10px' }}>
+              {user.displayName || user.email}
+            </span>
+            <ul>
+              {ownedPlanets.map((planet, index) => (
+                <li key={index}>
+                  {`(${planet.x.toFixed(2)}, ${planet.y.toFixed(
+                    2
+                  )}, ${planet.z.toFixed(2)})`}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
       <Canvas gl={{ stencil: true }}>
