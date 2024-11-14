@@ -73,6 +73,7 @@ const App = React.memo(() => {
   const deferredPositions = useDeferredValue(positions);
   const { isAuthenticated, isLoading, user } = useAuth();
   const [ownedPlanets, setOwnedPlanets] = useState([]);
+  const setTarget = useStore((state) => state.setTarget);
 
   const fetchOwnedPlanets = async (userId) => {
     try {
@@ -88,13 +89,13 @@ const App = React.memo(() => {
       // Set camera position based on the first owned planet's coordinates plus the offset
       if (data.planets.length > 0) {
         const firstPlanet = data.planets[0];
-        const offset = { x: 100, y: 280, z: 380 };
+
         const newPosition = {
-          x: firstPlanet.x + offset.x,
-          y: firstPlanet.y + offset.y,
-          z: firstPlanet.z + offset.z,
+          x: firstPlanet.x + 100,
+          y: firstPlanet.y + 280,
+          z: firstPlanet.z + 380,
         };
-        setCameraPosition(newPosition.x, newPosition.y, newPosition.z);
+        setTarget(newPosition.x, newPosition.y, newPosition.z);
         setLookAt(firstPlanet.x, firstPlanet.y, firstPlanet.z);
       }
     } catch (error) {
@@ -136,7 +137,7 @@ const App = React.memo(() => {
       assignGreenSphere(user.uid);
       fetchOwnedPlanets(user.uid); // Fetch owned planets on user login
     }
-  }, [user, setCameraPosition, setLookAt]);
+  }, [user, setTarget, setLookAt]);
 
   const loadCellCallback = useCallback(
     (x, z) =>
