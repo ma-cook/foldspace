@@ -74,7 +74,7 @@ const App = React.memo(() => {
   const assignGreenSphere = async (userId) => {
     try {
       const response = await fetch(
-        'http://localhost:5001/foldspace-6483c/us-central1/api/startingPlanet',
+        'https://us-central1-foldspace-6483c.cloudfunctions.net/api/startingPlanet',
         {
           method: 'POST',
           headers: {
