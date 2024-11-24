@@ -1,3 +1,33 @@
+import * as THREE from 'three';
+import cellCache from './cellCache';
+
+const createVector3Array = (positions) => {
+  if (!Array.isArray(positions)) {
+    return [];
+  }
+
+  return positions.reduce((acc, pos, index) => {
+    if (
+      pos &&
+      typeof pos === 'object' &&
+      'x' in pos &&
+      'y' in pos &&
+      'z' in pos
+    ) {
+      acc.push(new THREE.Vector3(pos.x, pos.y, pos.z));
+    } else {
+      console.warn(`Element at index ${index} is invalid:`, pos);
+    }
+    return acc;
+  }, []);
+};
+
+const updatePositions = (setPositions, newPositions) => {
+  setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+};
+
+const worker = new Worker(new URL('./cellWorker.js', import.meta.url));
+
 const loadCell = (
   cellKeysToLoad,
   loadDetail,
