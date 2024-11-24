@@ -50,6 +50,7 @@ app.use(bodyParser.json({ limit: '10mb' }));
 const allowedOrigins = [
   'https://orderofgalaxies.web.app',
   'https://foldspace-6483c.web.app',
+  'http://localhost:5173/',
 ];
 
 const corsOptions = {
@@ -202,7 +203,7 @@ app.post('/verify-token', cors(corsOptions), async (req, res) => {
 
 // New endpoint to assign ownership of a green sphere to a new user
 app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
-  const { userId } = req.body;
+  const { userId, civilisationName, homePlanetName } = req.body;
   try {
     // Check if the user already has a starting planet
     const userDoc = await db.collection('users').doc(userId).get();
@@ -269,11 +270,13 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       });
     }
 
-    // Assign ownership to the new user
+    // Assign ownership to the new user and save planet and civilisation name
     const docRef = db.collection('cells').doc(closestSphere.docId);
     const data = (await docRef.get()).data();
     const updatedGreenPositions = data.positions.greenPositions.map((pos) =>
-      pos === closestSphere.position ? { ...pos, owner: userId } : pos
+      pos === closestSphere.position
+        ? { ...pos, owner: userId, civilisationName, homePlanetName }
+        : pos
     );
 
     await docRef.update({
