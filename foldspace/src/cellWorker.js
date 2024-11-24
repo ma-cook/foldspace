@@ -46,9 +46,13 @@ const fetchCellDataInBatches = async (cellKeys) => {
       const data = await response.json();
       keysToFetch.forEach((key) => {
         cellCache[key] = data[key];
-        // Log planetName if it exists
-        if (data[key] && data[key].positions) {
-          data[key].positions.forEach((position) => {
+        // Log planetName if it exists in greenPositions
+        if (
+          data[key] &&
+          data[key].positions &&
+          data[key].positions.greenPositions
+        ) {
+          data[key].positions.greenPositions.forEach((position) => {
             if (position.planetName) {
               console.log('planetName:', position.planetName);
             }
@@ -200,14 +204,16 @@ self.onmessage = async (event) => {
       if (cellData[cellKey]) {
         const savedPositions = cellData[cellKey];
         const validPositions = savedPositions.positions || {};
-        const newPositions = createVector3Array(validPositions.positions);
+        const newPositions = createVector3Array(validPositions.greenPositions);
 
         // Log planetName if it exists
-        validPositions.positions.forEach((position) => {
-          if (position.planetName) {
-            console.log('planetName:', position.planetName);
-          }
-        });
+        if (Array.isArray(validPositions.greenPositions)) {
+          validPositions.greenPositions.forEach((position) => {
+            if (position.planetName) {
+              console.log('planetName:', position.planetName);
+            }
+          });
+        }
 
         return { cellKey, newPositions, loadDetail, savedPositions };
       } else {

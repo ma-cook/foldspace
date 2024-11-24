@@ -275,7 +275,13 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
     const data = (await docRef.get()).data();
     const updatedGreenPositions = data.positions.greenPositions.map((pos) =>
       pos === closestSphere.position
-        ? { ...pos, owner: userId, civilisationName, homePlanetName }
+        ? {
+            ...pos,
+            owner: userId,
+            civilisationName,
+            homePlanetName,
+            planetName: homePlanetName,
+          }
         : pos
     );
 
