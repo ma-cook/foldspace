@@ -46,18 +46,6 @@ const fetchCellDataInBatches = async (cellKeys) => {
       const data = await response.json();
       keysToFetch.forEach((key) => {
         cellCache[key] = data[key];
-        // Log planetName if it exists in greenPositions
-        if (
-          data[key] &&
-          data[key].positions &&
-          data[key].positions.greenPositions
-        ) {
-          data[key].positions.greenPositions.forEach((position) => {
-            if (position.planetName) {
-              console.log('planetName:', position.planetName);
-            }
-          });
-        }
       });
       return { ...cachedData, ...data };
     } else {
@@ -107,10 +95,7 @@ const generateNewPositions = (x, z) => {
       const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
       const posY = Math.floor(Math.random() * 20) * 5000;
       const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
-      const planetName = `Planet_${posX.toFixed(0)}_${posY.toFixed(
-        0
-      )}_${posZ.toFixed(0)}`;
-      positions[i] = { x: posX, y: posY, z: posZ, planetName };
+      positions[i] = new THREE.Vector3(posX, posY, posZ);
     }
     return positions;
   };
@@ -204,16 +189,7 @@ self.onmessage = async (event) => {
       if (cellData[cellKey]) {
         const savedPositions = cellData[cellKey];
         const validPositions = savedPositions.positions || {};
-        const newPositions = createVector3Array(validPositions.greenPositions);
-
-        // Log planetName if it exists
-        if (Array.isArray(validPositions.greenPositions)) {
-          validPositions.greenPositions.forEach((position) => {
-            if (position.planetName) {
-              console.log('planetName:', position.planetName);
-            }
-          });
-        }
+        const newPositions = createVector3Array(validPositions.positions);
 
         return { cellKey, newPositions, loadDetail, savedPositions };
       } else {
