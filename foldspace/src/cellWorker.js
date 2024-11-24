@@ -190,15 +190,8 @@ self.onmessage = async (event) => {
         const savedPositions = cellData[cellKey];
         const validPositions = savedPositions.positions || {};
         const newPositions = createVector3Array(validPositions.positions);
-        const planetName = savedPositions.planetName || ''; // Handle planetName
 
-        return {
-          cellKey,
-          newPositions,
-          loadDetail,
-          savedPositions,
-          planetName,
-        };
+        return { cellKey, newPositions, loadDetail, savedPositions };
       } else {
         // Parse cellKey into x and z coordinates
         const [x, z] = cellKey.split(',').map(Number);
@@ -249,7 +242,6 @@ self.onmessage = async (event) => {
           newGasMoonPositions,
           newBrownMoonPositions,
           loadDetail,
-          planetName: '', // No planet name for newly generated positions
         };
       }
     });

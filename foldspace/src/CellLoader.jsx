@@ -1,4 +1,3 @@
-// CellLoader.jsx
 import React, {
   useState,
   useEffect,
@@ -17,7 +16,7 @@ import {
   DETAIL_DISTANCE,
   UNLOAD_DETAIL_DISTANCE,
 } from './config';
-import loadCell from './loadCell';
+
 import { buildBVH, queryBVH } from './BVH';
 
 // Utility Functions
@@ -78,64 +77,54 @@ const useCells = (cameraRef, currentLoadDistance) => {
   return { cells, bvhRootRef, updateCells };
 };
 
-// Reducer for Loading Queue
-const loadingQueueReducer = (state, action) => {
-  switch (action.type) {
-    case 'ADD_TO_QUEUE':
-      const newItems = action.payload.filter(
-        (item) => !state.cellKeys.has(item.cellKey)
-      );
-
-      if (newItems.length === 0) return state; // No new items to add
-
-      const updatedItems = [...state.items, ...newItems];
-      const updatedCellKeys = new Set(state.cellKeys);
-      newItems.forEach((item) => updatedCellKeys.add(item.cellKey));
-
-      return {
-        items: updatedItems,
-        cellKeys: updatedCellKeys,
-      };
-
-    case 'REMOVE_FROM_QUEUE':
-      const itemsToRemove = new Set(action.payload);
-      const remainingItems = state.items.filter(
-        (item) => !itemsToRemove.has(item.cellKey)
-      );
-      const remainingCellKeys = new Set(
-        remainingItems.map((item) => item.cellKey)
-      );
-      return {
-        items: remainingItems,
-        cellKeys: remainingCellKeys,
-      };
-
-    default:
-      return state;
-  }
-};
-
 // Custom Hook for Managing Loading Queue
 const useLoadingQueue = (
-  loadCellFn,
+  loadCell,
   loadedCells,
   setLoadedCells,
   unloadCell,
-  unloadDetailedSpheres,
-  callbacks
+  unloadDetailedSpheres
 ) => {
   const initialState = {
     items: [],
     cellKeys: new Set(),
   };
 
-  const [loadingQueue, dispatchQueue] = useReducer(
-    loadingQueueReducer,
-    initialState
-  );
+  const [loadingQueue, dispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case 'ADD_TO_QUEUE':
+        const newItems = action.payload.filter(
+          (item) => !state.cellKeys.has(item.cellKey)
+        );
 
-  // Use useState for loadingCells
-  const [loadingCells, setLoadingCells] = useState(new Set());
+        if (newItems.length === 0) return state; // No new items to add
+
+        const updatedItems = [...state.items, ...newItems];
+        const updatedCellKeys = new Set(state.cellKeys);
+        newItems.forEach((item) => updatedCellKeys.add(item.cellKey));
+
+        return {
+          items: updatedItems,
+          cellKeys: updatedCellKeys,
+        };
+
+      case 'REMOVE_FROM_QUEUE':
+        const itemsToRemove = new Set(action.payload);
+        const remainingItems = state.items.filter(
+          (item) => !itemsToRemove.has(item.cellKey)
+        );
+        const remainingCellKeys = new Set(
+          remainingItems.map((item) => item.cellKey)
+        );
+        return {
+          items: remainingItems,
+          cellKeys: remainingCellKeys,
+        };
+
+      default:
+        return state;
+    }
+  }, initialState);
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.items.length > 0) {
@@ -144,16 +133,14 @@ const useLoadingQueue = (
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
         requestIdleCallback(() => {
-          loadCellFn({
-            cellKeysToLoad: [cellKey],
+          loadCell(
+            newX,
+            newZ,
             loadDetail,
             loadedCells,
-            loadingCells,
-            setLoadingCells,
-            ...callbacks,
-          });
-
-          // Update loadedCells state
+            loadingQueue.cellKeys, // Pass cellKeys Set if needed
+            dispatch
+          );
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = new Set(prevLoadedCells);
             updatedLoadedCells.add(cellKey);
@@ -162,8 +149,7 @@ const useLoadingQueue = (
         });
       });
 
-      // Remove processed items from the queue
-      dispatchQueue({
+      dispatch({
         type: 'REMOVE_FROM_QUEUE',
         payload: batch.map((item) => item.cellKey),
       });
@@ -171,20 +157,15 @@ const useLoadingQueue = (
   }, [
     loadingQueue.items,
     loadingQueue.cellKeys,
-    loadCellFn,
+    loadCell,
     loadedCells,
     setLoadedCells,
-    callbacks,
-    dispatchQueue,
-    loadingCells,
-    setLoadingCells,
   ]);
 
-  return { loadingQueue, dispatch: dispatchQueue, processLoadingQueue };
+  return { loadingQueue, dispatch, processLoadingQueue };
 };
 
-// CellLoader Component
-const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
+const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   const [currentLoadDistance, setCurrentLoadDistance] = useState(LOAD_DISTANCE);
   const { cells, bvhRootRef, updateCells } = useCells(
     cameraRef,
@@ -195,53 +176,12 @@ const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
   const unloadDetailedSpheres = useStore(
     (state) => state.unloadDetailedSpheres
   );
-
-  // Define all required callbacks
-  const setPositions = useStore((state) => state.setPositions);
-  const setPlanetNames = useStore((state) => state.setPlanetNames);
-  const setRedPositions = useStore((state) => state.setRedPositions);
-  const setGreenPositions = useStore((state) => state.setGreenPositions);
-  const setBluePositions = useStore((state) => state.setBluePositions);
-  const setPurplePositions = useStore((state) => state.setPurplePositions);
-  const setBrownPositions = useStore((state) => state.setBrownPositions);
-  const setGreenMoonPositions = useStore(
-    (state) => state.setGreenMoonPositions
-  );
-  const setPurpleMoonPositions = useStore(
-    (state) => state.setPurpleMoonPositions
-  );
-  const setGasPositions = useStore((state) => state.setGasPositions);
-  const setRedMoonPositions = useStore((state) => state.setRedMoonPositions);
-  const setGasMoonPositions = useStore((state) => state.setGasMoonPositions);
-  const setBrownMoonPositions = useStore(
-    (state) => state.setBrownMoonPositions
-  );
-  const swapBuffers = useStore((state) => state.swapBuffers);
-
-  const callbacks = {
-    setPositions,
-    setPlanetNames,
-    setRedPositions,
-    setGreenPositions,
-    setBluePositions,
-    setPurplePositions,
-    setBrownPositions,
-    setGreenMoonPositions,
-    setPurpleMoonPositions,
-    setGasPositions,
-    setRedMoonPositions,
-    setGasMoonPositions,
-    setBrownMoonPositions,
-    swapBuffers,
-  };
-
   const { loadingQueue, dispatch, processLoadingQueue } = useLoadingQueue(
     loadCell,
     loadedCells,
     setLoadedCells,
     unloadCell,
-    unloadDetailedSpheres,
-    callbacks
+    unloadDetailedSpheres
   );
 
   const checkCellsAroundCamera = useCallback(() => {
@@ -261,7 +201,10 @@ const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
     );
 
     nearbyCells.forEach((cellKey) => {
-      if (!loadedCells.has(cellKey) && !loadingQueue.cellKeys.has(cellKey)) {
+      if (
+        !loadedCells.has(cellKey) &&
+        !loadingQueue.cellKeys.has(cellKey) // Use Set for efficient lookup
+      ) {
         const [newX, newZ] = cellKey.split(',').map(Number);
         const distance = calculateDistance(
           cameraPosition.x,
@@ -296,6 +239,7 @@ const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
         x * GRID_SIZE,
         z * GRID_SIZE
       );
+
       if (distance > UNLOAD_DISTANCE) {
         unloadCell(x, z);
         setLoadedCells((prevLoadedCells) => {
@@ -310,7 +254,7 @@ const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
   }, [
     cameraRef,
     loadedCells,
-    loadingQueue.cellKeys,
+    loadingQueue.cellKeys, // Include cellKeys in dependencies
     currentLoadDistance,
     unloadCell,
     unloadDetailedSpheres,
@@ -328,7 +272,7 @@ const CellLoader = React.memo(({ cameraRef, unloadCell }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       processLoadingQueue();
-    }, 5); // Run every 500 milliseconds
+    }, 500); // Run every 500 milliseconds
     return () => clearInterval(interval);
   }, [processLoadingQueue]);
 
