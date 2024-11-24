@@ -35,6 +35,7 @@ const loadCell = (
   loadingCells,
   setLoadingCells,
   setPositions,
+  setPlanetNames,
   setRedPositions,
   setGreenPositions,
   setBluePositions,
@@ -60,6 +61,15 @@ const loadCell = (
       loadedCells = new Set(loadedCells);
     } else {
       loadedCells = new Set();
+    }
+  }
+
+  // Ensure loadingCells is a Set
+  if (!(loadingCells instanceof Set)) {
+    if (Array.isArray(loadingCells)) {
+      loadingCells = new Set(loadingCells);
+    } else {
+      loadingCells = new Set();
     }
   }
 
@@ -94,6 +104,7 @@ const loadCell = (
 
       if (loadDetail && savedPositions) {
         const positions = savedPositions.positions || {};
+        const planetName = savedPositions.planetName || ''; // Handle planetName
         const newRedPositions = createVector3Array(positions.redPositions);
         const newGreenPositions = createVector3Array(positions.greenPositions);
         const newBluePositions = createVector3Array(positions.bluePositions);
@@ -129,6 +140,12 @@ const loadCell = (
         updatePositions(setRedMoonPositions, newRedMoonPositions);
         updatePositions(setGasMoonPositions, newGasMoonPositions);
         updatePositions(setBrownMoonPositions, newBrownMoonPositions);
+
+        // Update planet names
+        setPlanetNames((prevPlanetNames) => ({
+          ...prevPlanetNames,
+          [cellKey]: planetName,
+        }));
       }
 
       setLoadedCells((prevLoadedCells) => {

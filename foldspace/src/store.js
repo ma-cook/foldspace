@@ -35,7 +35,10 @@ export const useStore = create((set) => ({
   loadedCells: new Set(), // Use a Set to track loaded cells
   bvh: [null, null], // Add BVH state
   detailedPositions: [], // Add detailed positions state
-  lessDetailedPositions: [], // Add less detailed positions state
+  lessDetailedPositions: [],
+  planetNames: {},
+  loadingCells: new Set(), // Add less detailed positions state
+  setLoadingCells: (loadingCells) => set({ loadingCells }),
   setBVH: (bvh, bufferIndex) =>
     set((state) => {
       const newBVH = [...state.bvh];
@@ -60,6 +63,10 @@ export const useStore = create((set) => ({
       delete newPlaneMeshes[cellKey];
       return { planeMeshes: newPlaneMeshes };
     }),
+  setPlanetNames: (planetNames) =>
+    set((state) => ({
+      planetNames: { ...state.planetNames, ...planetNames },
+    })),
   setLoadedCells: (loadedCells) => {
     set((state) => {
       const newLoadedCells =

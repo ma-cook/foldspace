@@ -68,6 +68,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     (state) => state.brownMoonPositions[activeBuffer]
   );
   const bvh = useStore((state) => state.bvh[activeBuffer]);
+  const planetNames = useStore((state) => state.planetNames);
 
   useBVH(positions, activeBuffer);
 
@@ -397,6 +398,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         material={memoizedSphereMaterials.green}
         geometry={getCachedGeometry('sphere')}
         scale={[0.2, 0.2, 0.2]}
+        planetNames={planetNames}
       />
       <MemoizedSphere
         key={`greenGlow`}

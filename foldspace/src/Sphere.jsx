@@ -1,9 +1,17 @@
 import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 
 const Sphere = forwardRef(
   (
-    { positions, material, geometry, scale = [1, 1, 1], rotation = [0, 0, 0] },
+    {
+      positions,
+      material,
+      geometry,
+      scale = [1, 1, 1],
+      rotation = [0, 0, 0],
+      planetNames = {},
+    },
     ref
   ) => {
     const meshRef = useRef();
@@ -49,20 +57,41 @@ const Sphere = forwardRef(
     }, [positions, scale, rotation, material]);
 
     return (
-      <instancedMesh
-        ref={(node) => {
-          meshRef.current = node;
-          if (typeof ref === 'function') {
-            ref(node);
-          } else if (ref) {
-            ref.current = node;
+      <>
+        <instancedMesh
+          ref={(node) => {
+            meshRef.current = node;
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref) {
+              ref.current = node;
+            }
+          }}
+          args={[geometry, null, positions.length]} // Set material to null initially
+          frustumCulled={false}
+        >
+          <primitive attach="material" object={material} />
+        </instancedMesh>
+        {positions.map((position, index) => {
+          const planetName = planetNames[index];
+          if (planetName) {
+            return (
+              <Html
+                key={index}
+                position={
+                  position instanceof THREE.Vector3
+                    ? [position.x, position.y + 1, position.z]
+                    : [position[0], position[1] + 1, position[2]]
+                }
+                center
+              >
+                <div className="planet-name">{planetName}</div>
+              </Html>
+            );
           }
-        }}
-        args={[geometry, null, positions.length]} // Set material to null initially
-        frustumCulled={false}
-      >
-        <primitive attach="material" object={material} />
-      </instancedMesh>
+          return null;
+        })}
+      </>
     );
   }
 );
