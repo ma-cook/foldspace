@@ -23,6 +23,10 @@ const createVector3Array = (positions) => {
 };
 
 const updatePositions = (setPositions, newPositions) => {
+  if (typeof setPositions !== 'function') {
+    console.warn('Invalid setPositions callback');
+    return;
+  }
   setPositions((prevPositions) => [...prevPositions, ...newPositions]);
 };
 
@@ -35,7 +39,7 @@ const loadCell = (
   loadingCells,
   setLoadingCells,
   setPositions,
-  setPlanetNames, // Ensure this is passed
+  setPlanetNames,
   setRedPositions,
   setGreenPositions,
   setBluePositions,
@@ -50,105 +54,127 @@ const loadCell = (
   setLoadedCells,
   swapBuffers
 ) => {
-  // Validate required callbacks
   if (typeof setPlanetNames !== 'function') {
     console.error('setPlanetNames must be a function');
     return;
   }
+  // Ensure cellKeysToLoad is an array
+  if (!Array.isArray(cellKeysToLoad)) {
+    cellKeysToLoad = [cellKeysToLoad];
+  }
 
-  // Rest of the initialization code...
+  // Ensure loadedCells is a Set
+  if (!(loadedCells instanceof Set)) {
+    if (Array.isArray(loadedCells)) {
+      loadedCells = new Set(loadedCells);
+    } else {
+      loadedCells = new Set();
+    }
+  }
+
+  // Ensure loadingCells is a Set
+  if (!(loadingCells instanceof Set)) {
+    if (Array.isArray(loadingCells)) {
+      loadingCells = new Set(loadingCells);
+    } else {
+      loadingCells = new Set();
+    }
+  }
+
+  const newCellKeys = cellKeysToLoad.filter(
+    (cellKey) => !loadedCells.has(cellKey) && !loadingCells.has(cellKey)
+  );
+
+  if (newCellKeys.length === 0) {
+    return;
+  }
+
+  // Update loadingCells state synchronously
+  setLoadingCells((prev) => {
+    const newSet = new Set(prev);
+    newCellKeys.forEach((cellKey) => newSet.add(cellKey));
+    return newSet;
+  });
+
+  worker.postMessage({
+    cellKeysToLoad: newCellKeys,
+    loadDetail,
+  });
 
   worker.onmessage = async (event) => {
     const results = event.data;
 
-    if (!Array.isArray(results)) {
-      console.error('Expected array of results from worker');
-      return;
-    }
-
     results.forEach((result) => {
-      try {
-        const {
-          cellKey,
-          newPositions,
-          loadDetail,
-          savedPositions,
-          planetName, // Ensure planetName is included in result
-        } = result;
+      const { cellKey, newPositions, loadDetail, savedPositions } = result;
 
-        if (!cellKey) {
-          console.error('Missing cellKey in result');
-          return;
+      cellCache[cellKey] = newPositions;
+      updatePositions(setPositions, newPositions);
+
+      if (loadDetail && savedPositions) {
+        const positions = savedPositions.positions || {};
+        const planetName = savedPositions.planetName || ''; // Handle planetName
+        const newRedPositions = createVector3Array(positions.redPositions);
+        const newGreenPositions = createVector3Array(positions.greenPositions);
+        const newBluePositions = createVector3Array(positions.bluePositions);
+        const newPurplePositions = createVector3Array(
+          positions.purplePositions
+        );
+        const newBrownPositions = createVector3Array(positions.brownPositions);
+        const newGreenMoonPositions = createVector3Array(
+          positions.greenMoonPositions
+        );
+        const newPurpleMoonPositions = createVector3Array(
+          positions.purpleMoonPositions
+        );
+        const newGasPositions = createVector3Array(positions.gasPositions);
+        const newRedMoonPositions = createVector3Array(
+          positions.redMoonPositions
+        );
+        const newGasMoonPositions = createVector3Array(
+          positions.gasMoonPositions
+        );
+        const newBrownMoonPositions = createVector3Array(
+          positions.brownMoonPositions
+        );
+
+        updatePositions(setRedPositions, newRedPositions);
+        updatePositions(setGreenPositions, newGreenPositions);
+        updatePositions(setBluePositions, newBluePositions);
+        updatePositions(setPurplePositions, newPurplePositions);
+        updatePositions(setBrownPositions, newBrownPositions);
+        updatePositions(setGreenMoonPositions, newGreenMoonPositions);
+        updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
+        updatePositions(setGasPositions, newGasPositions);
+        updatePositions(setRedMoonPositions, newRedMoonPositions);
+        updatePositions(setGasMoonPositions, newGasMoonPositions);
+        updatePositions(setBrownMoonPositions, newBrownMoonPositions);
+
+        // Update planet names
+        try {
+          const planetName = savedPositions.planetName || '';
+          setPlanetNames((prev) => ({
+            ...prev,
+            [cellKey]: planetName,
+          }));
+        } catch (error) {
+          console.error('Error updating planet names:', error);
         }
-
-        cellCache[cellKey] = newPositions;
-
-        if (typeof setPositions === 'function') {
-          updatePositions(setPositions, newPositions);
-        }
-
-        if (loadDetail && savedPositions) {
-          const positions = savedPositions.positions || {};
-
-          // Update all position types
-          const positionUpdates = {
-            setRedPositions: positions.redPositions,
-            setGreenPositions: positions.greenPositions,
-            setBluePositions: positions.bluePositions,
-            setPurplePositions: positions.purplePositions,
-            setBrownPositions: positions.brownPositions,
-            setGreenMoonPositions: positions.greenMoonPositions,
-            setPurpleMoonPositions: positions.purpleMoonPositions,
-            setGasPositions: positions.gasPositions,
-            setRedMoonPositions: positions.redMoonPositions,
-            setGasMoonPositions: positions.gasMoonPositions,
-            setBrownMoonPositions: positions.brownMoonPositions,
-          };
-
-          // Safely update each position type
-          Object.entries(positionUpdates).forEach(([setter, positions]) => {
-            const setterFn = eval(setter);
-            if (typeof setterFn === 'function' && Array.isArray(positions)) {
-              updatePositions(setterFn, createVector3Array(positions));
-            }
-          });
-
-          // Update planet names
-          if (planetName) {
-            setPlanetNames((prev) => ({
-              ...prev,
-              [cellKey]: planetName,
-            }));
-          }
-        }
-
-        if (typeof setLoadedCells === 'function') {
-          setLoadedCells((prev) => {
-            const newSet = new Set(prev);
-            newSet.add(cellKey);
-            return newSet;
-          });
-        }
-
-        if (typeof setLoadingCells === 'function') {
-          setLoadingCells((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(cellKey);
-            return newSet;
-          });
-        }
-
-        if (typeof swapBuffers === 'function') {
-          swapBuffers();
-        }
-      } catch (error) {
-        console.error('Error processing result:', error);
       }
-    });
-  };
 
-  worker.onerror = (error) => {
-    console.error('Worker error:', error);
+      setLoadedCells((prevLoadedCells) => {
+        const updatedLoadedCells = new Set(prevLoadedCells);
+        updatedLoadedCells.add(cellKey);
+        return updatedLoadedCells;
+      });
+
+      setLoadingCells((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(cellKey);
+        return newSet;
+      });
+
+      swapBuffers();
+    });
   };
 };
 
