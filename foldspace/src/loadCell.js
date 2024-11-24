@@ -129,6 +129,15 @@ const loadCell = (
         updatePositions(setRedMoonPositions, newRedMoonPositions);
         updatePositions(setGasMoonPositions, newGasMoonPositions);
         updatePositions(setBrownMoonPositions, newBrownMoonPositions);
+
+        // Log any green sphere position that has a planetName
+        if (Array.isArray(positions.greenPositions)) {
+          positions.greenPositions.forEach((position) => {
+            if (position.planetName) {
+              console.log('planetName:', position.planetName);
+            }
+          });
+        }
       }
 
       setLoadedCells((prevLoadedCells) => {
