@@ -130,7 +130,7 @@ const loadCell = (
         updatePositions(setGasMoonPositions, newGasMoonPositions);
         updatePositions(setBrownMoonPositions, newBrownMoonPositions);
 
-        // Log any green sphere position that has a planetName
+        // Log planetName if it exists in greenPositions
         if (Array.isArray(positions.greenPositions)) {
           positions.greenPositions.forEach((position) => {
             if (position.planetName) {
