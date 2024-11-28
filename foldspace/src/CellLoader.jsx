@@ -126,6 +126,22 @@ const useLoadingQueue = (
     }
   }, initialState);
 
+  const {
+    setPositions,
+    setRedPositions,
+    setGreenPositions,
+    setBluePositions,
+    setPurplePositions,
+    setBrownPositions,
+    setGreenMoonPositions,
+    setPurpleMoonPositions,
+    setGasPositions,
+    setRedMoonPositions,
+    setGasMoonPositions,
+    setBrownMoonPositions,
+    setPlanetNames, // Ensure this is obtained from the store
+  } = useStore();
+
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.items.length > 0) {
       const batchSize = 10; // Adjust batch size as needed
@@ -134,13 +150,28 @@ const useLoadingQueue = (
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
         requestIdleCallback(() => {
           loadCell(
-            newX,
-            newZ,
+            [cellKey], // cellKeysToLoad as an array
             loadDetail,
             loadedCells,
-            loadingQueue.cellKeys, // Pass cellKeys Set if needed
-            dispatch
+            loadingQueue.cellKeys,
+            setLoadingCells,
+            setPositions,
+            setRedPositions,
+            setGreenPositions,
+            setBluePositions,
+            setPurplePositions,
+            setBrownPositions,
+            setGreenMoonPositions,
+            setPurpleMoonPositions,
+            setGasPositions,
+            setRedMoonPositions,
+            setGasMoonPositions,
+            setBrownMoonPositions,
+            setLoadedCells,
+            swapBuffers,
+            setPlanetNames // Pass the setPlanetNames function
           );
+
           setLoadedCells((prevLoadedCells) => {
             const updatedLoadedCells = new Set(prevLoadedCells);
             updatedLoadedCells.add(cellKey);
@@ -160,6 +191,20 @@ const useLoadingQueue = (
     loadCell,
     loadedCells,
     setLoadedCells,
+    setPositions,
+    setRedPositions,
+    setGreenPositions,
+    setBluePositions,
+    setPurplePositions,
+    setBrownPositions,
+    setGreenMoonPositions,
+    setPurpleMoonPositions,
+    setGasPositions,
+    setRedMoonPositions,
+    setGasMoonPositions,
+    setBrownMoonPositions,
+    swapBuffers,
+    setPlanetNames,
   ]);
 
   return { loadingQueue, dispatch, processLoadingQueue };
