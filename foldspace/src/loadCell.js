@@ -153,10 +153,7 @@ const loadCell = (
 
           // Update planet names state
           if (typeof setPlanetNames === 'function') {
-            setPlanetNames((prevPlanetNames) => ({
-              ...prevPlanetNames,
-              ...planetNames,
-            }));
+            setPlanetNames(planetNames);
           } else {
             console.warn('setPlanetNames is not a function');
           }
