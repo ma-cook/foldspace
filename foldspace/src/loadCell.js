@@ -47,7 +47,8 @@ const loadCell = (
   setGasMoonPositions,
   setBrownMoonPositions,
   setLoadedCells,
-  swapBuffers
+  swapBuffers,
+  setPlanetNames // Add this parameter to set planet names
 ) => {
   return new Promise((resolve, reject) => {
     // Ensure cellKeysToLoad is an array
@@ -136,16 +137,25 @@ const loadCell = (
           updatePositions(setGasMoonPositions, newGasMoonPositions);
           updatePositions(setBrownMoonPositions, newBrownMoonPositions);
 
-          // Log planetName and its coordinates if it exists in greenPositions
+          // Create a mapping of coordinates to planetName
+          const planetNames = {};
           if (Array.isArray(positions.greenPositions)) {
             positions.greenPositions.forEach((position) => {
               if (position.planetName) {
+                const key = `${position.x},${position.y},${position.z}`;
+                planetNames[key] = position.planetName;
                 console.log(
                   `planetName: ${position.planetName}, coordinates: (${position.x}, ${position.y}, ${position.z})`
                 );
               }
             });
           }
+
+          // Update planet names state
+          setPlanetNames((prevPlanetNames) => ({
+            ...prevPlanetNames,
+            ...planetNames,
+          }));
         }
 
         setLoadedCells((prevLoadedCells) => {
