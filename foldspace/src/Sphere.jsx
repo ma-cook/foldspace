@@ -17,6 +17,10 @@ const Sphere = forwardRef(
     const meshRef = useRef();
 
     useEffect(() => {
+      console.log('planetNames:', planetNames);
+    }, [planetNames]);
+
+    useEffect(() => {
       const mesh = meshRef.current;
       if (mesh) {
         const customInstancePositions = new Float32Array(positions.length * 3);
