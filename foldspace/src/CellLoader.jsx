@@ -97,7 +97,7 @@ const useLoadingQueue = (
           (item) => !state.cellKeys.has(item.cellKey)
         );
 
-        if (newItems.length === 0) return state; // No new items to add
+        if (newItems.length === 0) return state;
 
         const updatedItems = [...state.items, ...newItems];
         const updatedCellKeys = new Set(state.cellKeys);
@@ -139,12 +139,14 @@ const useLoadingQueue = (
     setRedMoonPositions,
     setGasMoonPositions,
     setBrownMoonPositions,
-    setPlanetNames, // Ensure this is obtained from the store
+    setPlanetNames,
+    swapBuffers,
+    setLoadingCells,
   } = useStore();
 
   const processLoadingQueue = useCallback(() => {
     if (loadingQueue.items.length > 0) {
-      const batchSize = 10; // Adjust batch size as needed
+      const batchSize = 10;
       const batch = loadingQueue.items.slice(0, batchSize);
 
       batch.forEach(({ cellKey, newX, newZ, loadDetail }) => {
@@ -168,7 +170,7 @@ const useLoadingQueue = (
             setGasMoonPositions,
             setBrownMoonPositions,
             setLoadedCells,
-            swapBuffers,
+            swapBuffers, // Pass the swapBuffers function
             setPlanetNames // Pass the setPlanetNames function
           );
 
@@ -246,10 +248,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     );
 
     nearbyCells.forEach((cellKey) => {
-      if (
-        !loadedCells.has(cellKey) &&
-        !loadingQueue.cellKeys.has(cellKey) // Use Set for efficient lookup
-      ) {
+      if (!loadedCells.has(cellKey) && !loadingQueue.cellKeys.has(cellKey)) {
         const [newX, newZ] = cellKey.split(',').map(Number);
         const distance = calculateDistance(
           cameraPosition.x,
@@ -270,7 +269,6 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
       }
     });
 
-    // If all cells within the load distance are already loaded, return early
     if (allCellsLoaded) return;
 
     newLoadingQueue.sort((a, b) => a.distance - b.distance);
@@ -299,7 +297,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   }, [
     cameraRef,
     loadedCells,
-    loadingQueue.cellKeys, // Include cellKeys in dependencies
+    loadingQueue.cellKeys,
     currentLoadDistance,
     unloadCell,
     unloadDetailedSpheres,
@@ -308,7 +306,6 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
     dispatch,
   ]);
 
-  // Throttle the checkCellsAroundCamera function to reduce the frequency of updates
   const throttledCheckCellsAroundCamera = useMemo(
     () => throttle(checkCellsAroundCamera, 100),
     [checkCellsAroundCamera]
@@ -317,7 +314,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       processLoadingQueue();
-    }, 500); // Run every 500 milliseconds
+    }, 500);
     return () => clearInterval(interval);
   }, [processLoadingQueue]);
 
