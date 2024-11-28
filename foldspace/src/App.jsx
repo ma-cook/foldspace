@@ -74,6 +74,7 @@ const App = React.memo(() => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [ownedPlanets, setOwnedPlanets] = useState([]);
   const setTarget = useStore((state) => state.setTarget);
+  const setPlanetNames = useStore((state) => state.setPlanetNames);
 
   const fetchOwnedPlanets = async (userId) => {
     try {
@@ -161,7 +162,8 @@ const App = React.memo(() => {
         setGasMoonPositions,
         setBrownMoonPositions,
         setLoadedCells,
-        swapBuffers
+        swapBuffers,
+        setPlanetNames
       ),
     [
       loadedCells,
@@ -181,6 +183,7 @@ const App = React.memo(() => {
       setBrownMoonPositions,
       setLoadedCells,
       swapBuffers,
+      setPlanetNames,
     ]
   );
 
