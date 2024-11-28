@@ -202,18 +202,31 @@ app.post('/verify-token', cors(corsOptions), async (req, res) => {
 });
 
 // New endpoint to assign ownership of a green sphere to a new user
+// New endpoint to assign ownership of a green sphere to a new user
 app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
-  const { userId, civilisationName, homePlanetName } = req.body;
+  const { userId } = req.body;
   try {
-    // Check if the user already has a starting planet
+    // Fetch user data from Firestore
     const userDoc = await db.collection('users').doc(userId).get();
-    if (userDoc.exists) {
-      const userData = userDoc.data();
-      if (userData.spheres && userData.spheres.length > 0) {
-        return res
-          .status(400)
-          .json({ error: 'User already has a starting planet' });
-      }
+    if (!userDoc.exists) {
+      console.error(`User with ID ${userId} not found.`);
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userData = userDoc.data();
+    const { civilisationName, homePlanetName } = userData;
+
+    if (!civilisationName || !homePlanetName) {
+      console.error(`User data incomplete for userId ${userId}.`);
+      return res.status(400).json({ error: 'User data is incomplete' });
+    }
+
+    // Check if the user already has a starting planet
+    if (userData.spheres && userData.spheres.length > 0) {
+      console.error(`User ${userId} already has a starting planet.`);
+      return res
+        .status(400)
+        .json({ error: 'User already has a starting planet' });
     }
 
     const cellsSnapshot = await db.collection('cells').get();
@@ -240,6 +253,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
     });
 
     if (!closestSphere) {
+      console.error(`No green spheres available for userId ${userId}.`);
       return res.status(404).json({ error: 'No green spheres available' });
     }
 
@@ -265,6 +279,9 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
     });
 
     if (isTooClose) {
+      console.error(
+        `No green spheres available within the required distance for userId ${userId}.`
+      );
       return res.status(400).json({
         error: 'No green spheres available within the required distance',
       });
@@ -274,7 +291,9 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
     const docRef = db.collection('cells').doc(closestSphere.docId);
     const data = (await docRef.get()).data();
     const updatedGreenPositions = data.positions.greenPositions.map((pos) =>
-      pos === closestSphere.position
+      pos.x === closestSphere.position.x &&
+      pos.y === closestSphere.position.y &&
+      pos.z === closestSphere.position.z
         ? {
             ...pos,
             owner: userId,
@@ -289,6 +308,13 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       'positions.greenPositions': updatedGreenPositions,
     });
 
+    // Log the updated document to verify the planetName
+    const updatedDoc = await docRef.get();
+    console.log(
+      `Updated document for cellKey ${closestSphere.docId}:`,
+      updatedDoc.data()
+    );
+
     // Update the user's document with the new sphere
     const userRef = db.collection('users').doc(userId);
     await userRef.set(
@@ -300,7 +326,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
 
     res.json({ message: 'Ownership assigned successfully' });
   } catch (error) {
-    console.error('Error assigning ownership:', error);
+    console.error(`Error assigning ownership for userId ${userId}:`, error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
