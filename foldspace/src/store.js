@@ -403,7 +403,7 @@ export const useStore = create((set) => ({
 
   swapBuffers: () =>
     set((state) => ({
-      activeBuffer: (state.activeBuffer + 1) % 2,
+      activeBuffer: 1 - state.activeBuffer, // Toggle between 0 and 1
     })),
   removePositions: (positionsToRemove) => {
     set((state) => {

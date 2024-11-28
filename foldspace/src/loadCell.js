@@ -152,10 +152,14 @@ const loadCell = (
           }
 
           // Update planet names state
-          setPlanetNames((prevPlanetNames) => ({
-            ...prevPlanetNames,
-            ...planetNames,
-          }));
+          if (typeof setPlanetNames === 'function') {
+            setPlanetNames((prevPlanetNames) => ({
+              ...prevPlanetNames,
+              ...planetNames,
+            }));
+          } else {
+            console.warn('setPlanetNames is not a function');
+          }
         }
 
         setLoadedCells((prevLoadedCells) => {
@@ -169,6 +173,13 @@ const loadCell = (
           newSet.delete(cellKey);
           return newSet;
         });
+
+        // Swap buffers if defined
+        if (typeof swapBuffers === 'function') {
+          swapBuffers();
+        } else {
+          console.warn('swapBuffers is not a function');
+        }
       });
 
       resolve();
