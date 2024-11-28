@@ -144,9 +144,6 @@ const loadCell = (
               if (position.planetName) {
                 const key = `${position.x},${position.y},${position.z}`;
                 planetNames[key] = position.planetName;
-                console.log(
-                  `planetName: ${position.planetName}, coordinates: (${position.x}, ${position.y}, ${position.z})`
-                );
               }
             });
           }

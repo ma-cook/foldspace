@@ -1,3 +1,4 @@
+// Sphere.jsx
 import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
@@ -77,11 +78,17 @@ const Sphere = forwardRef(
           <primitive attach="material" object={material} />
         </instancedMesh>
         {positions.map((position, index) => {
-          const planetName = planetNames[index];
+          // Construct the key from position coordinates
+          const key =
+            position instanceof THREE.Vector3
+              ? `${position.x},${position.y},${position.z}`
+              : `${position[0]},${position[1]},${position[2]}`;
+
+          const planetName = planetNames[key];
           if (planetName) {
             return (
               <Html
-                key={index}
+                key={key}
                 position={
                   position instanceof THREE.Vector3
                     ? [position.x, position.y + 1, position.z]

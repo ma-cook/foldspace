@@ -306,10 +306,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     animate();
   }, []);
 
-  useEffect(() => {
-    console.log('planetNames:', planetNames);
-  }, [planetNames]);
-
   return (
     <>
       <PlaneMesh
