@@ -169,8 +169,6 @@ const loadCell = (
           newSet.delete(cellKey);
           return newSet;
         });
-
-        swapBuffers();
       });
 
       resolve();
