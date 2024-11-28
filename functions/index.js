@@ -205,129 +205,159 @@ app.post('/verify-token', cors(corsOptions), async (req, res) => {
 // New endpoint to assign ownership of a green sphere to a new user
 app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'Missing userId in request body' });
+  }
+
   try {
-    // Fetch user data from Firestore
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      console.error(`User with ID ${userId} not found.`);
-      return res.status(404).json({ error: 'User not found' });
-    }
+    await db.runTransaction(async (transaction) => {
+      // Fetch user data
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) {
+        throw new Error('User not found');
+      }
 
-    const userData = userDoc.data();
-    const { civilisationName, homePlanetName } = userData;
-
-    if (!civilisationName || !homePlanetName) {
-      console.error(`User data incomplete for userId ${userId}.`);
-      return res.status(400).json({ error: 'User data is incomplete' });
-    }
-
-    // Check if the user already has a starting planet
-    if (userData.spheres && userData.spheres.length > 0) {
-      console.error(`User ${userId} already has a starting planet.`);
-      return res
-        .status(400)
-        .json({ error: 'User already has a starting planet' });
-    }
-
-    const cellsSnapshot = await db.collection('cells').get();
-    let closestSphere = null;
-    let closestDistance = Infinity;
-
-    // Find the closest green sphere to [0,0,0]
-    cellsSnapshot.forEach((doc) => {
-      const data = doc.data();
-      const greenPositions = data.positions.greenPositions || [];
-
-      greenPositions.forEach((position) => {
-        const distance = Math.sqrt(
-          position.x * position.x +
-            position.y * position.y +
-            position.z * position.z
-        );
-
-        if (distance < closestDistance) {
-          closestSphere = { docId: doc.id, position };
-          closestDistance = distance;
-        }
-      });
-    });
-
-    if (!closestSphere) {
-      console.error(`No green spheres available for userId ${userId}.`);
-      return res.status(404).json({ error: 'No green spheres available' });
-    }
-
-    // Check if the new sphere is within 25,000 units of any other user's sphere
-    const usersSnapshot = await db.collection('users').get();
-    let isTooClose = false;
-
-    usersSnapshot.forEach((userDoc) => {
       const userData = userDoc.data();
-      const userSpheres = userData.spheres || [];
+      const { civilisationName, homePlanetName, spheres } = userData;
 
-      userSpheres.forEach((sphere) => {
-        const distance = Math.sqrt(
-          (sphere.x - closestSphere.position.x) ** 2 +
-            (sphere.y - closestSphere.position.y) ** 2 +
-            (sphere.z - closestSphere.position.z) ** 2
+      if (!civilisationName || !homePlanetName) {
+        throw new Error('User data is incomplete');
+      }
+
+      // Check if the user already has a starting planet
+      if (spheres && spheres.length > 0) {
+        throw new Error('User already has a starting planet');
+      }
+
+      // Fetch all cells
+      const cellsSnapshot = await transaction.get(db.collection('cells'));
+      let closestSphere = null;
+      let closestDistance = Infinity;
+
+      // Iterate through cells to find the closest unowned green sphere
+      cellsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        const greenPositions = data.positions.greenPositions || [];
+
+        greenPositions.forEach((position) => {
+          // Skip spheres that already have an owner
+          if (position.owner) {
+            return;
+          }
+
+          const distance = Math.sqrt(
+            position.x * position.x +
+              position.y * position.y +
+              position.z * position.z
+          );
+
+          if (distance < closestDistance) {
+            closestSphere = { cellId: doc.id, position };
+            closestDistance = distance;
+          }
+        });
+      });
+
+      if (!closestSphere) {
+        throw new Error('No green spheres available');
+      }
+
+      // Check distance constraints
+      const usersSnapshot = await transaction.get(db.collection('users'));
+      let isTooClose = false;
+
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        const userSpheres = data.spheres || [];
+
+        userSpheres.forEach((sphere) => {
+          const distance = Math.sqrt(
+            (sphere.x - closestSphere.position.x) ** 2 +
+              (sphere.y - closestSphere.position.y) ** 2 +
+              (sphere.z - closestSphere.position.z) ** 2
+          );
+
+          if (distance < 25000) {
+            isTooClose = true;
+          }
+        });
+      });
+
+      if (isTooClose) {
+        throw new Error(
+          'No green spheres available within the required distance'
+        );
+      }
+
+      // Assign ownership to the selected sphere
+      const cellRef = db.collection('cells').doc(closestSphere.cellId);
+      const cellDoc = await transaction.get(cellRef);
+      if (!cellDoc.exists) {
+        throw new Error('Selected cell does not exist');
+      }
+
+      const updatedGreenPositions = cellDoc
+        .data()
+        .positions.greenPositions.map((pos) =>
+          pos.x === closestSphere.position.x &&
+          pos.y === closestSphere.position.y &&
+          pos.z === closestSphere.position.z
+            ? {
+                ...pos,
+                owner: userId,
+                civilisationName,
+                homePlanetName,
+                planetName: homePlanetName,
+              }
+            : pos
         );
 
-        if (distance < 25000) {
-          isTooClose = true;
-        }
+      // Update the cell with the assigned sphere
+      transaction.update(cellRef, {
+        'positions.greenPositions': updatedGreenPositions,
       });
-    });
 
-    if (isTooClose) {
-      console.error(
-        `No green spheres available within the required distance for userId ${userId}.`
-      );
-      return res.status(400).json({
-        error: 'No green spheres available within the required distance',
+      // Update the user's document with the new sphere
+      const newSphere = {
+        ...closestSphere.position,
+        planetName: homePlanetName,
+        civilisationName,
+      };
+      transaction.update(userRef, {
+        spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
       });
-    }
 
-    // Assign ownership to the new user and save planet and civilisation name
-    const docRef = db.collection('cells').doc(closestSphere.docId);
-    const data = (await docRef.get()).data();
-    const updatedGreenPositions = data.positions.greenPositions.map((pos) =>
-      pos.x === closestSphere.position.x &&
-      pos.y === closestSphere.position.y &&
-      pos.z === closestSphere.position.z
-        ? {
-            ...pos,
-            owner: userId,
-            civilisationName,
-            homePlanetName,
-            planetName: homePlanetName,
-          }
-        : pos
-    );
-
-    await docRef.update({
-      'positions.greenPositions': updatedGreenPositions,
+      // Optionally, update cache and local data files here
+      console.log(`Assigned sphere ${closestSphere.cellId} to user ${userId}`);
     });
-
-    // Log the updated document to verify the planetName
-    const updatedDoc = await docRef.get();
-    console.log(
-      `Updated document for cellKey ${closestSphere.docId}:`,
-      updatedDoc.data()
-    );
-
-    // Update the user's document with the new sphere
-    const userRef = db.collection('users').doc(userId);
-    await userRef.set(
-      {
-        spheres: admin.firestore.FieldValue.arrayUnion(closestSphere.position),
-      },
-      { merge: true }
-    );
 
     res.json({ message: 'Ownership assigned successfully' });
   } catch (error) {
-    console.error(`Error assigning ownership for userId ${userId}:`, error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error(
+      `Error assigning ownership for userId ${userId}:`,
+      error.message
+    );
+
+    if (error.message === 'User not found') {
+      res.status(404).json({ error: 'User not found' });
+    } else if (error.message === 'User data is incomplete') {
+      res.status(400).json({ error: 'User data is incomplete' });
+    } else if (error.message === 'User already has a starting planet') {
+      res.status(400).json({ error: 'User already has a starting planet' });
+    } else if (error.message === 'No green spheres available') {
+      res.status(404).json({ error: 'No green spheres available' });
+    } else if (
+      error.message ===
+      'No green spheres available within the required distance'
+    ) {
+      res.status(400).json({
+        error: 'No green spheres available within the required distance',
+      });
+    } else {
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
   }
 });
 
