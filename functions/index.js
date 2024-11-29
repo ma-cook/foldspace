@@ -279,7 +279,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
               (sphere.z - closestSphere.position.z) ** 2
           );
 
-          if (distance < 25000) {
+          if (distance > 25000) {
             isTooClose = true;
           }
         });
