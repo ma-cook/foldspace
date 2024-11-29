@@ -231,64 +231,57 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         throw new Error('User already has a starting planet');
       }
 
+      // Fetch all users' spheres to check distance constraints
+      const usersSnapshot = await transaction.get(db.collection('users'));
+      const existingSpheres = [];
+      usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.spheres) {
+          existingSpheres.push(...data.spheres);
+        }
+      });
+
       // Fetch all cells
       const cellsSnapshot = await transaction.get(db.collection('cells'));
       let closestSphere = null;
-      let closestDistance = Infinity;
+      let closestDistanceSq = Infinity;
 
-      // Iterate through cells to find the closest unowned green sphere
-      cellsSnapshot.forEach((doc) => {
+      // Iterate through cells to find the closest unowned green sphere outside 25,000 distance
+      for (const doc of cellsSnapshot.docs) {
         const data = doc.data();
         const greenPositions = data.positions.greenPositions || [];
 
-        greenPositions.forEach((position) => {
-          // Skip spheres that already have an owner
-          if (position.owner) {
-            return;
+        for (const position of greenPositions) {
+          if (position.owner) continue;
+
+          // Calculate squared distance from origin
+          const distanceSq =
+            position.x ** 2 + position.y ** 2 + position.z ** 2;
+
+          // Check distance constraints with existing spheres
+          let isTooClose = false;
+          for (const sphere of existingSpheres) {
+            const dx = sphere.x - position.x;
+            const dy = sphere.y - position.y;
+            const dz = sphere.z - position.z;
+            const userDistanceSq = dx ** 2 + dy ** 2 + dz ** 2;
+            if (userDistanceSq <= 35000 ** 2) {
+              isTooClose = true;
+              break;
+            }
           }
 
-          const distance = Math.sqrt(
-            position.x * position.x +
-              position.y * position.y +
-              position.z * position.z
-          );
-
-          if (distance < closestDistance) {
+          if (!isTooClose && distanceSq < closestDistanceSq) {
             closestSphere = { cellId: doc.id, position };
-            closestDistance = distance;
+            closestDistanceSq = distanceSq;
           }
-        });
-      });
+        }
+
+        if (closestSphere && closestDistanceSq === 0) break; // Optimal sphere found
+      }
 
       if (!closestSphere) {
         throw new Error('No green spheres available');
-      }
-
-      // Check distance constraints
-      const usersSnapshot = await transaction.get(db.collection('users'));
-      let isTooClose = false;
-
-      usersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        const userSpheres = data.spheres || [];
-
-        userSpheres.forEach((sphere) => {
-          const distance = Math.sqrt(
-            (sphere.x - closestSphere.position.x) ** 2 +
-              (sphere.y - closestSphere.position.y) ** 2 +
-              (sphere.z - closestSphere.position.z) ** 2
-          );
-
-          if (distance > 25000) {
-            isTooClose = true;
-          }
-        });
-      });
-
-      if (isTooClose) {
-        throw new Error(
-          'No green spheres available within the required distance'
-        );
       }
 
       // Assign ownership to the selected sphere
@@ -329,7 +322,6 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
       });
 
-      // Optionally, update cache and local data files here
       console.log(`Assigned sphere ${closestSphere.cellId} to user ${userId}`);
     });
 
@@ -348,13 +340,6 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       res.status(400).json({ error: 'User already has a starting planet' });
     } else if (error.message === 'No green spheres available') {
       res.status(404).json({ error: 'No green spheres available' });
-    } else if (
-      error.message ===
-      'No green spheres available within the required distance'
-    ) {
-      res.status(400).json({
-        error: 'No green spheres available within the required distance',
-      });
     } else {
       res.status(500).json({ error: 'Internal Server Error' });
     }
