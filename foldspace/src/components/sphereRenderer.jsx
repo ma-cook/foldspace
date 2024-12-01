@@ -10,6 +10,7 @@ import { useClearDetailedSpheres } from '../hooks/useClearDetailedSpheres';
 import { getCachedGeometry, getCachedShader } from '../resourceCache';
 import { DETAIL_DISTANCE } from '../config';
 import * as THREE from 'three';
+import SphereGroup from './SphereGroup'; // Import SphereGroup
 
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const previousYellowPositions = useRef(new Set());
@@ -72,6 +73,11 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
 
   useBVH(positions, activeBuffer);
 
+  const filteredPositions = useFilteredPositions(
+    positions,
+    cameraRef,
+    DETAIL_DISTANCE
+  );
   const filteredRedPositions = useFilteredPositions(
     redPositions,
     cameraRef,
@@ -124,11 +130,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
   const filteredBrownMoonPositions = useFilteredPositions(
     brownMoonPositions,
-    cameraRef,
-    DETAIL_DISTANCE
-  );
-  const filteredPositions = useFilteredPositions(
-    positions,
     cameraRef,
     DETAIL_DISTANCE
   );
@@ -234,7 +235,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   }, [clearDetailedSpheres]);
 
   useEffect(() => {
-    // Set sphere refs in the store
     useStore.getState().setSphereRefs('someCellKey', sphereRefs);
   }, []);
 
@@ -251,50 +251,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const memoizedLessDetailedPositions = useMemo(
     () => lessDetailedPositions,
     [lessDetailedPositions]
-  );
-  const memoizedFilteredRedPositions = useMemo(
-    () => filteredRedPositions,
-    [filteredRedPositions]
-  );
-  const memoizedFilteredGreenPositions = useMemo(
-    () => filteredGreenPositions,
-    [filteredGreenPositions]
-  );
-  const memoizedFilteredBluePositions = useMemo(
-    () => filteredBluePositions,
-    [filteredBluePositions]
-  );
-  const memoizedFilteredPurplePositions = useMemo(
-    () => filteredPurplePositions,
-    [filteredPurplePositions]
-  );
-  const memoizedFilteredBrownPositions = useMemo(
-    () => filteredBrownPositions,
-    [filteredBrownPositions]
-  );
-  const memoizedFilteredGreenMoonPositions = useMemo(
-    () => filteredGreenMoonPositions,
-    [filteredGreenMoonPositions]
-  );
-  const memoizedFilteredPurpleMoonPositions = useMemo(
-    () => filteredPurpleMoonPositions,
-    [filteredPurpleMoonPositions]
-  );
-  const memoizedFilteredGasPositions = useMemo(
-    () => filteredGasPositions,
-    [filteredGasPositions]
-  );
-  const memoizedFilteredRedMoonPositions = useMemo(
-    () => filteredRedMoonPositions,
-    [filteredRedMoonPositions]
-  );
-  const memoizedFilteredGasMoonPositions = useMemo(
-    () => filteredGasMoonPositions,
-    [filteredGasMoonPositions]
-  );
-  const memoizedFilteredBrownMoonPositions = useMemo(
-    () => filteredBrownMoonPositions,
-    [filteredBrownMoonPositions]
   );
 
   useEffect(() => {
@@ -366,165 +322,48 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         frustumCulled={false}
         scale={[1.3, 1.3, 1.3]}
       />
-      <MemoizedSphere
-        key={`red`}
-        ref={sphereRefs.red}
-        positions={memoizedFilteredRedPositions}
-        material={memoizedSphereMaterials.red}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.2, 0.2, 0.2]}
-      />
-      <MemoizedSphere
-        key={`redGlow`}
-        ref={sphereRefs.red}
-        positions={memoizedFilteredRedPositions}
-        material={memoizedSphereMaterials.redGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.4, 0.4, 0.4]}
-      />
-      <MemoizedSphere
-        key={`redMoon`}
-        ref={sphereRefs.redMoon}
-        positions={memoizedFilteredRedMoonPositions}
-        material={memoizedSphereMaterials.moon}
-        geometry={getCachedGeometry('sphere')}
-        frustumCulled={false}
-        scale={[0.05, 0.05, 0.05]}
-      />
-      <MemoizedSphere
-        key={`green`}
-        ref={sphereRefs.green}
-        positions={memoizedFilteredGreenPositions}
-        material={memoizedSphereMaterials.green}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.2, 0.2, 0.2]}
+      <SphereGroup
+        color="red"
+        positions={filteredRedPositions}
+        moonPositions={filteredRedMoonPositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
         planetNames={planetNames}
       />
-      <MemoizedSphere
-        key={`greenGlow`}
-        ref={sphereRefs.green}
-        positions={memoizedFilteredGreenPositions}
-        material={memoizedSphereMaterials.greenGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.4, 0.4, 0.4]}
+      <SphereGroup
+        color="green"
+        positions={filteredGreenPositions}
+        moonPositions={filteredGreenMoonPositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
+        planetNames={planetNames}
       />
-      <MemoizedSphere
-        key={`greenMoon`}
-        ref={sphereRefs.greenMoon}
-        positions={memoizedFilteredGreenMoonPositions}
-        material={memoizedSphereMaterials.moon}
-        geometry={getCachedGeometry('sphere')}
-        frustumCulled={false}
-        scale={[0.05, 0.05, 0.05]}
+      <SphereGroup
+        color="blue"
+        positions={filteredBluePositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
       />
-      <MemoizedSphere
-        key={`blue`}
-        ref={sphereRefs.blue}
-        positions={memoizedFilteredBluePositions}
-        material={memoizedSphereMaterials.blue}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.2, 0.2, 0.2]}
+      <SphereGroup
+        color="purple"
+        positions={filteredPurplePositions}
+        moonPositions={filteredPurpleMoonPositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
       />
-      <MemoizedSphere
-        key={`blueGlow`}
-        ref={sphereRefs.blue}
-        positions={memoizedFilteredBluePositions}
-        material={memoizedSphereMaterials.blueGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.4, 0.4, 0.4]}
+      <SphereGroup
+        color="brown"
+        positions={filteredBrownPositions}
+        moonPositions={filteredBrownMoonPositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
       />
-      <MemoizedSphere
-        key={`purple`}
-        ref={sphereRefs.purple}
-        positions={memoizedFilteredPurplePositions}
-        material={memoizedSphereMaterials.purple}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.2, 0.2, 0.2]}
-      />
-      <MemoizedSphere
-        key={`purpleGlow`}
-        ref={sphereRefs.purple}
-        positions={memoizedFilteredPurplePositions}
-        material={memoizedSphereMaterials.purpleGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.4, 0.4, 0.4]}
-      />
-      <MemoizedSphere
-        key={`purpleMoon`}
-        ref={sphereRefs.purpleMoon}
-        positions={memoizedFilteredPurpleMoonPositions}
-        material={memoizedSphereMaterials.moon}
-        geometry={getCachedGeometry('sphere')}
-        frustumCulled={false}
-        scale={[0.05, 0.05, 0.05]}
-      />
-      <MemoizedSphere
-        key={`brown`}
-        ref={sphereRefs.brown}
-        positions={memoizedFilteredBrownPositions}
-        material={memoizedSphereMaterials.brown}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.4, 0.4, 0.4]}
-      />
-      <MemoizedSphere
-        key={`brownGlow`}
-        ref={sphereRefs.brown}
-        positions={memoizedFilteredBrownPositions}
-        material={memoizedSphereMaterials.brownGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.7, 0.7, 0.7]}
-      />
-      <MemoizedSphere
-        key={`brownRing`}
-        ref={sphereRefs.brownRing}
-        positions={memoizedFilteredBrownPositions}
-        material={memoizedSphereMaterials.brownRing}
-        geometry={getCachedGeometry('torus')}
-        rotation={[-Math.PI / 2, 0, 0]}
-        scale={[1.2, 1.2, 1.2]}
-      />
-      <MemoizedSphere
-        key={`brownMoon`}
-        ref={sphereRefs.brownMoon}
-        positions={memoizedFilteredBrownMoonPositions}
-        material={memoizedSphereMaterials.moon}
-        geometry={getCachedGeometry('sphere')}
-        frustumCulled={false}
-        scale={[0.1, 0.1, 0.1]}
-      />
-      <MemoizedSphere
-        key={`gas`}
-        ref={sphereRefs.gas}
-        positions={memoizedFilteredGasPositions}
-        material={memoizedSphereMaterials.gas}
-        geometry={getCachedGeometry('sphere')}
-        scale={[0.6, 0.6, 0.6]}
-      />
-      <MemoizedSphere
-        key={`gasGlow`}
-        ref={sphereRefs.gas}
-        positions={memoizedFilteredGasPositions}
-        material={memoizedSphereMaterials.gasGlow}
-        geometry={getCachedGeometry('sphere')}
-        scale={[1.1, 1.1, 1.1]}
-      />
-      <MemoizedSphere
-        key={`gasRing`}
-        ref={sphereRefs.gasRing}
-        positions={memoizedFilteredGasPositions}
-        material={memoizedSphereMaterials.brownRing}
-        geometry={getCachedGeometry('torus')}
-        rotation={[-Math.PI / 2, 0, 0]}
-        scale={[1.6, 1.6, 1.6]}
-      />
-      <MemoizedSphere
-        key={`gasMoon`}
-        ref={sphereRefs.gasMoon}
-        positions={memoizedFilteredGasMoonPositions}
-        material={memoizedSphereMaterials.moon}
-        geometry={getCachedGeometry('sphere')}
-        frustumCulled={false}
-        scale={[0.1, 0.1, 0.1]}
+      <SphereGroup
+        color="gas"
+        positions={filteredGasPositions}
+        moonPositions={filteredGasMoonPositions}
+        sphereRefs={sphereRefs}
+        materials={memoizedSphereMaterials}
       />
     </>
   );
