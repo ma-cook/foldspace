@@ -261,20 +261,19 @@ self.onmessage = async (event) => {
           // Parse cellKey into x and z coordinates
           const [x, z] = cellKey.split(',').map(Number);
 
-          ({
-            newPositions,
-            newRedPositions,
-            newGreenPositions,
-            newBluePositions,
-            newPurplePositions,
-            newBrownPositions,
-            newGreenMoonPositions,
-            newPurpleMoonPositions,
-            newGasPositions,
-            newRedMoonPositions,
-            newGasMoonPositions,
-            newBrownMoonPositions,
-          } = generateNewPositions(x, z));
+          const generated = generateNewPositions(x, z);
+          newPositions = generated.newPositions;
+          newRedPositions = generated.newRedPositions;
+          newGreenPositions = generated.newGreenPositions;
+          newBluePositions = generated.newBluePositions;
+          newPurplePositions = generated.newPurplePositions;
+          newBrownPositions = generated.newBrownPositions;
+          newGreenMoonPositions = generated.newGreenMoonPositions;
+          newPurpleMoonPositions = generated.newPurpleMoonPositions;
+          newGasPositions = generated.newGasPositions;
+          newRedMoonPositions = generated.newRedMoonPositions;
+          newGasMoonPositions = generated.newGasMoonPositions;
+          newBrownMoonPositions = generated.newBrownMoonPositions;
 
           // Save the newly generated positions
           await saveCellData(cellKey, {

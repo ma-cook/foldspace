@@ -89,25 +89,21 @@ const loadCell = (
       loadedCells = new Set(loadedCells || []);
     }
 
-    cellKeysToLoad = cellKeysToLoad.filter(
+    const filteredCellKeys = cellKeysToLoad.filter(
       (cellKey) =>
         cellKey !== undefined &&
         !loadedCells.has(cellKey) &&
         !loadingCells.has(cellKey)
     );
 
-    const newCellKeys = cellKeysToLoad.filter(
-      (cellKey) => !loadedCells.has(cellKey) && !loadingCells.has(cellKey)
-    );
-
-    if (newCellKeys.length === 0) {
+    if (filteredCellKeys.length === 0) {
       resolve();
       return;
     }
 
     setLoadingCells((prev) => {
       const newSet = new Set(prev);
-      newCellKeys.forEach((cellKey) => newSet.add(cellKey));
+      filteredCellKeys.forEach((cellKey) => newSet.add(cellKey));
       return newSet;
     });
 
@@ -116,7 +112,7 @@ const loadCell = (
 
     worker.postMessage({
       requestId,
-      cellKeysToLoad: newCellKeys,
+      cellKeysToLoad: filteredCellKeys,
       loadDetail,
     });
   })
@@ -129,43 +125,25 @@ const loadCell = (
         const {
           cellKey,
           newPositions = [],
+          newRedPositions = [],
+          newGreenPositions = [],
+          newBluePositions = [],
+          newPurplePositions = [],
+          newBrownPositions = [],
+          newGreenMoonPositions = [],
+          newPurpleMoonPositions = [],
+          newGasPositions = [],
+          newRedMoonPositions = [],
+          newGasMoonPositions = [],
+          newBrownMoonPositions = [],
           loadDetail,
-          savedPositions,
         } = result;
 
         cellCache[cellKey] = newPositions;
         updatePositions(setPositions, newPositions);
 
-        if (loadDetail && savedPositions) {
-          const positions = savedPositions.positions || {};
-          const newRedPositions = createVector3Array(positions.redPositions);
-          const newGreenPositions = createVector3Array(
-            positions.greenPositions
-          );
-          const newBluePositions = createVector3Array(positions.bluePositions);
-          const newPurplePositions = createVector3Array(
-            positions.purplePositions
-          );
-          const newBrownPositions = createVector3Array(
-            positions.brownPositions
-          );
-          const newGreenMoonPositions = createVector3Array(
-            positions.greenMoonPositions
-          );
-          const newPurpleMoonPositions = createVector3Array(
-            positions.purpleMoonPositions
-          );
-          const newGasPositions = createVector3Array(positions.gasPositions);
-          const newRedMoonPositions = createVector3Array(
-            positions.redMoonPositions
-          );
-          const newGasMoonPositions = createVector3Array(
-            positions.gasMoonPositions
-          );
-          const newBrownMoonPositions = createVector3Array(
-            positions.brownMoonPositions
-          );
-
+        if (loadDetail) {
+          // Update all other positions
           updatePositions(setRedPositions, newRedPositions);
           updatePositions(setGreenPositions, newGreenPositions);
           updatePositions(setBluePositions, newBluePositions);
@@ -179,8 +157,8 @@ const loadCell = (
           updatePositions(setBrownMoonPositions, newBrownMoonPositions);
 
           const planetNames = {};
-          if (Array.isArray(positions.greenPositions)) {
-            positions.greenPositions.forEach((position) => {
+          if (Array.isArray(newGreenPositions)) {
+            newGreenPositions.forEach((position) => {
               if (position.planetName) {
                 const key = `${position.x},${position.y},${position.z}`;
                 planetNames[key] = position.planetName;
