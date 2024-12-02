@@ -5,13 +5,19 @@ importScripts(
 const cellCache = {};
 
 const createVector3Array = (positions) => {
-  if (!positions) {
-    return [];
-  }
   if (!Array.isArray(positions)) {
     return [];
   }
-  return positions.map((pos) => new THREE.Vector3(pos.x, pos.y, pos.z));
+  return positions
+    .map((pos) => {
+      if (pos && 'x' in pos && 'y' in pos && 'z' in pos) {
+        return new THREE.Vector3(pos.x, pos.y, pos.z);
+      } else {
+        console.warn('Invalid position:', pos);
+        return null;
+      }
+    })
+    .filter(Boolean);
 };
 
 const fetchCellDataInBatches = async (cellKeys) => {
@@ -186,17 +192,57 @@ self.onmessage = async (event) => {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
 
     const results = cellKeysToLoad.map((cellKey) => {
+      let newPositions = [];
+      let newRedPositions = [];
+      let newGreenPositions = [];
+      let newBluePositions = [];
+      let newPurplePositions = [];
+      let newBrownPositions = [];
+      let newGreenMoonPositions = [];
+      let newPurpleMoonPositions = [];
+      let newGasPositions = [];
+      let newRedMoonPositions = [];
+      let newGasMoonPositions = [];
+      let newBrownMoonPositions = [];
+
       if (cellData[cellKey]) {
         const savedPositions = cellData[cellKey];
-        const validPositions = savedPositions.positions || {};
-        const newPositions = createVector3Array(validPositions.positions);
 
-        return { cellKey, newPositions, loadDetail, savedPositions };
+        newPositions = createVector3Array(savedPositions.positions || []);
+        newRedPositions = createVector3Array(savedPositions.redPositions || []);
+        newGreenPositions = createVector3Array(
+          savedPositions.greenPositions || []
+        );
+        newBluePositions = createVector3Array(
+          savedPositions.bluePositions || []
+        );
+        newPurplePositions = createVector3Array(
+          savedPositions.purplePositions || []
+        );
+        newBrownPositions = createVector3Array(
+          savedPositions.brownPositions || []
+        );
+        newGreenMoonPositions = createVector3Array(
+          savedPositions.greenMoonPositions || []
+        );
+        newPurpleMoonPositions = createVector3Array(
+          savedPositions.purpleMoonPositions || []
+        );
+        newGasPositions = createVector3Array(savedPositions.gasPositions || []);
+        newRedMoonPositions = createVector3Array(
+          savedPositions.redMoonPositions || []
+        );
+        newGasMoonPositions = createVector3Array(
+          savedPositions.gasMoonPositions || []
+        );
+        newBrownMoonPositions = createVector3Array(
+          savedPositions.brownMoonPositions || []
+        );
       } else {
         // Parse cellKey into x and z coordinates
         const [x, z] = cellKey.split(',').map(Number);
 
-        const {
+        ({
           newPositions,
           newRedPositions,
           newGreenPositions,
@@ -209,7 +255,7 @@ self.onmessage = async (event) => {
           newRedMoonPositions,
           newGasMoonPositions,
           newBrownMoonPositions,
-        } = generateNewPositions(x, z);
+        } = generateNewPositions(x, z));
 
         // Save the newly generated positions
         saveCellData(cellKey, {
@@ -226,24 +272,27 @@ self.onmessage = async (event) => {
           gasMoonPositions: newGasMoonPositions,
           brownMoonPositions: newBrownMoonPositions,
         });
-
-        return {
-          cellKey,
-          newPositions,
-          newRedPositions,
-          newGreenPositions,
-          newBluePositions,
-          newPurplePositions,
-          newBrownPositions,
-          newGreenMoonPositions,
-          newPurpleMoonPositions,
-          newGasPositions,
-          newRedMoonPositions,
-          newGasMoonPositions,
-          newBrownMoonPositions,
-          loadDetail,
-        };
       }
+
+      // Now, all arrays are initialized, and you can safely process them
+      // e.g., generate moons for planets if needed
+
+      return {
+        cellKey,
+        newPositions,
+        newRedPositions,
+        newGreenPositions,
+        newBluePositions,
+        newPurplePositions,
+        newBrownPositions,
+        newGreenMoonPositions,
+        newPurpleMoonPositions,
+        newGasPositions,
+        newRedMoonPositions,
+        newGasMoonPositions,
+        newBrownMoonPositions,
+        loadDetail,
+      };
     });
 
     self.postMessage({
