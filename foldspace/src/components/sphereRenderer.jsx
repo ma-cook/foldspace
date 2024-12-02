@@ -27,6 +27,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     purple: useRef(),
     gas: useRef(),
     centralDetailed: useRef(),
+    centralGlow: useRef(), // Added separate ref
     centralLessDetailed: useRef(),
     brownRing: useRef(),
     systemRing: useRef(),
@@ -169,7 +170,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       );
     }
 
-    const spheres = [
+    const sphereColors = [
       'red',
       'green',
       'blue',
@@ -181,7 +182,9 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       'redMoon',
       'gasMoon',
       'brownMoon',
-    ].map((color) => {
+    ];
+
+    const spheres = sphereColors.map((color) => {
       const instancedMesh = spherePools[color].get();
       instancedMesh.material = memoizedSphereMaterials[color];
       return instancedMesh;
@@ -189,19 +192,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
 
     return () => {
       spheres.forEach((instancedMesh, index) => {
-        const color = [
-          'red',
-          'green',
-          'blue',
-          'purple',
-          'brown',
-          'greenMoon',
-          'purpleMoon',
-          'gas',
-          'redMoon',
-          'gasMoon',
-          'brownMoon',
-        ][index];
+        const color = sphereColors[index];
         spherePools[color].release(instancedMesh);
       });
     };
@@ -286,7 +277,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       />
       <MemoizedSphere
         key={`systemRing-${getCachedGeometry('torus').uuid}`}
-        ref={sphereRefs.systemRing}
+        ref={sphereRefs.systemRing} // Unique ref
         positions={memoizedDetailedPositions}
         material={memoizedSphereMaterials.systemRing}
         geometry={getCachedGeometry('torus')}
@@ -294,8 +285,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[70, 70, 4]}
       />
       <MemoizedSphere
-        key={`central${getCachedGeometry('sphere').uuid}`}
-        ref={sphereRefs.centralDetailed}
+        key={`central-${getCachedGeometry('sphere').uuid}`}
+        ref={sphereRefs.centralDetailed} // Unique ref
         positions={memoizedDetailedPositions}
         material={memoizedSphereMaterials.sun}
         geometry={getCachedGeometry('sphere')}
@@ -303,8 +294,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         scale={[1.3, 1.3, 1.3]}
       />
       <MemoizedSphere
-        key={`centralGlow${getCachedGeometry('sphere').uuid}`}
-        ref={sphereRefs.centralDetailed}
+        key={`centralGlow-${getCachedGeometry('sphere').uuid}`}
+        ref={sphereRefs.centralGlow} // Separate unique ref
         positions={memoizedDetailedPositions}
         material={memoizedSphereMaterials.sunGlow}
         geometry={getCachedGeometry('sphere')}

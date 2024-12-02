@@ -1,5 +1,5 @@
 // Sphere.jsx
-import React, { useMemo, useRef, forwardRef } from 'react';
+import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 
@@ -17,25 +17,16 @@ const Sphere = forwardRef(
   ) => {
     const meshRef = useRef();
 
-    const customInstancePositions = useMemo(() => {
-      const positionsArray = new Float32Array(positions.length * 3);
-      positions.forEach((position, index) => {
-        positionsArray.set(
-          position instanceof THREE.Vector3
-            ? [position.x, position.y, position.z]
-            : [position[0], position[1], position[2]],
-          index * 3
-        );
-      });
-      return positionsArray;
-    }, [positions]);
+    // Update instance matrices whenever positions, scale, or rotation change
+    useEffect(() => {
+      const mesh = meshRef.current;
+      if (!mesh) return;
 
-    const instanceMatrices = useMemo(() => {
-      const matrices = new Float32Array(positions.length * 16);
-      const quaternion = new THREE.Quaternion().setFromEuler(
+      const quat = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(...rotation)
       );
       const scaleVector = new THREE.Vector3(...scale);
+
       positions.forEach((position, index) => {
         const posVector =
           position instanceof THREE.Vector3
@@ -43,49 +34,26 @@ const Sphere = forwardRef(
             : new THREE.Vector3(...position);
         const matrix = new THREE.Matrix4().compose(
           posVector,
-          quaternion,
+          quat,
           scaleVector
         );
-        matrix.toArray(matrices, index * 16);
+        mesh.setMatrixAt(index, matrix);
       });
-      return matrices;
+
+      mesh.instanceMatrix.needsUpdate = true;
     }, [positions, scale, rotation]);
 
-    useMemo(() => {
-      const mesh = meshRef.current;
-      if (mesh) {
-        mesh.geometry.setAttribute(
-          'customInstancePosition',
-          new THREE.InstancedBufferAttribute(customInstancePositions, 3)
-        );
-
-        if (material instanceof THREE.ShaderMaterial) {
-          material.customInstancePositions = customInstancePositions;
-        }
-
-        for (let i = 0; i < positions.length; i++) {
-          const matrix = new THREE.Matrix4().fromArray(
-            instanceMatrices,
-            i * 16
-          );
-          mesh.setMatrixAt(i, matrix);
-        }
-        mesh.instanceMatrix.needsUpdate = true;
-      }
-    }, [customInstancePositions, instanceMatrices, material, positions.length]);
-
-    // Optimize planet names rendering
-    const planetNameElements = useMemo(() => {
-      return Object.keys(planetNames).map((key) => {
-        const position = key.split(',').map(Number);
-        const planetName = planetNames[key];
+    // Render planet names using Html
+    const planetNameElements = React.useMemo(() => {
+      return Object.entries(planetNames).map(([key, name]) => {
+        const [x, y, z] = key.split(',').map(Number);
         return (
           <Html
             key={key}
-            position={[position[0], position[1] + 1, position[2]]}
+            position={[x, y + 1, z]} // Slightly offset to prevent z-fighting
             center
           >
-            <div className="planet-name">{planetName}</div>
+            <div className="planet-name">{name}</div>
           </Html>
         );
       });
@@ -96,17 +64,16 @@ const Sphere = forwardRef(
         <instancedMesh
           ref={(node) => {
             meshRef.current = node;
+            // Forward ref if provided
             if (typeof ref === 'function') {
               ref(node);
             } else if (ref) {
               ref.current = node;
             }
           }}
-          args={[geometry, null, positions.length]}
+          args={[geometry, material, positions.length]}
           frustumCulled={false}
-        >
-          <primitive attach="material" object={material} />
-        </instancedMesh>
+        />
         {planetNameElements}
       </>
     );
