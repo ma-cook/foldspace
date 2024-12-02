@@ -35,11 +35,15 @@ const generateRequestId = () => {
 };
 
 worker.onmessage = (event) => {
-  const { requestId, results } = event.data;
+  const { requestId, results, error } = event.data;
   if (pendingRequests.has(requestId)) {
-    const { resolve } = pendingRequests.get(requestId);
+    const { resolve, reject } = pendingRequests.get(requestId);
     pendingRequests.delete(requestId);
-    resolve(results);
+    if (error) {
+      reject(new Error(error));
+    } else {
+      resolve(results);
+    }
   }
 };
 
@@ -104,8 +108,17 @@ const loadCell = (
     });
   })
     .then((results) => {
+      if (!Array.isArray(results)) {
+        console.error('Worker results should be an array:', results);
+        return;
+      }
       results.forEach((result) => {
-        const { cellKey, newPositions, loadDetail, savedPositions } = result;
+        const {
+          cellKey,
+          newPositions = [],
+          loadDetail,
+          savedPositions,
+        } = result;
 
         cellCache[cellKey] = newPositions;
         updatePositions(setPositions, newPositions);
