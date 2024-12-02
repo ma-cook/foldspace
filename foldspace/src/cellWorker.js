@@ -202,10 +202,12 @@ self.onmessage = async (event) => {
 
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
+    console.log(`Fetched cell data for requestId ${requestId}:`, cellData);
 
     const results = [];
 
     for (const cellKey of cellKeysToLoad) {
+      console.log(`Processing cellKey: ${cellKey}`);
       try {
         let newPositions = [];
         let newRedPositions = [];
@@ -222,6 +224,10 @@ self.onmessage = async (event) => {
 
         if (cellData[cellKey]) {
           const savedPositions = cellData[cellKey];
+          console.log(
+            `Loaded saved positions for cellKey ${cellKey}:`,
+            savedPositions
+          );
 
           newPositions = createVector3Array(savedPositions.positions || []);
           newRedPositions = createVector3Array(
@@ -260,6 +266,9 @@ self.onmessage = async (event) => {
         } else {
           // Parse cellKey into x and z coordinates
           const [x, z] = cellKey.split(',').map(Number);
+          console.log(
+            `Generating new positions for cellKey ${cellKey} with coordinates x: ${x}, z: ${z}`
+          );
 
           const generated = generateNewPositions(x, z);
           newPositions = generated.newPositions;
@@ -290,6 +299,7 @@ self.onmessage = async (event) => {
             gasMoonPositions: newGasMoonPositions,
             brownMoonPositions: newBrownMoonPositions,
           });
+          console.log(`Saved new positions for cellKey ${cellKey}`);
         }
 
         results.push({
@@ -308,13 +318,17 @@ self.onmessage = async (event) => {
           newBrownMoonPositions,
           loadDetail,
         });
+        console.log(`Added result for cellKey ${cellKey}`);
       } catch (error) {
         console.error(`Error processing cellKey ${cellKey}:`, error);
         // Optionally, you could push an error object to results or skip this cellKey
       }
     }
 
-    console.log('Worker sending results:', { requestId, results });
+    console.log(`Worker sending results for requestId ${requestId}:`, {
+      requestId,
+      results,
+    });
 
     self.postMessage({
       requestId,
