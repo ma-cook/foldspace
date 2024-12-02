@@ -191,58 +191,98 @@ self.onmessage = async (event) => {
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
 
-    const results = cellKeysToLoad.map((cellKey) => {
-      let newPositions = [];
-      let newRedPositions = [];
-      let newGreenPositions = [];
-      let newBluePositions = [];
-      let newPurplePositions = [];
-      let newBrownPositions = [];
-      let newGreenMoonPositions = [];
-      let newPurpleMoonPositions = [];
-      let newGasPositions = [];
-      let newRedMoonPositions = [];
-      let newGasMoonPositions = [];
-      let newBrownMoonPositions = [];
+    const results = [];
 
-      if (cellData[cellKey]) {
-        const savedPositions = cellData[cellKey];
+    for (const cellKey of cellKeysToLoad) {
+      try {
+        let newPositions = [];
+        let newRedPositions = [];
+        let newGreenPositions = [];
+        let newBluePositions = [];
+        let newPurplePositions = [];
+        let newBrownPositions = [];
+        let newGreenMoonPositions = [];
+        let newPurpleMoonPositions = [];
+        let newGasPositions = [];
+        let newRedMoonPositions = [];
+        let newGasMoonPositions = [];
+        let newBrownMoonPositions = [];
 
-        newPositions = createVector3Array(savedPositions.positions || []);
-        newRedPositions = createVector3Array(savedPositions.redPositions || []);
-        newGreenPositions = createVector3Array(
-          savedPositions.greenPositions || []
-        );
-        newBluePositions = createVector3Array(
-          savedPositions.bluePositions || []
-        );
-        newPurplePositions = createVector3Array(
-          savedPositions.purplePositions || []
-        );
-        newBrownPositions = createVector3Array(
-          savedPositions.brownPositions || []
-        );
-        newGreenMoonPositions = createVector3Array(
-          savedPositions.greenMoonPositions || []
-        );
-        newPurpleMoonPositions = createVector3Array(
-          savedPositions.purpleMoonPositions || []
-        );
-        newGasPositions = createVector3Array(savedPositions.gasPositions || []);
-        newRedMoonPositions = createVector3Array(
-          savedPositions.redMoonPositions || []
-        );
-        newGasMoonPositions = createVector3Array(
-          savedPositions.gasMoonPositions || []
-        );
-        newBrownMoonPositions = createVector3Array(
-          savedPositions.brownMoonPositions || []
-        );
-      } else {
-        // Parse cellKey into x and z coordinates
-        const [x, z] = cellKey.split(',').map(Number);
+        if (cellData[cellKey]) {
+          const savedPositions = cellData[cellKey];
 
-        ({
+          newPositions = createVector3Array(savedPositions.positions || []);
+          newRedPositions = createVector3Array(
+            savedPositions.redPositions || []
+          );
+          newGreenPositions = createVector3Array(
+            savedPositions.greenPositions || []
+          );
+          newBluePositions = createVector3Array(
+            savedPositions.bluePositions || []
+          );
+          newPurplePositions = createVector3Array(
+            savedPositions.purplePositions || []
+          );
+          newBrownPositions = createVector3Array(
+            savedPositions.brownPositions || []
+          );
+          newGreenMoonPositions = createVector3Array(
+            savedPositions.greenMoonPositions || []
+          );
+          newPurpleMoonPositions = createVector3Array(
+            savedPositions.purpleMoonPositions || []
+          );
+          newGasPositions = createVector3Array(
+            savedPositions.gasPositions || []
+          );
+          newRedMoonPositions = createVector3Array(
+            savedPositions.redMoonPositions || []
+          );
+          newGasMoonPositions = createVector3Array(
+            savedPositions.gasMoonPositions || []
+          );
+          newBrownMoonPositions = createVector3Array(
+            savedPositions.brownMoonPositions || []
+          );
+        } else {
+          // Parse cellKey into x and z coordinates
+          const [x, z] = cellKey.split(',').map(Number);
+
+          ({
+            newPositions,
+            newRedPositions,
+            newGreenPositions,
+            newBluePositions,
+            newPurplePositions,
+            newBrownPositions,
+            newGreenMoonPositions,
+            newPurpleMoonPositions,
+            newGasPositions,
+            newRedMoonPositions,
+            newGasMoonPositions,
+            newBrownMoonPositions,
+          } = generateNewPositions(x, z));
+
+          // Save the newly generated positions
+          await saveCellData(cellKey, {
+            positions: newPositions,
+            redPositions: newRedPositions,
+            greenPositions: newGreenPositions,
+            bluePositions: newBluePositions,
+            purplePositions: newPurplePositions,
+            brownPositions: newBrownPositions,
+            greenMoonPositions: newGreenMoonPositions,
+            purpleMoonPositions: newPurpleMoonPositions,
+            gasPositions: newGasPositions,
+            redMoonPositions: newRedMoonPositions,
+            gasMoonPositions: newGasMoonPositions,
+            brownMoonPositions: newBrownMoonPositions,
+          });
+        }
+
+        results.push({
+          cellKey,
           newPositions,
           newRedPositions,
           newGreenPositions,
@@ -255,52 +295,20 @@ self.onmessage = async (event) => {
           newRedMoonPositions,
           newGasMoonPositions,
           newBrownMoonPositions,
-        } = generateNewPositions(x, z));
-
-        // Save the newly generated positions
-        saveCellData(cellKey, {
-          positions: newPositions,
-          redPositions: newRedPositions,
-          greenPositions: newGreenPositions,
-          bluePositions: newBluePositions,
-          purplePositions: newPurplePositions,
-          brownPositions: newBrownPositions,
-          greenMoonPositions: newGreenMoonPositions,
-          purpleMoonPositions: newPurpleMoonPositions,
-          gasPositions: newGasPositions,
-          redMoonPositions: newRedMoonPositions,
-          gasMoonPositions: newGasMoonPositions,
-          brownMoonPositions: newBrownMoonPositions,
+          loadDetail,
         });
+      } catch (error) {
+        console.error(`Error processing cellKey ${cellKey}:`, error);
+        // Optionally, you could push an error object to results or skip this cellKey
       }
-
-      // Now, all arrays are initialized, and you can safely process them
-      // e.g., generate moons for planets if needed
-
-      return {
-        cellKey,
-        newPositions,
-        newRedPositions,
-        newGreenPositions,
-        newBluePositions,
-        newPurplePositions,
-        newBrownPositions,
-        newGreenMoonPositions,
-        newPurpleMoonPositions,
-        newGasPositions,
-        newRedMoonPositions,
-        newGasMoonPositions,
-        newBrownMoonPositions,
-        loadDetail,
-      };
-    });
+    }
 
     self.postMessage({
       requestId,
       results,
     });
   } catch (error) {
-    console.error('Error loading cell data:', error);
+    console.error('Error in worker:', error);
     self.postMessage({
       requestId,
       error: error.message,

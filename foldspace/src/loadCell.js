@@ -41,13 +41,16 @@ worker.onmessage = (event) => {
     pendingRequests.delete(requestId);
     if (error) {
       reject(new Error(error));
-    } else {
+    } else if (results) {
       resolve(results);
+    } else {
+      reject(new Error('Worker returned neither results nor error.'));
     }
   }
 };
 
 worker.onerror = (error) => {
+  console.error('Worker encountered an error:', error);
   pendingRequests.forEach(({ reject }) => reject(error));
   pendingRequests.clear();
 };
