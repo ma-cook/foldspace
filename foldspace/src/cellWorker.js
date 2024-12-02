@@ -187,6 +187,7 @@ const saveCellData = async (cellKey, positions) => {
 
 self.onmessage = async (event) => {
   const { requestId, cellKeysToLoad = [], loadDetail } = event.data;
+  console.log('Worker received message:', event.data);
 
   if (
     !Array.isArray(cellKeysToLoad) ||
@@ -313,6 +314,8 @@ self.onmessage = async (event) => {
         // Optionally, you could push an error object to results or skip this cellKey
       }
     }
+
+    console.log('Worker sending results:', { requestId, results });
 
     self.postMessage({
       requestId,
