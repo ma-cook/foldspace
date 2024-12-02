@@ -39,12 +39,15 @@ worker.onmessage = (event) => {
   if (pendingRequests.has(requestId)) {
     const { resolve, reject } = pendingRequests.get(requestId);
     pendingRequests.delete(requestId);
+
     if (error) {
+      console.error('Worker reported error:', error);
       reject(new Error(error));
-    } else if (results) {
+    } else if (Array.isArray(results)) {
       resolve(results);
     } else {
-      reject(new Error('Worker returned neither results nor error.'));
+      console.error('Worker results are invalid:', results);
+      reject(new Error('Invalid results from worker'));
     }
   }
 };
@@ -79,12 +82,19 @@ const loadCell = (
 ) => {
   return new Promise((resolve, reject) => {
     if (!Array.isArray(cellKeysToLoad)) {
-      cellKeysToLoad = [cellKeysToLoad];
+      cellKeysToLoad = cellKeysToLoad !== undefined ? [cellKeysToLoad] : [];
     }
 
     if (!(loadedCells instanceof Set)) {
       loadedCells = new Set(loadedCells || []);
     }
+
+    cellKeysToLoad = cellKeysToLoad.filter(
+      (cellKey) =>
+        cellKey !== undefined &&
+        !loadedCells.has(cellKey) &&
+        !loadingCells.has(cellKey)
+    );
 
     const newCellKeys = cellKeysToLoad.filter(
       (cellKey) => !loadedCells.has(cellKey) && !loadingCells.has(cellKey)

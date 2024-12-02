@@ -186,7 +186,18 @@ const saveCellData = async (cellKey, positions) => {
 };
 
 self.onmessage = async (event) => {
-  const { requestId, cellKeysToLoad, loadDetail } = event.data;
+  const { requestId, cellKeysToLoad = [], loadDetail } = event.data;
+
+  if (
+    !Array.isArray(cellKeysToLoad) ||
+    cellKeysToLoad.some((key) => key === undefined)
+  ) {
+    self.postMessage({
+      requestId,
+      error: 'Invalid cellKeysToLoad',
+    });
+    return;
+  }
 
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
