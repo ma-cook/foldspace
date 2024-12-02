@@ -27,6 +27,26 @@ const updatePositions = (setPositions, newPositions) => {
 };
 
 const worker = new Worker(new URL('./cellWorker.js', import.meta.url));
+const pendingRequests = new Map();
+let requestIdCounter = 0;
+
+const generateRequestId = () => {
+  return ++requestIdCounter;
+};
+
+worker.onmessage = (event) => {
+  const { requestId, results } = event.data;
+  if (pendingRequests.has(requestId)) {
+    const { resolve } = pendingRequests.get(requestId);
+    pendingRequests.delete(requestId);
+    resolve(results);
+  }
+};
+
+worker.onerror = (error) => {
+  pendingRequests.forEach(({ reject }) => reject(error));
+  pendingRequests.clear();
+};
 
 const loadCell = (
   cellKeysToLoad,
@@ -48,21 +68,15 @@ const loadCell = (
   setBrownMoonPositions,
   setLoadedCells,
   swapBuffers,
-  setPlanetNames // Add this parameter to set planet names
+  setPlanetNames
 ) => {
   return new Promise((resolve, reject) => {
-    // Ensure cellKeysToLoad is an array
     if (!Array.isArray(cellKeysToLoad)) {
       cellKeysToLoad = [cellKeysToLoad];
     }
 
-    // Ensure loadedCells is a Set
     if (!(loadedCells instanceof Set)) {
-      if (Array.isArray(loadedCells)) {
-        loadedCells = new Set(loadedCells);
-      } else {
-        loadedCells = new Set();
-      }
+      loadedCells = new Set(loadedCells || []);
     }
 
     const newCellKeys = cellKeysToLoad.filter(
@@ -74,21 +88,22 @@ const loadCell = (
       return;
     }
 
-    // Update loadingCells state synchronously
     setLoadingCells((prev) => {
       const newSet = new Set(prev);
       newCellKeys.forEach((cellKey) => newSet.add(cellKey));
       return newSet;
     });
 
+    const requestId = generateRequestId();
+    pendingRequests.set(requestId, { resolve, reject });
+
     worker.postMessage({
+      requestId,
       cellKeysToLoad: newCellKeys,
       loadDetail,
     });
-
-    worker.onmessage = async (event) => {
-      const results = event.data;
-
+  })
+    .then((results) => {
       results.forEach((result) => {
         const { cellKey, newPositions, loadDetail, savedPositions } = result;
 
@@ -137,7 +152,6 @@ const loadCell = (
           updatePositions(setGasMoonPositions, newGasMoonPositions);
           updatePositions(setBrownMoonPositions, newBrownMoonPositions);
 
-          // Create a mapping of coordinates to planetName
           const planetNames = {};
           if (Array.isArray(positions.greenPositions)) {
             positions.greenPositions.forEach((position) => {
@@ -148,7 +162,6 @@ const loadCell = (
             });
           }
 
-          // Update planet names state
           if (typeof setPlanetNames === 'function') {
             setPlanetNames(planetNames);
           } else {
@@ -168,21 +181,16 @@ const loadCell = (
           return newSet;
         });
 
-        // Swap buffers if defined
         if (typeof swapBuffers === 'function') {
           swapBuffers();
         } else {
           console.warn('swapBuffers is not a function');
         }
       });
-
-      resolve();
-    };
-
-    worker.onerror = (error) => {
-      reject(error);
-    };
-  });
+    })
+    .catch((error) => {
+      console.error('Worker error:', error);
+    });
 };
 
 export default loadCell;

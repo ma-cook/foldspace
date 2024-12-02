@@ -180,7 +180,7 @@ const saveCellData = async (cellKey, positions) => {
 };
 
 self.onmessage = async (event) => {
-  const { cellKeysToLoad, loadDetail } = event.data;
+  const { requestId, cellKeysToLoad, loadDetail } = event.data;
 
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
@@ -246,8 +246,15 @@ self.onmessage = async (event) => {
       }
     });
 
-    self.postMessage(results);
+    self.postMessage({
+      requestId,
+      results,
+    });
   } catch (error) {
     console.error('Error loading cell data:', error);
+    self.postMessage({
+      requestId,
+      error: error.message,
+    });
   }
 };
