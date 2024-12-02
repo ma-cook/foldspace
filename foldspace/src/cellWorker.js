@@ -20,6 +20,16 @@ const createVector3Array = (positions) => {
     .filter(Boolean);
 };
 
+const serializeVector3Array = (vectorArray) => {
+  return vectorArray.map((vector) => {
+    return {
+      x: vector.x,
+      y: vector.y,
+      z: vector.z,
+    };
+  });
+};
+
 const fetchCellDataInBatches = async (cellKeys) => {
   const cachedData = {};
   const keysToFetch = [];
@@ -304,18 +314,18 @@ self.onmessage = async (event) => {
 
         results.push({
           cellKey,
-          newPositions,
-          newRedPositions,
-          newGreenPositions,
-          newBluePositions,
-          newPurplePositions,
-          newBrownPositions,
-          newGreenMoonPositions,
-          newPurpleMoonPositions,
-          newGasPositions,
-          newRedMoonPositions,
-          newGasMoonPositions,
-          newBrownMoonPositions,
+          newPositions: serializeVector3Array(newPositions),
+          newRedPositions: serializeVector3Array(newRedPositions),
+          newGreenPositions: serializeVector3Array(newGreenPositions),
+          newBluePositions: serializeVector3Array(newBluePositions),
+          newPurplePositions: serializeVector3Array(newPurplePositions),
+          newBrownPositions: serializeVector3Array(newBrownPositions),
+          newGreenMoonPositions: serializeVector3Array(newGreenMoonPositions),
+          newPurpleMoonPositions: serializeVector3Array(newPurpleMoonPositions),
+          newGasPositions: serializeVector3Array(newGasPositions),
+          newRedMoonPositions: serializeVector3Array(newRedMoonPositions),
+          newGasMoonPositions: serializeVector3Array(newGasMoonPositions),
+          newBrownMoonPositions: serializeVector3Array(newBrownMoonPositions),
           loadDetail,
         });
         console.log(`Added result for cellKey ${cellKey}`);

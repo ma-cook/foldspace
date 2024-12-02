@@ -1,6 +1,30 @@
 import * as THREE from 'three';
 import cellCache from './cellCache';
 
+// Add deserialization function
+const deserializeVector3Array = (positions) => {
+  if (!Array.isArray(positions)) {
+    return [];
+  }
+
+  return positions
+    .map((pos) => {
+      if (
+        pos &&
+        typeof pos === 'object' &&
+        'x' in pos &&
+        'y' in pos &&
+        'z' in pos
+      ) {
+        return new THREE.Vector3(pos.x, pos.y, pos.z);
+      } else {
+        console.warn('Invalid position:', pos);
+        return null;
+      }
+    })
+    .filter(Boolean);
+};
+
 const createVector3Array = (positions) => {
   if (!Array.isArray(positions)) {
     return [];
@@ -35,6 +59,8 @@ const generateRequestId = () => {
 };
 
 worker.onmessage = (event) => {
+  console.log('Received message from worker:', event.data); // Added log
+
   const { requestId, results, error } = event.data;
   if (pendingRequests.has(requestId)) {
     const { resolve, reject } = pendingRequests.get(requestId);
@@ -89,21 +115,18 @@ const loadCell = (
       loadedCells = new Set(loadedCells || []);
     }
 
-    const filteredCellKeys = cellKeysToLoad.filter(
-      (cellKey) =>
-        cellKey !== undefined &&
-        !loadedCells.has(cellKey) &&
-        !loadingCells.has(cellKey)
+    const newCellKeys = cellKeysToLoad.filter(
+      (cellKey) => !loadedCells.has(cellKey) && !loadingCells.has(cellKey)
     );
 
-    if (filteredCellKeys.length === 0) {
+    if (newCellKeys.length === 0) {
       resolve();
       return;
     }
 
     setLoadingCells((prev) => {
       const newSet = new Set(prev);
-      filteredCellKeys.forEach((cellKey) => newSet.add(cellKey));
+      newCellKeys.forEach((cellKey) => newSet.add(cellKey));
       return newSet;
     });
 
@@ -112,7 +135,7 @@ const loadCell = (
 
     worker.postMessage({
       requestId,
-      cellKeysToLoad: filteredCellKeys,
+      cellKeysToLoad: newCellKeys,
       loadDetail,
     });
   })
@@ -139,22 +162,58 @@ const loadCell = (
           loadDetail,
         } = result;
 
-        cellCache[cellKey] = newPositions;
-        updatePositions(setPositions, newPositions);
+        // Deserialize the positions
+        const deserializedNewPositions = deserializeVector3Array(newPositions);
+        const deserializedNewRedPositions =
+          deserializeVector3Array(newRedPositions);
+        const deserializedNewGreenPositions =
+          deserializeVector3Array(newGreenPositions);
+        const deserializedNewBluePositions =
+          deserializeVector3Array(newBluePositions);
+        const deserializedNewPurplePositions =
+          deserializeVector3Array(newPurplePositions);
+        const deserializedNewBrownPositions =
+          deserializeVector3Array(newBrownPositions);
+        const deserializedNewGreenMoonPositions = deserializeVector3Array(
+          newGreenMoonPositions
+        );
+        const deserializedNewPurpleMoonPositions = deserializeVector3Array(
+          newPurpleMoonPositions
+        );
+        const deserializedNewGasPositions =
+          deserializeVector3Array(newGasPositions);
+        const deserializedNewRedMoonPositions =
+          deserializeVector3Array(newRedMoonPositions);
+        const deserializedNewGasMoonPositions =
+          deserializeVector3Array(newGasMoonPositions);
+        const deserializedNewBrownMoonPositions = deserializeVector3Array(
+          newBrownMoonPositions
+        );
+
+        cellCache[cellKey] = deserializedNewPositions;
+        updatePositions(setPositions, deserializedNewPositions);
 
         if (loadDetail) {
-          // Update all other positions
-          updatePositions(setRedPositions, newRedPositions);
-          updatePositions(setGreenPositions, newGreenPositions);
-          updatePositions(setBluePositions, newBluePositions);
-          updatePositions(setPurplePositions, newPurplePositions);
-          updatePositions(setBrownPositions, newBrownPositions);
-          updatePositions(setGreenMoonPositions, newGreenMoonPositions);
-          updatePositions(setPurpleMoonPositions, newPurpleMoonPositions);
-          updatePositions(setGasPositions, newGasPositions);
-          updatePositions(setRedMoonPositions, newRedMoonPositions);
-          updatePositions(setGasMoonPositions, newGasMoonPositions);
-          updatePositions(setBrownMoonPositions, newBrownMoonPositions);
+          updatePositions(setRedPositions, deserializedNewRedPositions);
+          updatePositions(setGreenPositions, deserializedNewGreenPositions);
+          updatePositions(setBluePositions, deserializedNewBluePositions);
+          updatePositions(setPurplePositions, deserializedNewPurplePositions);
+          updatePositions(setBrownPositions, deserializedNewBrownPositions);
+          updatePositions(
+            setGreenMoonPositions,
+            deserializedNewGreenMoonPositions
+          );
+          updatePositions(
+            setPurpleMoonPositions,
+            deserializedNewPurpleMoonPositions
+          );
+          updatePositions(setGasPositions, deserializedNewGasPositions);
+          updatePositions(setRedMoonPositions, deserializedNewRedMoonPositions);
+          updatePositions(setGasMoonPositions, deserializedNewGasMoonPositions);
+          updatePositions(
+            setBrownMoonPositions,
+            deserializedNewBrownMoonPositions
+          );
 
           const planetNames = {};
           if (Array.isArray(newGreenPositions)) {
