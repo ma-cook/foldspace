@@ -62,7 +62,7 @@ const Sphere = forwardRef(
           transparent: true,
         });
         const sprite = new Sprite(spriteMaterial);
-        sprite.position.set(x, y + 1, z);
+        sprite.position.set(x, y + 50, z);
         sprite.scale.set(50, 25, 1); // Adjust size as needed
         spriteGroup.add(sprite);
       });

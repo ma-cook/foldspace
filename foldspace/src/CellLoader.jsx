@@ -324,7 +324,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
 
   useEffect(() => {
     if (loadingQueue.items.length === 0) {
-      setCurrentLoadDistance(350000);
+      setCurrentLoadDistance(200000);
     }
   }, [loadingQueue.items]);
 
