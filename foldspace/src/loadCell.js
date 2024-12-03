@@ -120,7 +120,7 @@ const loadCell = (
     );
 
     if (newCellKeys.length === 0) {
-      resolve();
+      resolve([]);
       return;
     }
 
