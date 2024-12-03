@@ -239,40 +239,48 @@ self.onmessage = async (event) => {
             savedPositions
           );
 
-          newPositions = createVector3Array(savedPositions.positions || []);
-          newRedPositions = createVector3Array(
-            savedPositions.redPositions || []
-          );
-          newGreenPositions = createVector3Array(
-            savedPositions.greenPositions || []
-          );
-          newBluePositions = createVector3Array(
-            savedPositions.bluePositions || []
-          );
-          newPurplePositions = createVector3Array(
-            savedPositions.purplePositions || []
-          );
-          newBrownPositions = createVector3Array(
-            savedPositions.brownPositions || []
-          );
-          newGreenMoonPositions = createVector3Array(
-            savedPositions.greenMoonPositions || []
-          );
-          newPurpleMoonPositions = createVector3Array(
-            savedPositions.purpleMoonPositions || []
-          );
-          newGasPositions = createVector3Array(
-            savedPositions.gasPositions || []
-          );
-          newRedMoonPositions = createVector3Array(
-            savedPositions.redMoonPositions || []
-          );
-          newGasMoonPositions = createVector3Array(
-            savedPositions.gasMoonPositions || []
-          );
-          newBrownMoonPositions = createVector3Array(
-            savedPositions.brownMoonPositions || []
-          );
+          // Check if 'positions' is an array or an object with categorized positions
+          if (Array.isArray(savedPositions.positions)) {
+            newPositions = createVector3Array(savedPositions.positions || []);
+          } else if (typeof savedPositions.positions === 'object') {
+            // If 'positions' contains categorized arrays
+            newPositions = createVector3Array(
+              savedPositions.positions.positions || []
+            );
+            newRedPositions = createVector3Array(
+              savedPositions.positions.redPositions || []
+            );
+            newGreenPositions = createVector3Array(
+              savedPositions.positions.greenPositions || []
+            );
+            newBluePositions = createVector3Array(
+              savedPositions.positions.bluePositions || []
+            );
+            newPurplePositions = createVector3Array(
+              savedPositions.positions.purplePositions || []
+            );
+            newBrownPositions = createVector3Array(
+              savedPositions.positions.brownPositions || []
+            );
+            newGreenMoonPositions = createVector3Array(
+              savedPositions.positions.greenMoonPositions || []
+            );
+            newPurpleMoonPositions = createVector3Array(
+              savedPositions.positions.purpleMoonPositions || []
+            );
+            newGasPositions = createVector3Array(
+              savedPositions.positions.gasPositions || []
+            );
+            newRedMoonPositions = createVector3Array(
+              savedPositions.positions.redMoonPositions || []
+            );
+            newGasMoonPositions = createVector3Array(
+              savedPositions.positions.gasMoonPositions || []
+            );
+            newBrownMoonPositions = createVector3Array(
+              savedPositions.positions.brownMoonPositions || []
+            );
+          }
         } else {
           // Parse cellKey into x and z coordinates
           const [x, z] = cellKey.split(',').map(Number);
