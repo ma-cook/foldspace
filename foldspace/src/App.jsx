@@ -75,6 +75,25 @@ const App = React.memo(() => {
   const [ownedPlanets, setOwnedPlanets] = useState([]);
   const setTarget = useStore((state) => state.setTarget);
   const setPlanetNames = useStore((state) => state.setPlanetNames);
+  const [shipsData, setShipsData] = useState(null);
+
+  const fetchShipsData = async (userId) => {
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData.ships) {
+          setShipsData(userData.ships);
+        } else {
+          console.log('No ships data found for this user.');
+        }
+      } else {
+        console.error('User not found');
+      }
+    } catch (error) {
+      console.error('Error fetching ships data:', error);
+    }
+  };
 
   const fetchOwnedPlanets = async (userId) => {
     try {
@@ -138,6 +157,7 @@ const App = React.memo(() => {
       assignGreenSphere(user.uid).then(() => {
         fetchOwnedPlanets(user.uid); // Ensure fetch is called after assigning
       });
+      fetchShipsData(user.uid);
     }
   }, [user, setTarget, setLookAt]);
 
@@ -338,6 +358,29 @@ const App = React.memo(() => {
               loadCell={loadCellCallback}
               unloadCell={unloadCellCallback}
             />
+            {shipsData && (
+              <>
+                {shipsData['colony ship'] &&
+                  shipsData['colony ship'].position && (
+                    <ColonyShip
+                      position={[
+                        shipsData['colony ship'].position.x,
+                        shipsData['colony ship'].position.y,
+                        shipsData['colony ship'].position.z,
+                      ]}
+                    />
+                  )}
+                {shipsData['scout'] && shipsData['scout'].position && (
+                  <ScoutShip
+                    position={[
+                      shipsData['scout'].position.x,
+                      shipsData['scout'].position.y,
+                      shipsData['scout'].position.z,
+                    ]}
+                  />
+                )}
+              </>
+            )}
           </Suspense>
         </Bvh>
       </Canvas>
