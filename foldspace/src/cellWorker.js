@@ -11,7 +11,12 @@ const createVector3Array = (positions) => {
   return positions
     .map((pos) => {
       if (pos && 'x' in pos && 'y' in pos && 'z' in pos) {
-        return new THREE.Vector3(pos.x, pos.y, pos.z);
+        return {
+          x: pos.x,
+          y: pos.y,
+          z: pos.z,
+          planetName: pos.planetName || null,
+        };
       } else {
         console.warn('Invalid position:', pos);
         return null;
@@ -26,6 +31,7 @@ const serializeVector3Array = (vectorArray) => {
       x: vector.x,
       y: vector.y,
       z: vector.z,
+      planetName: vector.planetName || null,
     };
   });
 };
@@ -280,6 +286,17 @@ self.onmessage = async (event) => {
             newBrownMoonPositions = createVector3Array(
               savedPositions.positions.brownMoonPositions || []
             );
+          }
+
+          // Extract planet names
+          const planetNames = {};
+          if (Array.isArray(savedPositions.positions)) {
+            savedPositions.positions.forEach((pos) => {
+              if (pos.planetName) {
+                const key = `${pos.x},${pos.y},${pos.z}`;
+                planetNames[key] = pos.planetName;
+              }
+            });
           }
         } else {
           // Parse cellKey into x and z coordinates
