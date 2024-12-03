@@ -1,7 +1,8 @@
 // Sphere.jsx
 import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
-import { Html } from '@react-three/drei';
+import { Sprite, SpriteMaterial, TextureLoader } from 'three';
+import { createTextTexture } from './utils/textTexture';
 
 const Sphere = forwardRef(
   (
@@ -16,8 +17,8 @@ const Sphere = forwardRef(
     ref
   ) => {
     const meshRef = useRef();
+    const spriteGroupRef = useRef();
 
-    // Update instance matrices whenever positions, scale, or rotation change
     useEffect(() => {
       const mesh = meshRef.current;
       if (!mesh) return;
@@ -43,19 +44,27 @@ const Sphere = forwardRef(
       mesh.instanceMatrix.needsUpdate = true;
     }, [positions, scale, rotation]);
 
-    // Render planet names using Html
-    const planetNameElements = React.useMemo(() => {
-      return Object.entries(planetNames).map(([key, name]) => {
+    // Create sprites for planet names
+    useEffect(() => {
+      const spriteGroup = spriteGroupRef.current;
+      if (!spriteGroup) return;
+
+      // Clear existing sprites
+      while (spriteGroup.children.length) {
+        spriteGroup.remove(spriteGroup.children[0]);
+      }
+
+      Object.entries(planetNames).forEach(([key, name]) => {
         const [x, y, z] = key.split(',').map(Number);
-        return (
-          <Html
-            key={key}
-            position={[x, y + 1, z]} // Slightly offset to prevent z-fighting
-            center
-          >
-            <div className="planet-name">{name}</div>
-          </Html>
-        );
+        const texture = createTextTexture(name);
+        const spriteMaterial = new SpriteMaterial({
+          map: texture,
+          transparent: true,
+        });
+        const sprite = new Sprite(spriteMaterial);
+        sprite.position.set(x, y + 1, z);
+        sprite.scale.set(50, 25, 1); // Adjust size as needed
+        spriteGroup.add(sprite);
       });
     }, [planetNames]);
 
@@ -64,7 +73,6 @@ const Sphere = forwardRef(
         <instancedMesh
           ref={(node) => {
             meshRef.current = node;
-            // Forward ref if provided
             if (typeof ref === 'function') {
               ref(node);
             } else if (ref) {
@@ -74,7 +82,7 @@ const Sphere = forwardRef(
           args={[geometry, material, positions.length]}
           frustumCulled={false}
         />
-        {planetNameElements}
+        <group ref={spriteGroupRef} />
       </>
     );
   }

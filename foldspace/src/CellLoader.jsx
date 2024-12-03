@@ -314,7 +314,7 @@ const CellLoader = React.memo(({ cameraRef, loadCell, unloadCell }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       processLoadingQueue();
-    }, 500);
+    }, 100);
     return () => clearInterval(interval);
   }, [processLoadingQueue]);
 
