@@ -25,6 +25,7 @@ import LoadingMessage from './LoadingMessage';
 import loadCell from './loadCell';
 import unloadCell from './unloadCell';
 import { useAuth } from './hooks/useAuth';
+import { db } from './firebase';
 import AppLoader from './AppLoader';
 
 const App = React.memo(() => {
