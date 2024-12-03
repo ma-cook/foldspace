@@ -59,8 +59,6 @@ const generateRequestId = () => {
 };
 
 worker.onmessage = (event) => {
-  console.log('Received message from worker:', event.data); // Added log
-
   const { requestId, results, error } = event.data;
   if (pendingRequests.has(requestId)) {
     const { resolve, reject } = pendingRequests.get(requestId);
