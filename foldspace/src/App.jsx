@@ -35,8 +35,8 @@ import {
   query,
   where,
 } from 'firebase/firestore';
-import ColonyShip from './components/ColonyShip';
-import ScoutShip from './components/ScoutShip';
+import ColonyShip from './modelLoaders/ColonyShip';
+import ScoutShip from './modelLoaders/ScoutShip';
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
