@@ -37,6 +37,7 @@ import {
 } from 'firebase/firestore';
 import ColonyShip from './modelLoaders/ColonyShip';
 import ScoutShip from './modelLoaders/ScoutShip';
+import UserPanel from './components/UserPanel';
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
@@ -343,85 +344,13 @@ const App = React.memo(() => {
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          zIndex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          padding: '5px 10px',
-          borderRadius: '5px',
-        }}
-      >
-        {user && (
-          <>
-            <span style={{ marginRight: '10px' }}>
-              {user.displayName || user.email}
-            </span>
-            <h3>Owned Planets:</h3>
-            <ul>
-              {ownedPlanets.map((planet, index) => (
-                <li
-                  key={index}
-                  onClick={() => handlePlanetClick(planet)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {planet.planetName}: ({planet.x.toFixed(2)},{' '}
-                  {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
-                </li>
-              ))}
-            </ul>
-            <h3>Ships:</h3>
-            {shipsData ? (
-              <ul>
-                {(() => {
-                  const shipTypeCounts = {};
-                  return Object.entries(shipsData).map(
-                    ([shipKey, shipInfo]) => {
-                      // Extract ship type by removing numbers from the key
-                      const shipType = shipKey.replace(/\d+/g, '').trim();
-
-                      // Initialize or increment the count for this ship type
-                      if (!shipTypeCounts[shipType]) {
-                        shipTypeCounts[shipType] = 1;
-                      } else {
-                        shipTypeCounts[shipType]++;
-                      }
-
-                      // Construct the ship name with the type and count
-                      const shipNumber = shipTypeCounts[shipType];
-                      const shipDisplayName = `${shipType}${shipNumber}`;
-
-                      // Define the click handler for the list item
-                      const handleClick = () =>
-                        handleShipClick(shipInfo.position);
-
-                      return (
-                        <li
-                          key={shipKey}
-                          onClick={handleClick}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {shipDisplayName} at position (
-                          {shipInfo.position.x.toFixed(2)},{' '}
-                          {shipInfo.position.y.toFixed(2)},{' '}
-                          {shipInfo.position.z.toFixed(2)})
-                        </li>
-                      );
-                    }
-                  );
-                })()}
-              </ul>
-            ) : (
-              <p>No ship data available.</p>
-            )}
-          </>
-        )}
-      </div>
+      <UserPanel
+        user={user}
+        ownedPlanets={ownedPlanets}
+        shipsData={shipsData}
+        handlePlanetClick={handlePlanetClick}
+        handleShipClick={handleShipClick}
+      />
       <Canvas gl={{ stencil: true }}>
         <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
 
