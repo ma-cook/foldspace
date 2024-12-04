@@ -323,6 +323,16 @@ const App = React.memo(() => {
     setLookAt(shipPosition);
   };
 
+  const handlePlanetClick = (planetPosition) => {
+    const offsetPosition = {
+      x: planetPosition.x + 100,
+      y: planetPosition.y + 280,
+      z: planetPosition.z + 380,
+    };
+    setTarget(offsetPosition);
+    setLookAt(planetPosition);
+  };
+
   if (isLoading) {
     return <AppLoader />;
   }
@@ -355,7 +365,11 @@ const App = React.memo(() => {
             <h3>Owned Planets:</h3>
             <ul>
               {ownedPlanets.map((planet, index) => (
-                <li key={index}>
+                <li
+                  key={index}
+                  onClick={() => handlePlanetClick(planet)}
+                  style={{ cursor: 'pointer' }}
+                >
                   {planet.planetName}: ({planet.x.toFixed(2)},{' '}
                   {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
                 </li>
@@ -382,8 +396,16 @@ const App = React.memo(() => {
                       const shipNumber = shipTypeCounts[shipType];
                       const shipDisplayName = `${shipType}${shipNumber}`;
 
+                      // Define the click handler for the list item
+                      const handleClick = () =>
+                        handleShipClick(shipInfo.position);
+
                       return (
-                        <li key={shipKey}>
+                        <li
+                          key={shipKey}
+                          onClick={handleClick}
+                          style={{ cursor: 'pointer' }}
+                        >
                           {shipDisplayName} at position (
                           {shipInfo.position.x.toFixed(2)},{' '}
                           {shipInfo.position.y.toFixed(2)},{' '}
