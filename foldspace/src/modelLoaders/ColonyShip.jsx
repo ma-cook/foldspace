@@ -20,3 +20,5 @@ export function ColonyShip(props) {
 }
 
 useGLTF.preload('/colonyShip.glb');
+
+export default ColonyShip;

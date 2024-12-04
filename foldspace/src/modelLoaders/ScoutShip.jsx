@@ -6,7 +6,7 @@ Command: npx gltfjsx@6.5.3 scoutShip.glb
 import React from 'react';
 import { useGLTF } from '@react-three/drei';
 
-export function ScoutShip(props) {
+const ColonyShip = (props) => {
   const { nodes, materials } = useGLTF('/scoutShip.glb');
   return (
     <group {...props} dispose={null}>
@@ -17,6 +17,8 @@ export function ScoutShip(props) {
       />
     </group>
   );
-}
+};
 
 useGLTF.preload('/scoutShip.glb');
+
+export default ColonyShip;
