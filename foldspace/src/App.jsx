@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
+import LoadingMessage from './components/LoadingMessage';
 
 const App = React.memo(() => {
   const cameraRef = useRef();
@@ -147,13 +148,13 @@ const App = React.memo(() => {
     setLookAt(planetPosition);
   };
 
-  if (isLoading) {
-    return <AppLoader />;
-  }
+  // if (isLoading) {
+  //   return <AppLoader />;
+  // }
 
-  if (!isAuthenticated) {
-    return <div>Please sign in to access this application.</div>;
-  }
+  // if (!isAuthenticated) {
+  //   return <div>Please sign in to access this application.</div>;
+  // }
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -170,6 +171,8 @@ const App = React.memo(() => {
         sphereRendererRef={sphereRendererRef}
         shipsData={shipsData}
         handleShipClick={handleShipClick}
+        loadingCells={loadingCells}
+        setLoadingCells={setLoadingCells}
       />
       {loadingCells.size > 0 && <LoadingMessage />}
     </div>

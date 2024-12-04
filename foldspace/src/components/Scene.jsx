@@ -13,9 +13,11 @@ import CustomCamera from '../CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import LoadingMessage from '../LoadingMessage';
+import LoadingMessage from './LoadingMessage';
 import loadCell from '../loadCell';
 import unloadCell from '../unloadCell';
+import ColonyShip from '../modelLoaders/ColonyShip';
+import ScoutShip from '../modelLoaders/ScoutShip';
 
 const Scene = ({
   backgroundColor,
@@ -23,6 +25,8 @@ const Scene = ({
   sphereRendererRef,
   shipsData,
   handleShipClick,
+  loadingCells,
+  setLoadingCells,
 }) => {
   const loadedCells = useStore((state) => state.loadedCells);
   const positions = useStore((state) => state.positions);
