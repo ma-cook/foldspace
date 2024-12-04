@@ -1,5 +1,6 @@
 // UserPanel.jsx
 import React, { useState } from 'react';
+import { useStore } from './store';
 
 const UserPanel = ({
   user,
@@ -10,6 +11,10 @@ const UserPanel = ({
   setLookAt,
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState({});
+  const setIsSelectingDestination = useStore(
+    (state) => state.setIsSelectingDestination
+  );
+  const setShipToMove = useStore((state) => state.setShipToMove);
 
   const toggleDropdown = (shipKey) => {
     setDropdownVisible((prev) => ({

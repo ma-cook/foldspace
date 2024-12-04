@@ -138,13 +138,13 @@ const App = React.memo(() => {
     setLookAt(shipPosition);
   };
 
-  if (isLoading) {
-    return <AppLoader />;
-  }
+  // if (isLoading) {
+  //   return <AppLoader />;
+  // }
 
-  if (!isAuthenticated) {
-    return <div>Please sign in to access this application.</div>;
-  }
+  // if (!isAuthenticated) {
+  //   return <div>Please sign in to access this application.</div>;
+  // }
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
