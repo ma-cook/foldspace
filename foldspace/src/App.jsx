@@ -113,66 +113,38 @@ const App = React.memo(() => {
 
   const fetchOwnedPlanets = async (userId) => {
     try {
-      // Reference to the 'cells' collection
-      const cellsCollectionRef = collection(db, 'cells');
+      // Reference to the user's document
+      const userDocRef = doc(db, 'users', userId);
 
-      // Create a query to find cells where any planet is owned by the user
-      const q = query(
-        cellsCollectionRef,
-        where('ownerIds', 'array-contains', userId)
-      );
+      // Fetch the user document
+      const userDoc = await getDoc(userDocRef);
 
-      // Execute the query
-      const querySnapshot = await getDocs(q);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const planets = userData.spheres || [];
 
-      const planets = [];
+        setOwnedPlanets(planets);
 
-      // Iterate over the cells to extract owned planets
-      querySnapshot.forEach((cellDoc) => {
-        const cellData = cellDoc.data();
-        const { positions } = cellData;
+        // Set camera position based on the first owned planet's coordinates plus the offset
+        if (planets.length > 0) {
+          const firstPlanet = planets[0];
 
-        // Check each type of positions for ownership
-        const planetTypes = [
-          'greenPositions',
-          'redPositions',
-          'bluePositions',
-          'purplePositions',
-          'brownPositions',
-          // Add other planet types if necessary
-        ];
-
-        planetTypes.forEach((type) => {
-          if (positions[type]) {
-            positions[type].forEach((planet) => {
-              if (planet.owner === userId) {
-                planets.push({
-                  ...planet,
-                  type,
-                });
-              }
-            });
-          }
-        });
-      });
-
-      setOwnedPlanets(planets);
-
-      // Set camera position based on the first owned planet's coordinates plus the offset
-      if (planets.length > 0) {
-        const firstPlanet = planets[0];
-
-        const newPosition = {
-          x: firstPlanet.x + 100,
-          y: firstPlanet.y + 280,
-          z: firstPlanet.z + 380,
-        };
-        setTarget(newPosition);
-        setLookAt({
-          x: firstPlanet.x,
-          y: firstPlanet.y,
-          z: firstPlanet.z,
-        });
+          const newPosition = {
+            x: firstPlanet.x + 100,
+            y: firstPlanet.y + 280,
+            z: firstPlanet.z + 380,
+          };
+          setTarget(newPosition);
+          setLookAt({
+            x: firstPlanet.x,
+            y: firstPlanet.y,
+            z: firstPlanet.z,
+          });
+        } else {
+          console.log('No owned planets found for this user.');
+        }
+      } else {
+        console.error('User not found');
       }
     } catch (error) {
       console.error('Error fetching owned planets:', error);
