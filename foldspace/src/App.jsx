@@ -138,16 +138,6 @@ const App = React.memo(() => {
     setLookAt(shipPosition);
   };
 
-  const handlePlanetClick = (planetPosition) => {
-    const offsetPosition = {
-      x: planetPosition.x + 100,
-      y: planetPosition.y + 280,
-      z: planetPosition.z + 380,
-    };
-    setTarget(offsetPosition);
-    setLookAt(planetPosition);
-  };
-
   if (isLoading) {
     return <AppLoader />;
   }
@@ -162,8 +152,9 @@ const App = React.memo(() => {
         user={user}
         ownedPlanets={ownedPlanets}
         shipsData={shipsData}
-        handlePlanetClick={handlePlanetClick}
         handleShipClick={handleShipClick}
+        setTarget={setTarget}
+        setLookAt={setLookAt}
       />
       <Scene
         backgroundColor={backgroundColor}

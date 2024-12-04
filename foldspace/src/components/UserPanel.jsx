@@ -5,8 +5,9 @@ const UserPanel = ({
   user,
   ownedPlanets,
   shipsData,
-  handlePlanetClick,
   handleShipClick,
+  setTarget,
+  setLookAt,
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState({});
 
@@ -22,9 +23,25 @@ const UserPanel = ({
     // Additional logic for 'move to' can be added here
   };
 
+  const handleMoveShipClick = (shipKey) => {
+    setIsSelectingDestination(true);
+    setShipToMove(shipKey);
+    console.log(`Select destination for ship: ${shipKey}`);
+  };
+
   const handleStopClick = (shipKey) => {
     // Logic for 'stop' can be added here
     console.log(`Stopping ship: ${shipKey}`);
+  };
+
+  const handlePlanetClick = (planetPosition) => {
+    const offsetPosition = {
+      x: planetPosition.x + 100,
+      y: planetPosition.y + 280,
+      z: planetPosition.z + 380,
+    };
+    setTarget(offsetPosition);
+    setLookAt(planetPosition);
   };
 
   return (
@@ -89,6 +106,9 @@ const UserPanel = ({
                             onClick={() => handleMoveToClick(shipInfo.position)}
                           >
                             Move to
+                          </button>
+                          <button onClick={() => handleMoveShipClick(shipKey)}>
+                            Move ship
                           </button>
                           <button onClick={() => handleStopClick(shipKey)}>
                             Stop

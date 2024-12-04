@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStore } from './store';
 import { throttle } from 'lodash';
+import { useAuth } from './hooks/useAuth';
 
 const PlaneMesh = React.forwardRef(
   (
@@ -33,6 +34,25 @@ const PlaneMesh = React.forwardRef(
 
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
+    const isSelectingDestination = useStore(
+      (state) => state.isSelectingDestination
+    );
+    const shipToMove = useStore((state) => state.shipToMove);
+    const setIsSelectingDestination = useStore(
+      (state) => state.setIsSelectingDestination
+    );
+    const setShipToMove = useStore((state) => state.setShipToMove);
+    const { user } = useAuth();
+    const updateShipDestination = async (shipKey, destination) => {
+      // Implement the logic to update the ship's destination in your database
+      // For example, using Firestore:
+      const userId = user.uid;
+      const shipRef = doc(db, 'users', userId);
+      await updateDoc(shipRef, {
+        [`ships.${shipKey}.destination`]: destination,
+      });
+    };
+
     let isDragging = false;
     let mouseMoved = false;
 
@@ -144,6 +164,29 @@ const PlaneMesh = React.forwardRef(
               return 0;
             }
           });
+
+          if (intersects.length > 0) {
+            const { point } = intersects[0];
+            const { x, y, z } = point;
+
+            if (isSelectingDestination && shipToMove) {
+              // User is selecting a destination for a ship
+              // Update the ship's destination in the database
+              updateShipDestination(shipToMove, { x, y, z });
+
+              // Reset the selection mode
+              setIsSelectingDestination(false);
+              setShipToMove(null);
+
+              console.log(
+                `Ship ${shipToMove} destination set to (${x}, ${y}, ${z})`
+              );
+            } else {
+              // Existing logic to move the camera (only if not in selection mode)
+              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
+              setLookAt({ x, y, z });
+            }
+          }
 
           if (intersects.length > 0) {
             const { x, y, z } = intersects[0].point;
@@ -293,6 +336,10 @@ const PlaneMesh = React.forwardRef(
         gasInstancedMeshRef,
         brownRingInstancedMeshRef,
         systemRingInstancedMeshRef,
+        isSelectingDestination,
+        shipToMove,
+        setIsSelectingDestination,
+        setShipToMove,
       ]
     );
 
