@@ -1,14 +1,14 @@
-// components/ColonyShip.jsx
+// ColonyShip.jsx
 import React from 'react';
 import { useGLTF } from '@react-three/drei';
 
-const ColonyShip = (props) => {
+const ColonyShip = ({ position, onClick }) => {
   const { nodes, materials } = useGLTF('/colonyShip.glb');
   return (
-    <group {...props} dispose={null}>
+    <group position={position} dispose={null}>
       <mesh
         geometry={nodes.Plane.geometry}
-        material={materials.Material}
+        material={nodes.Plane.material}
         scale={[0.231, 0.231, 0.128]}
         onClick={onClick}
       />
@@ -18,4 +18,4 @@ const ColonyShip = (props) => {
 
 useGLTF.preload('/colonyShip.glb');
 
-export default ColonyShip; // Ensure default export
+export default ColonyShip;
