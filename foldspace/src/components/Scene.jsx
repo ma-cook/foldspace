@@ -6,7 +6,7 @@ import { Stats, Environment, Bvh } from '@react-three/drei';
 import CustomCamera from '../CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import CellLoader from './CellLoader';
-import Loader from '../Loader';
+import Loader from './Loader';
 import LoadingMessage from '../LoadingMessage';
 import loadCell from '../loadCell';
 import unloadCell from '../unloadCell';

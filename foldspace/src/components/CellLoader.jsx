@@ -8,16 +8,16 @@ import React, {
 } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { throttle } from 'lodash';
-import { useStore } from './store';
+import { useStore } from '../store';
 import {
   GRID_SIZE,
   LOAD_DISTANCE,
   UNLOAD_DISTANCE,
   DETAIL_DISTANCE,
   UNLOAD_DETAIL_DISTANCE,
-} from './config';
+} from '../config';
 
-import { buildBVH, queryBVH } from './BVH';
+import { buildBVH, queryBVH } from '../BVH';
 
 // Utility Functions
 const calculateDistance = (x1, z1, x2, z2) => {
