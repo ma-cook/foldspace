@@ -27,6 +27,14 @@ import unloadCell from './unloadCell';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
 import AppLoader from './AppLoader';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 
 const App = React.memo(() => {
   const loadedCells = useStore((state) => state.loadedCells);
@@ -80,8 +88,13 @@ const App = React.memo(() => {
 
   const fetchShipsData = async (userId) => {
     try {
-      const userDoc = await db.collection('users').doc(userId).get();
-      if (userDoc.exists) {
+      // Get a reference to the user document
+      const userDocRef = doc(db, 'users', userId);
+
+      // Fetch the user document
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.ships) {
           setShipsData(userData.ships);
@@ -98,26 +111,66 @@ const App = React.memo(() => {
 
   const fetchOwnedPlanets = async (userId) => {
     try {
-      const response = await fetch(
-        `https://us-central1-foldspace-6483c.cloudfunctions.net/api/getUserPlanets?userId=${userId}`
+      // Reference to the 'cells' collection
+      const cellsCollectionRef = collection(db, 'cells');
+
+      // Create a query to find cells where any planet is owned by the user
+      const q = query(
+        cellsCollectionRef,
+        where('ownerIds', 'array-contains', userId)
       );
-      if (!response.ok) {
-        throw new Error('Failed to fetch owned planets');
-      }
-      const data = await response.json();
-      setOwnedPlanets(data.planets);
+
+      // Execute the query
+      const querySnapshot = await getDocs(q);
+
+      const planets = [];
+
+      // Iterate over the cells to extract owned planets
+      querySnapshot.forEach((cellDoc) => {
+        const cellData = cellDoc.data();
+        const { positions } = cellData;
+
+        // Check each type of positions for ownership
+        const planetTypes = [
+          'greenPositions',
+          'redPositions',
+          'bluePositions',
+          'purplePositions',
+          'brownPositions',
+          // Add other planet types if necessary
+        ];
+
+        planetTypes.forEach((type) => {
+          if (positions[type]) {
+            positions[type].forEach((planet) => {
+              if (planet.owner === userId) {
+                planets.push({
+                  ...planet,
+                  type,
+                });
+              }
+            });
+          }
+        });
+      });
+
+      setOwnedPlanets(planets);
 
       // Set camera position based on the first owned planet's coordinates plus the offset
-      if (data.planets.length > 0) {
-        const firstPlanet = data.planets[0];
+      if (planets.length > 0) {
+        const firstPlanet = planets[0];
 
         const newPosition = {
           x: firstPlanet.x + 100,
           y: firstPlanet.y + 280,
           z: firstPlanet.z + 380,
         };
-        setTarget(newPosition); // Pass the entire object
-        setLookAt({ x: firstPlanet.x, y: firstPlanet.y, z: firstPlanet.z }); // Ensure it's an object
+        setTarget(newPosition);
+        setLookAt({
+          x: firstPlanet.x,
+          y: firstPlanet.y,
+          z: firstPlanet.z,
+        });
       }
     } catch (error) {
       console.error('Error fetching owned planets:', error);
