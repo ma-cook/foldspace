@@ -313,13 +313,13 @@ const App = React.memo(() => {
     );
   }
 
-  // if (isLoading) {
-  //   return <AppLoader />;
-  // }
+  if (isLoading) {
+    return <AppLoader />;
+  }
 
-  // if (!isAuthenticated) {
-  //   return <div>Please sign in to access this application.</div>;
-  // }
+  if (!isAuthenticated) {
+    return <div>Please sign in to access this application.</div>;
+  }
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -342,15 +342,48 @@ const App = React.memo(() => {
             <span style={{ marginRight: '10px' }}>
               {user.displayName || user.email}
             </span>
+            <h3>Owned Planets:</h3>
             <ul>
               {ownedPlanets.map((planet, index) => (
                 <li key={index}>
-                  {`(${planet.x.toFixed(2)}, ${planet.y.toFixed(
-                    2
-                  )}, ${planet.z.toFixed(2)})`}
+                  {planet.planetName}: ({planet.x.toFixed(2)},{' '}
+                  {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
                 </li>
               ))}
             </ul>
+            <h3>Ships:</h3>
+            {shipsData ? (
+              <ul>
+                {(() => {
+                  const shipTypeCounts = {};
+                  return Object.entries(shipsData).map(([shipId, shipInfo]) => {
+                    const shipType = shipInfo.type || 'Unknown Ship';
+
+                    // Initialize or increment the count for this ship type
+                    if (!shipTypeCounts[shipType]) {
+                      shipTypeCounts[shipType] = 1;
+                    } else {
+                      shipTypeCounts[shipType]++;
+                    }
+
+                    // Construct the ship name with the type and count
+                    const shipNumber = shipTypeCounts[shipType];
+                    const shipDisplayName = `${shipType}${shipNumber}`;
+
+                    return (
+                      <li key={shipId}>
+                        {shipDisplayName} at position (
+                        {shipInfo.position.x.toFixed(2)},{' '}
+                        {shipInfo.position.y.toFixed(2)},{' '}
+                        {shipInfo.position.z.toFixed(2)})
+                      </li>
+                    );
+                  });
+                })()}
+              </ul>
+            ) : (
+              <p>No ship data available.</p>
+            )}
           </>
         )}
       </div>
