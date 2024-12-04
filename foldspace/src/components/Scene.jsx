@@ -1,5 +1,11 @@
 // Scene.jsx
-import React, { useRef, useCallback, useMemo, Suspense } from 'react';
+import React, {
+  useRef,
+  useCallback,
+  useMemo,
+  Suspense,
+  useDeferredValue,
+} from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useStore } from '../store';
 import { Stats, Environment, Bvh } from '@react-three/drei';
