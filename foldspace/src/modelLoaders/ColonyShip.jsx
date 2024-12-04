@@ -8,8 +8,9 @@ const ColonyShip = (props) => {
     <group {...props} dispose={null}>
       <mesh
         geometry={nodes.Plane.geometry}
-        material={nodes.Plane.material}
+        material={materials.Material}
         scale={[0.231, 0.231, 0.128]}
+        onClick={onClick}
       />
     </group>
   );

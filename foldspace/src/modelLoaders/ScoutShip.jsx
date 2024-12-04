@@ -14,6 +14,7 @@ const ColonyShip = (props) => {
         geometry={nodes.Cube.geometry}
         material={materials.Material}
         scale={0.156}
+        onClick={onClick}
       />
     </group>
   );

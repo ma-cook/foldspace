@@ -313,6 +313,16 @@ const App = React.memo(() => {
     );
   }
 
+  const handleShipClick = (shipPosition) => {
+    const offsetPosition = {
+      x: shipPosition.x + 10,
+      y: shipPosition.y + 20,
+      z: shipPosition.z + 30,
+    };
+    setTarget(offsetPosition);
+    setLookAt(shipPosition);
+  };
+
   if (isLoading) {
     return <AppLoader />;
   }
@@ -356,29 +366,32 @@ const App = React.memo(() => {
               <ul>
                 {(() => {
                   const shipTypeCounts = {};
-                  return Object.entries(shipsData).map(([shipId, shipInfo]) => {
-                    const shipType = shipInfo.type || 'Unknown Ship';
+                  return Object.entries(shipsData).map(
+                    ([shipKey, shipInfo]) => {
+                      // Extract ship type by removing numbers from the key
+                      const shipType = shipKey.replace(/\d+/g, '').trim();
 
-                    // Initialize or increment the count for this ship type
-                    if (!shipTypeCounts[shipType]) {
-                      shipTypeCounts[shipType] = 1;
-                    } else {
-                      shipTypeCounts[shipType]++;
+                      // Initialize or increment the count for this ship type
+                      if (!shipTypeCounts[shipType]) {
+                        shipTypeCounts[shipType] = 1;
+                      } else {
+                        shipTypeCounts[shipType]++;
+                      }
+
+                      // Construct the ship name with the type and count
+                      const shipNumber = shipTypeCounts[shipType];
+                      const shipDisplayName = `${shipType}${shipNumber}`;
+
+                      return (
+                        <li key={shipKey}>
+                          {shipDisplayName} at position (
+                          {shipInfo.position.x.toFixed(2)},{' '}
+                          {shipInfo.position.y.toFixed(2)},{' '}
+                          {shipInfo.position.z.toFixed(2)})
+                        </li>
+                      );
                     }
-
-                    // Construct the ship name with the type and count
-                    const shipNumber = shipTypeCounts[shipType];
-                    const shipDisplayName = `${shipType}${shipNumber}`;
-
-                    return (
-                      <li key={shipId}>
-                        {shipDisplayName} at position (
-                        {shipInfo.position.x.toFixed(2)},{' '}
-                        {shipInfo.position.y.toFixed(2)},{' '}
-                        {shipInfo.position.z.toFixed(2)})
-                      </li>
-                    );
-                  });
+                  );
                 })()}
               </ul>
             ) : (
@@ -421,32 +434,43 @@ const App = React.memo(() => {
             />
             {shipsData && (
               <>
-                {shipsData['colony ship'] &&
-                  shipsData['colony ship'].position && (
-                    <ColonyShip
-                      position={[
-                        shipsData['colony ship'].position.x,
-                        shipsData['colony ship'].position.y,
-                        shipsData['colony ship'].position.z,
-                      ]}
-                    />
-                  )}
-                {shipsData['scout'] && shipsData['scout'].position && (
-                  <ScoutShip
-                    position={[
-                      shipsData['scout'].position.x,
-                      shipsData['scout'].position.y,
-                      shipsData['scout'].position.z,
-                    ]}
-                  />
-                )}
+                {Object.entries(shipsData).map(([shipKey, shipInfo]) => {
+                  const shipType = shipKey.replace(/\d+/g, '').trim();
+                  const position = [
+                    shipInfo.position.x,
+                    shipInfo.position.y,
+                    shipInfo.position.z,
+                  ];
+
+                  const handleClick = () => handleShipClick(shipInfo.position);
+
+                  if (shipType === 'colony ship') {
+                    return (
+                      <ColonyShip
+                        key={shipKey}
+                        position={position}
+                        onClick={handleClick}
+                      />
+                    );
+                  } else if (shipType === 'scout') {
+                    return (
+                      <ScoutShip
+                        key={shipKey}
+                        position={position}
+                        onClick={handleClick}
+                      />
+                    );
+                  } else {
+                    return null;
+                  }
+                })}
               </>
             )}
           </Suspense>
         </Bvh>
       </Canvas>
       {loadingCells.size > 0 && <LoadingMessage />}
-      <button onClick={handleDeleteAllCells}>Delete All Cells</button>
+      {/* <button onClick={handleDeleteAllCells}>Delete All Cells</button> */}
     </div>
   );
 });
