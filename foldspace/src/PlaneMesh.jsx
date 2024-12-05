@@ -358,8 +358,8 @@ const PlaneMesh = React.forwardRef(
             Math.abs(movementX) > moveThreshold ||
             Math.abs(movementY) > moveThreshold
           ) {
-            isDragging.current = false;
-            mouseMoved.current = false;
+            isDragging.current = true;
+            mouseMoved.current = true;
           }
 
           // Change the rotation based on the mouse movement
