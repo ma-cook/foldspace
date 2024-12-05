@@ -5,6 +5,9 @@ import { useStore } from './store';
 import { throttle } from 'lodash';
 import { useAuth } from './hooks/useAuth';
 
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from './firebase';
+
 const PlaneMesh = React.forwardRef(
   (
     {
