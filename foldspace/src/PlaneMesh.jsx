@@ -64,16 +64,16 @@ const PlaneMesh = React.forwardRef(
       }
     };
 
-    let isDragging = false;
-    let mouseMoved = false;
+    const isDragging = useRef(false);
+    const mouseMoved = useRef(false);
 
     const moveThreshold = 1; // Adjust based on sensitivity to movement
 
     const onMouseDown = useCallback(
       (event) => {
         isMouseDown.current = true;
-        isDragging = false;
-        mouseMoved = false;
+        isDragging.current = false;
+        mouseMoved.current = false;
         raycaster.setFromCamera(mouse, camera);
         lastMoveTimestamp.current = Date.now();
         const intersects = raycaster.intersectObjects(
@@ -314,7 +314,8 @@ const PlaneMesh = React.forwardRef(
             }
           }
         }
-        isDragging = false;
+        isDragging.current = false;
+        mouseMoved.current = false;
       },
       [
         raycaster,
@@ -357,8 +358,8 @@ const PlaneMesh = React.forwardRef(
             Math.abs(movementX) > moveThreshold ||
             Math.abs(movementY) > moveThreshold
           ) {
-            mouseMoved = true;
-            isDragging = true;
+            isDragging.current = false;
+            mouseMoved.current = false;
           }
 
           // Change the rotation based on the mouse movement
