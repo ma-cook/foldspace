@@ -43,14 +43,22 @@ const PlaneMesh = React.forwardRef(
     );
     const setShipToMove = useStore((state) => state.setShipToMove);
     const { user } = useAuth();
+    // Function to update the ship's destination in Firestore
     const updateShipDestination = async (shipKey, destination) => {
-      // Implement the logic to update the ship's destination in your database
-      // For example, using Firestore:
-      const userId = user.uid;
-      const shipRef = doc(db, 'users', userId);
-      await updateDoc(shipRef, {
-        [`ships.${shipKey}.destination`]: destination,
-      });
+      try {
+        if (!user) {
+          console.error('User not authenticated');
+          return;
+        }
+        const userId = user.uid;
+        const shipRef = doc(db, 'users', userId);
+        await updateDoc(shipRef, {
+          [`ships.${shipKey}.destination`]: destination,
+        });
+        console.log(`Destination for ship ${shipKey} set to:`, destination);
+      } catch (error) {
+        console.error('Error updating ship destination:', error);
+      }
     };
 
     let isDragging = false;
@@ -170,19 +178,13 @@ const PlaneMesh = React.forwardRef(
             const { x, y, z } = point;
 
             if (isSelectingDestination && shipToMove) {
-              // User is selecting a destination for a ship
-              // Update the ship's destination in the database
+              // Update the ship's destination
               updateShipDestination(shipToMove, { x, y, z });
-
-              // Reset the selection mode
+              // Reset selection mode
               setIsSelectingDestination(false);
               setShipToMove(null);
-
-              console.log(
-                `Ship ${shipToMove} destination set to (${x}, ${y}, ${z})`
-              );
             } else {
-              // Existing logic to move the camera (only if not in selection mode)
+              // Existing logic to move the camera
               setTarget({ x: x + 50, y: y + 120, z: z + 90 });
               setLookAt({ x, y, z });
             }
