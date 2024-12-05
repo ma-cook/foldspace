@@ -64,16 +64,16 @@ const PlaneMesh = React.forwardRef(
       }
     };
 
-    const isDragging = useRef(false);
-    const mouseMoved = useRef(false);
+    let isDragging = false;
+    let mouseMoved = false;
 
     const moveThreshold = 1; // Adjust based on sensitivity to movement
 
     const onMouseDown = useCallback(
       (event) => {
         isMouseDown.current = true;
-        isDragging.current = false;
-        mouseMoved.current = false;
+        isDragging = false;
+        mouseMoved = false;
         raycaster.setFromCamera(mouse, camera);
         lastMoveTimestamp.current = Date.now();
         const intersects = raycaster.intersectObjects(
@@ -188,134 +188,139 @@ const PlaneMesh = React.forwardRef(
               setShipToMove(null);
             } else {
               // Existing logic to move the camera
-              const instanceId = intersects[0].instanceId;
+              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
+              setLookAt({ x, y, z });
+            }
+          }
 
-              if (instanceId !== undefined) {
-                const instanceMatrix = new THREE.Matrix4();
+          if (intersects.length > 0) {
+            const { x, y, z } = intersects[0].point;
+            const instanceId = intersects[0].instanceId;
 
-                if (intersects[0].object === instancedMeshRef?.current) {
-                  instancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A yellow sphere was clicked');
-                } else if (
-                  intersects[0].object === lessDetailedMeshRef?.current
-                ) {
-                  lessDetailedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A less detailed yellow sphere was clicked');
-                } else if (
-                  intersects[0].object === redInstancedMeshRef?.current
-                ) {
-                  redInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A red sphere was clicked');
-                } else if (
-                  intersects[0].object === greenInstancedMeshRef?.current
-                ) {
-                  // Check if the green sphere was clicked
-                  greenInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A green sphere was clicked');
-                } else if (
-                  intersects[0].object === blueInstancedMeshRef?.current
-                ) {
-                  // Check if the blue sphere was clicked
-                  blueInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A blue sphere was clicked');
-                } else if (
-                  intersects[0].object === purpleInstancedMeshRef?.current
-                ) {
-                  // Check if the purple sphere was clicked
-                  purpleInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A purple sphere was clicked');
-                } else if (
-                  intersects[0].object === greenMoonInstancedMeshRef?.current
-                ) {
-                  // Check if the green moon sphere was clicked
-                  greenMoonInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A green moon sphere was clicked');
-                } else if (
-                  intersects[0].object === purpleMoonInstancedMeshRef?.current
-                ) {
-                  // Check if the purple moon sphere was clicked
-                  purpleMoonInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A purple moon sphere was clicked');
-                } else if (
-                  intersects[0].object === gasInstancedMeshRef?.current
-                ) {
-                  // Check if the gas sphere was clicked
-                  gasInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A gas sphere was clicked');
-                } else if (
-                  intersects[0].object === brownInstancedMeshRef?.current
-                ) {
-                  // Check if the brown sphere was clicked
-                  brownInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A brown sphere was clicked');
-                } else if (
-                  intersects[0].object === brownRingInstancedMeshRef?.current
-                ) {
-                  // Check if the brown ring was clicked
-                  brownRingInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A brown ring was clicked');
-                } else if (
-                  intersects[0].object === systemRingInstancedMeshRef?.current
-                ) {
-                  // Check if the system ring was clicked
-                  systemRingInstancedMeshRef.current.getMatrixAt(
-                    instanceId,
-                    instanceMatrix
-                  );
-                  console.log('A system ring was clicked');
-                }
+            if (instanceId !== undefined) {
+              const instanceMatrix = new THREE.Matrix4();
 
-                const instancePosition =
-                  new THREE.Vector3().setFromMatrixPosition(instanceMatrix);
-
-                setTarget({
-                  x: instancePosition.x + 100,
-                  y: instancePosition.y + 280,
-                  z: instancePosition.z + 380,
-                });
-                setLookAt(instancePosition);
-              } else {
-                setTarget({ x: x + 50, y: y + 120, z: z + 90 });
-                setLookAt({ x: x, y: y, z: z });
+              if (intersects[0].object === instancedMeshRef?.current) {
+                instancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A yellow sphere was clicked');
+              } else if (
+                intersects[0].object === lessDetailedMeshRef?.current
+              ) {
+                lessDetailedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A less detailed yellow sphere was clicked');
+              } else if (
+                intersects[0].object === redInstancedMeshRef?.current
+              ) {
+                redInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A red sphere was clicked');
+              } else if (
+                intersects[0].object === greenInstancedMeshRef?.current
+              ) {
+                // Check if the green sphere was clicked
+                greenInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A green sphere was clicked');
+              } else if (
+                intersects[0].object === blueInstancedMeshRef?.current
+              ) {
+                // Check if the blue sphere was clicked
+                blueInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A blue sphere was clicked');
+              } else if (
+                intersects[0].object === purpleInstancedMeshRef?.current
+              ) {
+                // Check if the purple sphere was clicked
+                purpleInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A purple sphere was clicked');
+              } else if (
+                intersects[0].object === greenMoonInstancedMeshRef?.current
+              ) {
+                // Check if the green moon sphere was clicked
+                greenMoonInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A green moon sphere was clicked');
+              } else if (
+                intersects[0].object === purpleMoonInstancedMeshRef?.current
+              ) {
+                // Check if the purple moon sphere was clicked
+                purpleMoonInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A purple moon sphere was clicked');
+              } else if (
+                intersects[0].object === gasInstancedMeshRef?.current
+              ) {
+                // Check if the gas sphere was clicked
+                gasInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A gas sphere was clicked');
+              } else if (
+                intersects[0].object === brownInstancedMeshRef?.current
+              ) {
+                // Check if the brown sphere was clicked
+                brownInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A brown sphere was clicked');
+              } else if (
+                intersects[0].object === brownRingInstancedMeshRef?.current
+              ) {
+                // Check if the brown ring was clicked
+                brownRingInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A brown ring was clicked');
+              } else if (
+                intersects[0].object === systemRingInstancedMeshRef?.current
+              ) {
+                // Check if the system ring was clicked
+                systemRingInstancedMeshRef.current.getMatrixAt(
+                  instanceId,
+                  instanceMatrix
+                );
+                console.log('A system ring was clicked');
               }
+
+              const instancePosition =
+                new THREE.Vector3().setFromMatrixPosition(instanceMatrix);
+
+              setTarget({
+                x: instancePosition.x + 100,
+                y: instancePosition.y + 280,
+                z: instancePosition.z + 380,
+              });
+              setLookAt(instancePosition);
+            } else {
+              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
+              setLookAt({ x: x, y: y, z: z });
             }
           }
         }
-        isDragging.current = false;
-        mouseMoved.current = false;
+        isDragging = false;
       },
       [
         raycaster,
@@ -340,7 +345,6 @@ const PlaneMesh = React.forwardRef(
         shipToMove,
         setIsSelectingDestination,
         setShipToMove,
-        updateShipDestination,
       ]
     );
 
@@ -358,8 +362,8 @@ const PlaneMesh = React.forwardRef(
             Math.abs(movementX) > moveThreshold ||
             Math.abs(movementY) > moveThreshold
           ) {
-            isDragging.current = true;
-            mouseMoved.current = true;
+            mouseMoved = true;
+            isDragging = true;
           }
 
           // Change the rotation based on the mouse movement
