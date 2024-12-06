@@ -34,7 +34,7 @@ const Ship = ({
 
   useFrame((state, delta) => {
     const { position, destination } = shipInfo;
-    if (destination) {
+    if (destination && shipRef.current) {
       const currentPos = new THREE.Vector3(position.x, position.y, position.z);
       const destPos = new THREE.Vector3(
         destination.x,
