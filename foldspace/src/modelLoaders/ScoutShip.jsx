@@ -1,11 +1,11 @@
 // ScoutShip.jsx
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 
-const ScoutShip = ({ position, onClick }) => {
+const ScoutShip = forwardRef(({ position, onClick }, ref) => {
   const { nodes, materials } = useGLTF('/scoutShip.glb');
   return (
-    <group position={position} dispose={null}>
+    <group ref={ref} position={position} dispose={null}>
       <mesh
         geometry={nodes.Cube.geometry}
         material={materials.Material}
@@ -14,7 +14,7 @@ const ScoutShip = ({ position, onClick }) => {
       />
     </group>
   );
-};
+});
 
 useGLTF.preload('/scoutShip.glb');
 

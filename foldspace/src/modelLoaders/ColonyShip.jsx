@@ -1,11 +1,11 @@
 // ColonyShip.jsx
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { useGLTF } from '@react-three/drei';
 
-const ColonyShip = ({ position, onClick }) => {
+const ColonyShip = forwardRef(({ position, onClick }, ref) => {
   const { nodes, materials } = useGLTF('/colonyShip.glb');
   return (
-    <group position={position} dispose={null}>
+    <group ref={ref} position={position} dispose={null}>
       <mesh
         geometry={nodes.Plane.geometry}
         material={nodes.Plane.material}
@@ -14,7 +14,7 @@ const ColonyShip = ({ position, onClick }) => {
       />
     </group>
   );
-};
+});
 
 useGLTF.preload('/colonyShip.glb');
 
