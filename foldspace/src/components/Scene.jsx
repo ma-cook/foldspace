@@ -21,6 +21,7 @@ import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import * as THREE from 'three';
+import { useAuth } from '../hooks/useAuth';
 
 const Ship = ({
   shipKey,
@@ -141,7 +142,7 @@ const Scene = ({
   const swapBuffers = useStore((state) => state.swapBuffers);
   const setPlanetNames = useStore((state) => state.setPlanetNames);
   const deferredPositions = useDeferredValue(positions);
-
+  const { user } = useAuth();
   const loadCellCallback = useCallback(
     (x, z) =>
       loadCell(
