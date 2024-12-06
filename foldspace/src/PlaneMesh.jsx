@@ -324,6 +324,7 @@ const PlaneMesh = React.forwardRef(
           }
         }
         isDragging = false;
+        isSelectingDestination === false;
       },
       [
         gl.domElement,

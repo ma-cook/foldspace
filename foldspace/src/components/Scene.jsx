@@ -21,6 +21,7 @@ import * as THREE from 'three';
 import { useAuth } from '../hooks/useAuth';
 import Ship from './Ship';
 import loadCell from '../loadCell';
+import unloadCell from '../unloadCell';
 
 const Scene = ({
   backgroundColor,
@@ -30,6 +31,7 @@ const Scene = ({
   handleShipClick,
   loadingCells,
   setLoadingCells,
+  updateShipDestination,
 }) => {
   const loadedCells = useStore((state) => state.loadedCells);
   const positions = useStore((state) => state.positions);
@@ -169,18 +171,6 @@ const Scene = ({
       });
     } catch (error) {
       console.error('Error updating ship position:', error);
-    }
-  };
-
-  const updateShipDestination = async (shipKey, destination) => {
-    try {
-      const userId = user.uid;
-      const shipRef = doc(db, 'users', userId);
-      await updateDoc(shipRef, {
-        [`ships.${shipKey}.destination`]: destination,
-      });
-    } catch (error) {
-      console.error('Error updating ship destination:', error);
     }
   };
 

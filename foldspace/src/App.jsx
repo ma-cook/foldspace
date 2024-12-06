@@ -1,24 +1,19 @@
+// App.jsx
 import React, {
   useRef,
   useEffect,
   useState,
   useCallback,
-  useMemo,
   Suspense,
-  useTransition,
   useDeferredValue,
 } from 'react';
 import { useStore } from './store';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
-import AppLoader from './AppLoader';
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  query,
-  where,
+  onSnapshot, // Import onSnapshot for real-time updates
 } from 'firebase/firestore';
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
@@ -35,62 +30,72 @@ const App = React.memo(() => {
   const setLookAt = useStore((state) => state.setLookAt);
   const [shipsData, setShipsData] = useState(null);
 
-  const fetchShipsData = async (userId) => {
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData.ships) {
-          setShipsData(userData.ships);
+  // Function to set up real-time listener for ships data
+  const fetchShipsData = useCallback((userId) => {
+    const userDocRef = doc(db, 'users', userId);
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.ships) {
+            setShipsData(userData.ships);
+          } else {
+            console.log('No ships data found for this user.');
+            setShipsData(null);
+          }
         } else {
-          console.log('No ships data found for this user.');
+          console.error('User not found');
+          setShipsData(null);
         }
-      } else {
-        console.error('User not found');
+      },
+      (error) => {
+        console.error('Error listening to ships data:', error);
       }
-    } catch (error) {
-      console.error('Error fetching ships data:', error);
-    }
-  };
+    );
 
-  const fetchOwnedPlanets = async (userId) => {
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
+    return unsubscribe;
+  }, []);
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const planets = userData.spheres || [];
+  const fetchOwnedPlanets = useCallback(
+    async (userId) => {
+      try {
+        const userDocRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userDocRef);
 
-        setOwnedPlanets(planets);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const planets = userData.spheres || [];
 
-        if (planets.length > 0) {
-          const firstPlanet = planets[0];
-          const newPosition = {
-            x: firstPlanet.x + 100,
-            y: firstPlanet.y + 280,
-            z: firstPlanet.z + 380,
-          };
-          setTarget(newPosition);
-          setLookAt({
-            x: firstPlanet.x,
-            y: firstPlanet.y,
-            z: firstPlanet.z,
-          });
+          setOwnedPlanets(planets);
+
+          if (planets.length > 0) {
+            const firstPlanet = planets[0];
+            const newPosition = {
+              x: firstPlanet.x + 100,
+              y: firstPlanet.y + 280,
+              z: firstPlanet.z + 380,
+            };
+            setTarget(newPosition);
+            setLookAt({
+              x: firstPlanet.x,
+              y: firstPlanet.y,
+              z: firstPlanet.z,
+            });
+          } else {
+            console.log('No owned planets found for this user.');
+          }
         } else {
-          console.log('No owned planets found for this user.');
+          console.error('User not found');
         }
-      } else {
-        console.error('User not found');
+      } catch (error) {
+        console.error('Error fetching owned planets:', error);
       }
-    } catch (error) {
-      console.error('Error fetching owned planets:', error);
-    }
-  };
+    },
+    [setTarget, setLookAt]
+  );
 
-  const assignGreenSphere = async (userId) => {
+  const assignGreenSphere = useCallback(async (userId) => {
     try {
       const response = await fetch(
         'https://us-central1-foldspace-6483c.cloudfunctions.net/api/startingPlanet',
@@ -117,16 +122,22 @@ const App = React.memo(() => {
     } catch (error) {
       console.error('Error assigning ownership:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let unsubscribeShips = null;
     if (user) {
       assignGreenSphere(user.uid).then(() => {
         fetchOwnedPlanets(user.uid);
       });
-      fetchShipsData(user.uid);
+      unsubscribeShips = fetchShipsData(user.uid); // Set up listener
     }
-  }, [user, setTarget, setLookAt]);
+
+    // Clean up the listener on unmount or when user changes
+    return () => {
+      if (unsubscribeShips) unsubscribeShips();
+    };
+  }, [user, assignGreenSphere, fetchOwnedPlanets, fetchShipsData]);
 
   const handleShipClick = (shipPosition) => {
     const offsetPosition = {
@@ -138,13 +149,28 @@ const App = React.memo(() => {
     setLookAt(shipPosition);
   };
 
-  // if (isLoading) {
-  //   return <AppLoader />;
-  // }
+  // Function to update ship's destination (passed to UserPanel)
+  const updateShipDestination = useCallback(
+    async (shipKey, destination) => {
+      try {
+        if (!user) {
+          console.error('User not authenticated');
+          return;
+        }
+        const userId = user.uid;
+        const shipRef = doc(db, 'users', userId);
 
-  // if (!isAuthenticated) {
-  //   return <div>Please sign in to access this application.</div>;
-  // }
+        await updateDoc(shipRef, {
+          [`ships.${shipKey}.destination`]: destination,
+        });
+
+        console.log(`Destination for ship ${shipKey} set to:`, destination);
+      } catch (error) {
+        console.error('Error updating ship destination:', error);
+      }
+    },
+    [user]
+  );
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -155,6 +181,7 @@ const App = React.memo(() => {
         handleShipClick={handleShipClick}
         setTarget={setTarget}
         setLookAt={setLookAt}
+        updateShipDestination={updateShipDestination} // Pass the function
       />
       <Scene
         backgroundColor={backgroundColor}
@@ -164,6 +191,7 @@ const App = React.memo(() => {
         handleShipClick={handleShipClick}
         loadingCells={loadingCells}
         setLoadingCells={setLoadingCells}
+        updateShipDestination={updateShipDestination}
       />
       {loadingCells.size > 0 && <LoadingMessage />}
     </div>

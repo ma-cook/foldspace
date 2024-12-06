@@ -74,7 +74,7 @@ const Ship = ({
 
   const shipType = shipKey.replace(/\d+/g, '').trim();
 
-  if (shipType === 'colony ship') {
+  if (shipType.toLowerCase() === 'colony ship') {
     return (
       <ColonyShip
         ref={shipRef}
@@ -82,7 +82,7 @@ const Ship = ({
         onClick={handleClick}
       />
     );
-  } else if (shipType === 'scout') {
+  } else if (shipType.toLowerCase() === 'scout') {
     return (
       <ScoutShip ref={shipRef} position={positionArray} onClick={handleClick} />
     );

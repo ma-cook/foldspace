@@ -9,6 +9,7 @@ const UserPanel = ({
   handleShipClick,
   setTarget,
   setLookAt,
+  updateShipDestination, // Receive the function as a prop
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState({});
   const setIsSelectingDestination = useStore(
@@ -23,10 +24,26 @@ const UserPanel = ({
     }));
   };
 
-  const handleMoveToClick = (shipKey) => {
-    const shipPosition = shipsData[shipKey].position;
-    handleShipClick(shipPosition);
-    // Additional logic for 'move to' can be added here
+  const handleMoveToClick = async (shipKey) => {
+    const shipInfo = shipsData[shipKey];
+    if (!shipInfo) {
+      console.error(`No ship data found for key: ${shipKey}`);
+      return;
+    }
+
+    // Define the destination. For demonstration, let's set it to a fixed offset.
+    // You can modify this to allow dynamic destination selection.
+    const destination = {
+      x: shipInfo.position.x + 100, // Example offset
+      y: shipInfo.position.y + 50,
+      z: shipInfo.position.z + 75,
+    };
+
+    // Update the ship's destination in Firestore
+    await updateShipDestination(shipKey, destination);
+
+    // Optionally, update the camera to focus on the new destination
+    handleShipClick(destination);
   };
 
   const handleMoveShipClick = (shipKey) => {
@@ -38,6 +55,8 @@ const UserPanel = ({
   const handleStopClick = (shipKey) => {
     // Logic for 'stop' can be added here
     console.log(`Stopping ship: ${shipKey}`);
+    // Optionally, clear the destination
+    updateShipDestination(shipKey, null);
   };
 
   const handlePlanetClick = (planetPosition) => {
@@ -96,7 +115,7 @@ const UserPanel = ({
                     shipTypeCounts[shipType]++;
                   }
                   const shipNumber = shipTypeCounts[shipType];
-                  const shipDisplayName = `${shipType}${shipNumber}`;
+                  const shipDisplayName = `${shipType} ${shipNumber}`;
                   const handleClick = () => toggleDropdown(shipKey);
                   return (
                     <li key={shipKey} style={{ cursor: 'pointer' }}>
