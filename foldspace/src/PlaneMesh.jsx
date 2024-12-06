@@ -193,7 +193,7 @@ const PlaneMesh = React.forwardRef(
             }
           }
 
-          if (intersects.length > 0) {
+          if (intersects.length > 0 && isSelectingDestination === false) {
             const { x, y, z } = intersects[0].point;
             const instanceId = intersects[0].instanceId;
 
