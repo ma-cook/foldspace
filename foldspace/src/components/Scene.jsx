@@ -13,7 +13,6 @@ import CustomCamera from '../CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import loadCell from '../loadCell';
 import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -21,6 +20,7 @@ import { db } from '../firebase';
 import * as THREE from 'three';
 import { useAuth } from '../hooks/useAuth';
 import Ship from './Ship';
+import loadCell from '../loadCell';
 
 const Scene = ({
   backgroundColor,
