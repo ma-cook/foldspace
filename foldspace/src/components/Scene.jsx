@@ -6,16 +6,14 @@ import React, {
   Suspense,
   useDeferredValue,
 } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { useStore } from '../store';
 import { Stats, Environment, Bvh } from '@react-three/drei';
 import CustomCamera from '../CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import LoadingMessage from './LoadingMessage';
 import loadCell from '../loadCell';
-import unloadCell from '../unloadCell';
 import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -71,6 +69,7 @@ const Scene = ({
   const setPlanetNames = useStore((state) => state.setPlanetNames);
   const deferredPositions = useDeferredValue(positions);
   const { user } = useAuth();
+
   const loadCellCallback = useCallback(
     (x, z) =>
       loadCell(

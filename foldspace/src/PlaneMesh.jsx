@@ -29,7 +29,7 @@ const PlaneMesh = React.forwardRef(
     },
     ref
   ) => {
-    const { raycaster, mouse, camera, size } = useThree();
+    const { raycaster, mouse, camera, size, gl } = useThree();
     const meshRefs = useRef([]); // Array of references for each plane mesh
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
@@ -71,6 +71,7 @@ const PlaneMesh = React.forwardRef(
 
     const onMouseDown = useCallback(
       (event) => {
+        if (event.target !== gl.domElement) return;
         isMouseDown.current = true;
         isDragging = false;
         mouseMoved = false;
@@ -111,6 +112,7 @@ const PlaneMesh = React.forwardRef(
         }
       },
       [
+        gl.domElement,
         raycaster,
         mouse,
         camera,
@@ -132,6 +134,7 @@ const PlaneMesh = React.forwardRef(
 
     const onMouseUp = useCallback(
       (event) => {
+        if (event.target !== gl.domElement) return;
         isMouseDown.current = false;
         if (!mouseMoved && !isDragging) {
           const mouseDownDuration = Date.now() - lastMoveTimestamp.current; // Calculate how long the mouse was held down
@@ -323,6 +326,7 @@ const PlaneMesh = React.forwardRef(
         isDragging = false;
       },
       [
+        gl.domElement,
         raycaster,
         mouse,
         camera,
@@ -376,15 +380,17 @@ const PlaneMesh = React.forwardRef(
         }
       }, 16); // Throttle to 60fps
 
-      document.addEventListener('mousedown', onMouseDown);
-      document.addEventListener('mouseup', onMouseUp);
-      document.addEventListener('mousemove', onMouseMove);
+      const canvas = gl.domElement;
+
+      canvas.addEventListener('mousedown', onMouseDown);
+      canvas.addEventListener('mouseup', onMouseUp);
+      canvas.addEventListener('mousemove', onMouseMove);
 
       return () => {
-        document.removeEventListener('mousedown', onMouseDown);
-        document.removeEventListener('mouseup', onMouseUp);
-        document.removeEventListener('mousemove', onMouseMove);
-        onMouseMove.cancel(); // Cancel the throttled function
+        canvas.removeEventListener('mousedown', onMouseDown);
+        canvas.removeEventListener('mouseup', onMouseUp);
+        canvas.removeEventListener('mousemove', onMouseMove);
+        onMouseMove.cancel();
       };
     }, [
       raycaster,
@@ -394,6 +400,7 @@ const PlaneMesh = React.forwardRef(
       setLookAt,
       size,
       sphereRefs,
+      gl.domElement,
       onMouseDown,
       onMouseUp,
     ]);

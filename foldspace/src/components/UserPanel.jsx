@@ -23,7 +23,8 @@ const UserPanel = ({
     }));
   };
 
-  const handleMoveToClick = (shipPosition) => {
+  const handleMoveToClick = (shipKey) => {
+    const shipPosition = shipsData[shipKey].position;
     handleShipClick(shipPosition);
     // Additional logic for 'move to' can be added here
   };
@@ -107,9 +108,7 @@ const UserPanel = ({
                       </div>
                       {dropdownVisible[shipKey] && (
                         <div style={{ marginLeft: '20px' }}>
-                          <button
-                            onClick={() => handleMoveToClick(shipInfo.position)}
-                          >
+                          <button onClick={() => handleMoveToClick(shipKey)}>
                             Move to
                           </button>
                           <button onClick={() => handleMoveShipClick(shipKey)}>
