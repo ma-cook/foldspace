@@ -13,7 +13,8 @@ import { db } from './firebase';
 import {
   doc,
   getDoc,
-  onSnapshot, // Import onSnapshot for real-time updates
+  onSnapshot,
+  updateDoc, // Import onSnapshot for real-time updates
 } from 'firebase/firestore';
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
