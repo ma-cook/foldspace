@@ -21,66 +21,77 @@ import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const ShipMovement = ({
-  shipsData,
-  shipRefs,
+const Ship = ({
+  shipKey,
+  shipInfo,
+  handleShipClick,
   updateShipPosition,
   updateShipDestination,
 }) => {
+  const shipRef = useRef();
   const timeSinceLastUpdate = useRef(0);
 
   useFrame((state, delta) => {
-    if (shipsData) {
-      Object.entries(shipsData).forEach(([shipKey, shipInfo]) => {
-        const { position, destination } = shipInfo;
-        if (destination) {
-          const shipRef = shipRefs.current[shipKey];
-          if (shipRef) {
-            const currentPos = new THREE.Vector3(
-              position.x,
-              position.y,
-              position.z
-            );
-            const destPos = new THREE.Vector3(
-              destination.x,
-              destination.y,
-              destination.z
-            );
-            const direction = destPos.clone().sub(currentPos).normalize();
-            const distance = currentPos.distanceTo(destPos);
-            const moveDistance = Math.min(distance, 10 * delta); // 10 units per second
+    const { position, destination } = shipInfo;
+    if (destination) {
+      const currentPos = new THREE.Vector3(position.x, position.y, position.z);
+      const destPos = new THREE.Vector3(
+        destination.x,
+        destination.y,
+        destination.z
+      );
+      const direction = destPos.clone().sub(currentPos).normalize();
+      const distance = currentPos.distanceTo(destPos);
+      const moveDistance = Math.min(distance, 10 * delta); // 10 units per second
 
-            if (distance > 0.1) {
-              currentPos.add(direction.multiplyScalar(moveDistance));
+      if (distance > 0.1) {
+        currentPos.add(direction.multiplyScalar(moveDistance));
 
-              // Update ship's position
-              shipRef.position.copy(currentPos);
+        // Update ship's position
+        shipRef.current.position.copy(currentPos);
 
-              // Update local shipData
-              shipInfo.position = {
-                x: currentPos.x,
-                y: currentPos.y,
-                z: currentPos.z,
-              };
+        // Update local shipData
+        shipInfo.position = {
+          x: currentPos.x,
+          y: currentPos.y,
+          z: currentPos.z,
+        };
 
-              // Update position in database every second
-              timeSinceLastUpdate.current += delta;
-              if (timeSinceLastUpdate.current >= 1) {
-                updateShipPosition(shipKey, shipInfo.position);
-                timeSinceLastUpdate.current = 0;
-              }
-            } else {
-              // Destination reached, clear destination
-              shipInfo.destination = null;
-              updateShipDestination(shipKey, null);
-            }
-          }
+        // Update position in database every second
+        timeSinceLastUpdate.current += delta;
+        if (timeSinceLastUpdate.current >= 1) {
+          updateShipPosition(shipKey, shipInfo.position);
+          timeSinceLastUpdate.current = 0;
         }
-      });
+      } else {
+        // Destination reached, clear destination
+        shipInfo.destination = null;
+        updateShipDestination(shipKey, null);
+      }
     }
   });
 
-  return null;
+  const position = [
+    shipInfo.position.x,
+    shipInfo.position.y,
+    shipInfo.position.z,
+  ];
+
+  const handleClick = () => handleShipClick(shipInfo.position);
+
+  const shipType = shipKey.replace(/\d+/g, '').trim();
+
+  if (shipType === 'colony ship') {
+    return (
+      <ColonyShip ref={shipRef} position={position} onClick={handleClick} />
+    );
+  } else if (shipType === 'scout') {
+    return (
+      <ScoutShip ref={shipRef} position={position} onClick={handleClick} />
+    );
+  } else {
+    return null;
+  }
 };
 
 const Scene = ({
@@ -129,7 +140,6 @@ const Scene = ({
   const swapBuffers = useStore((state) => state.swapBuffers);
   const setPlanetNames = useStore((state) => state.setPlanetNames);
   const deferredPositions = useDeferredValue(positions);
-  const shipRefs = useRef({});
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -279,49 +289,18 @@ const Scene = ({
           />
           {shipsData && (
             <>
-              {Object.entries(shipsData).map(([shipKey, shipInfo]) => {
-                const shipType = shipKey.replace(/\d+/g, '').trim();
-                const position = [
-                  shipInfo.position.x,
-                  shipInfo.position.y,
-                  shipInfo.position.z,
-                ];
-
-                const handleClick = () => handleShipClick(shipInfo.position);
-
-                const shipRef = useRef();
-                shipRefs.current[shipKey] = shipRef.current;
-
-                if (shipType === 'colony ship') {
-                  return (
-                    <ColonyShip
-                      key={shipKey}
-                      ref={shipRef}
-                      position={position}
-                      onClick={handleClick}
-                    />
-                  );
-                } else if (shipType === 'scout') {
-                  return (
-                    <ScoutShip
-                      key={shipKey}
-                      ref={shipRef}
-                      position={position}
-                      onClick={handleClick}
-                    />
-                  );
-                } else {
-                  return null;
-                }
-              })}
+              {Object.entries(shipsData).map(([shipKey, shipInfo]) => (
+                <Ship
+                  key={shipKey}
+                  shipKey={shipKey}
+                  shipInfo={shipInfo}
+                  handleShipClick={handleShipClick}
+                  updateShipPosition={updateShipPosition}
+                  updateShipDestination={updateShipDestination}
+                />
+              ))}
             </>
           )}
-          <ShipMovement
-            shipsData={shipsData}
-            shipRefs={shipRefs}
-            updateShipPosition={updateShipPosition}
-            updateShipDestination={updateShipDestination}
-          />
         </Suspense>
       </Bvh>
     </Canvas>
