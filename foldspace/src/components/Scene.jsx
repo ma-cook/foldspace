@@ -20,6 +20,7 @@ import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import * as THREE from 'three';
 
 const Ship = ({
   shipKey,
