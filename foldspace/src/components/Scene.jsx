@@ -6,7 +6,7 @@ import React, {
   Suspense,
   useDeferredValue,
 } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { useStore } from '../store';
 import { Stats, Environment, Bvh } from '@react-three/drei';
 import CustomCamera from '../CustomCamera';
@@ -18,6 +18,70 @@ import loadCell from '../loadCell';
 import unloadCell from '../unloadCell';
 import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+
+const ShipMovement = ({
+  shipsData,
+  shipRefs,
+  updateShipPosition,
+  updateShipDestination,
+}) => {
+  const timeSinceLastUpdate = useRef(0);
+
+  useFrame((state, delta) => {
+    if (shipsData) {
+      Object.entries(shipsData).forEach(([shipKey, shipInfo]) => {
+        const { position, destination } = shipInfo;
+        if (destination) {
+          const shipRef = shipRefs.current[shipKey];
+          if (shipRef) {
+            const currentPos = new THREE.Vector3(
+              position.x,
+              position.y,
+              position.z
+            );
+            const destPos = new THREE.Vector3(
+              destination.x,
+              destination.y,
+              destination.z
+            );
+            const direction = destPos.clone().sub(currentPos).normalize();
+            const distance = currentPos.distanceTo(destPos);
+            const moveDistance = Math.min(distance, 10 * delta); // 10 units per second
+
+            if (distance > 0.1) {
+              currentPos.add(direction.multiplyScalar(moveDistance));
+
+              // Update ship's position
+              shipRef.position.copy(currentPos);
+
+              // Update local shipData
+              shipInfo.position = {
+                x: currentPos.x,
+                y: currentPos.y,
+                z: currentPos.z,
+              };
+
+              // Update position in database every second
+              timeSinceLastUpdate.current += delta;
+              if (timeSinceLastUpdate.current >= 1) {
+                updateShipPosition(shipKey, shipInfo.position);
+                timeSinceLastUpdate.current = 0;
+              }
+            } else {
+              // Destination reached, clear destination
+              shipInfo.destination = null;
+              updateShipDestination(shipKey, null);
+            }
+          }
+        }
+      });
+    }
+  });
+
+  return null;
+};
 
 const Scene = ({
   backgroundColor,
@@ -65,6 +129,7 @@ const Scene = ({
   const swapBuffers = useStore((state) => state.swapBuffers);
   const setPlanetNames = useStore((state) => state.setPlanetNames);
   const deferredPositions = useDeferredValue(positions);
+  const shipRefs = useRef({});
 
   const loadCellCallback = useCallback(
     (x, z) =>
@@ -156,6 +221,30 @@ const Scene = ({
     );
   }
 
+  const updateShipPosition = async (shipKey, position) => {
+    try {
+      const userId = user.uid;
+      const shipRef = doc(db, 'users', userId);
+      await updateDoc(shipRef, {
+        [`ships.${shipKey}.position`]: position,
+      });
+    } catch (error) {
+      console.error('Error updating ship position:', error);
+    }
+  };
+
+  const updateShipDestination = async (shipKey, destination) => {
+    try {
+      const userId = user.uid;
+      const shipRef = doc(db, 'users', userId);
+      await updateDoc(shipRef, {
+        [`ships.${shipKey}.destination`]: destination,
+      });
+    } catch (error) {
+      console.error('Error updating ship destination:', error);
+    }
+  };
+
   return (
     <Canvas gl={{ stencil: true }}>
       <fog attach="fog" args={[backgroundColor, 10000, 100000]} />
@@ -200,10 +289,14 @@ const Scene = ({
 
                 const handleClick = () => handleShipClick(shipInfo.position);
 
+                const shipRef = useRef();
+                shipRefs.current[shipKey] = shipRef.current;
+
                 if (shipType === 'colony ship') {
                   return (
                     <ColonyShip
                       key={shipKey}
+                      ref={shipRef}
                       position={position}
                       onClick={handleClick}
                     />
@@ -212,6 +305,7 @@ const Scene = ({
                   return (
                     <ScoutShip
                       key={shipKey}
+                      ref={shipRef}
                       position={position}
                       onClick={handleClick}
                     />
@@ -222,6 +316,12 @@ const Scene = ({
               })}
             </>
           )}
+          <ShipMovement
+            shipsData={shipsData}
+            shipRefs={shipRefs}
+            updateShipPosition={updateShipPosition}
+            updateShipDestination={updateShipDestination}
+          />
         </Suspense>
       </Bvh>
     </Canvas>
