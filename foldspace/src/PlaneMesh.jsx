@@ -34,7 +34,7 @@ const PlaneMesh = React.forwardRef(
     const circleRef = useRef(); // Reference to the circle mesh
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
-
+    const colonizeMode = useStore((state) => state.colonizeMode);
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
     const isSelectingDestination = useStore(
@@ -185,14 +185,43 @@ const PlaneMesh = React.forwardRef(
 
             if (isSelectingDestination && shipToMove) {
               // Update the ship's destination
-              updateShipDestination(shipToMove, { x, y, z });
-              // Reset selection mode
-              setIsSelectingDestination(false);
-              setShipToMove(null);
+              if (colonizeMode) {
+                // In colonize mode, get the position of the clicked sphere
+                if (intersects.length > 0) {
+                  const { point, object } = intersects[0];
+                  const { x, y, z } = point;
+
+                  // Get the instanceId if available (for instanced meshes)
+                  const instanceId = intersects[0].instanceId;
+
+                  // Store destination information including sphere data
+                  const destination = {
+                    x,
+                    y,
+                    z,
+                    cellId: object.userData.cellId, // Assuming you have cellId stored
+                    instanceId,
+                  };
+
+                  updateShipDestination(shipToMove, destination);
+
+                  // Reset selection mode
+                  setIsSelectingDestination(false);
+                  setShipToMove(null);
+                  setColonizeMode(false);
+                }
+              } else {
+                // Normal movement mode
+                const { x, y, z } = intersects[0].point;
+                updateShipDestination(shipToMove, { x, y, z });
+
+                // Reset selection mode
+                setIsSelectingDestination(false);
+                setShipToMove(null);
+              }
             } else {
               // Existing logic to move the camera
-              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
-              setLookAt({ x, y, z });
+              console.log('no target');
             }
           }
 
@@ -349,6 +378,7 @@ const PlaneMesh = React.forwardRef(
         shipToMove,
         setIsSelectingDestination,
         setShipToMove,
+        colonizeMode,
       ]
     );
 

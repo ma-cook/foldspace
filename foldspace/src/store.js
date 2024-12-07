@@ -40,6 +40,8 @@ export const useStore = create((set) => ({
   loadingCells: new Set(), // Add less detailed positions state
   isSelectingDestination: false,
   shipToMove: null,
+  colonizeMode: false,
+  setColonizeMode: (value) => set({ colonizeMode: value }),
   setIsSelectingDestination: (value) => set({ isSelectingDestination: value }),
   setShipToMove: (shipKey) => set({ shipToMove: shipKey }),
   setLoadingCells: (loadingCells) => set({ loadingCells }),

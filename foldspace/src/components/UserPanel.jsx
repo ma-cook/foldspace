@@ -15,7 +15,7 @@ const UserPanel = ({
     (state) => state.setIsSelectingDestination
   );
   const setShipToMove = useStore((state) => state.setShipToMove);
-
+  const setColonizeMode = useStore((state) => state.setColonizeMode);
   const toggleDropdown = (shipKey) => {
     setDropdownVisible((prev) => ({
       ...prev,
@@ -33,6 +33,13 @@ const UserPanel = ({
     setIsSelectingDestination(true);
     setShipToMove(shipKey);
     console.log(`Select destination for ship: ${shipKey}`);
+  };
+
+  const handleColonizeClick = (shipKey) => {
+    setIsSelectingDestination(true);
+    setShipToMove(shipKey);
+    setColonizeMode(true); // Enable colonize mode
+    console.log(`Select planet to colonize with ship: ${shipKey}`);
   };
 
   const handleStopClick = (shipKey) => {
@@ -114,6 +121,13 @@ const UserPanel = ({
                           <button onClick={() => handleMoveShipClick(shipKey)}>
                             Move ship
                           </button>
+                          {shipType.toLowerCase() === 'colony ship' && (
+                            <button
+                              onClick={() => handleColonizeClick(shipKey)}
+                            >
+                              Colonize
+                            </button>
+                          )}
                           <button onClick={() => handleStopClick(shipKey)}>
                             Stop
                           </button>
