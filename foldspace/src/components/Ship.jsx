@@ -3,8 +3,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useAuth } from '../hooks/useAuth';
 
 const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
