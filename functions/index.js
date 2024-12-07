@@ -43,6 +43,10 @@ const fileQueue = async.queue(async (task, callback) => {
   }
 }, 1);
 
+const SHIP_SPEED = 600; // Units per minute
+const MOVEMENT_INTERVAL = 1;
+const COLONIZE_DURATION = 60;
+
 const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
 
@@ -346,6 +350,109 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   }
 });
 
+// Add this within your app setup
+app.post('/completeColonization', cors(corsOptions), async (req, res) => {
+  const { userId, shipKey, shipInfo } = req.body;
+
+  if (!userId || !shipKey || !shipInfo) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  try {
+    // Start a Firestore transaction
+    await db.runTransaction(async (transaction) => {
+      // Verify user exists
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data();
+
+      // Verify ship exists
+      const shipRef = userRef;
+      const shipData = userData.ships && userData.ships[shipKey];
+      if (!shipData) {
+        throw new Error('Ship not found');
+      }
+
+      // Ensure the ship is in colonization mode
+      if (!shipData.isColonizing) {
+        throw new Error('Ship is not colonizing');
+      }
+
+      const dest = shipInfo.destination;
+      const { x, y, z, instanceId } = dest;
+
+      // Search for the cell containing the sphere
+      const cellsSnapshot = await db.collection('cells').get();
+      let targetCellId = null;
+      let targetPositionIndex = null;
+
+      for (const doc of cellsSnapshot.docs) {
+        const cellId = doc.id;
+        const cellData = doc.data();
+        const greenPositions = cellData.positions.greenPositions || [];
+
+        for (let i = 0; i < greenPositions.length; i++) {
+          const position = greenPositions[i];
+          if (
+            position.x === x &&
+            position.y === y &&
+            position.z === z &&
+            (instanceId === undefined || i === instanceId)
+          ) {
+            targetCellId = cellId;
+            targetPositionIndex = i;
+            break;
+          }
+        }
+
+        if (targetCellId) {
+          break;
+        }
+      }
+
+      if (!targetCellId || targetPositionIndex === null) {
+        throw new Error('Sphere not found');
+      }
+
+      // Update the sphere's data to assign ownership
+      const cellRef = db.collection('cells').doc(targetCellId);
+      transaction.update(cellRef, {
+        [`positions.greenPositions.${targetPositionIndex}.owner`]: userId,
+        [`positions.greenPositions.${targetPositionIndex}.planetName`]:
+          userData.homePlanetName || userId,
+        [`positions.greenPositions.${targetPositionIndex}.civilisationName`]:
+          userData.civilisationName || userData.email,
+      });
+
+      // Add the planet to the user's spheres
+      const newSphere = {
+        x,
+        y,
+        z,
+        planetName: userData.homePlanetName || userId,
+        civilisationName: userData.civilisationName || userData.email,
+      };
+
+      transaction.update(userRef, {
+        spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+        [`ships.${shipKey}.isColonizing`]: false,
+        [`ships.${shipKey}.colonizeStartTime`]: null,
+        [`ships.${shipKey}.destination`]: null,
+        [`ships.${shipKey}`]: admin.firestore.FieldValue.delete(),
+      });
+    });
+
+    res.json({ message: 'Colonization completed successfully' });
+  } catch (error) {
+    console.error('Error in completeColonization:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/getUserPlanets', cors(corsOptions), async (req, res) => {
   const { userId } = req.query;
   try {
@@ -368,3 +475,146 @@ app.use((err, req, res, next) => {
 });
 
 exports.api = functions.https.onRequest(app);
+
+// index.js
+exports.updateShipPositions = functions.pubsub
+  .schedule('every minute')
+  .onRun(async (context) => {
+    console.log('Scheduled function: updateShipPositions started');
+
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      const batch = db.batch();
+      const currentTime = admin.firestore.Timestamp.now();
+
+      usersSnapshot.forEach((userDoc) => {
+        const userData = userDoc.data();
+        const ships = userData.ships || {};
+
+        Object.entries(ships).forEach(([shipKey, shipInfo]) => {
+          const {
+            position,
+            destination,
+            isColonizing,
+            colonizeStartTime,
+            type,
+            ownerId,
+          } = shipInfo;
+
+          if (destination && !isColonizing) {
+            // Calculate direction and distance
+            const dir = {
+              x: destination.x - position.x,
+              y: destination.y - position.y,
+              z: destination.z - position.z,
+            };
+            const distance = Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2);
+
+            if (distance === 0) {
+              // Destination reached
+              if (
+                type.toLowerCase() === 'colony ship' &&
+                destination.instanceId !== undefined
+              ) {
+                // Start colonization
+                batch.update(userDoc.ref, {
+                  [`ships.${shipKey}.isColonizing`]: true,
+                  [`ships.${shipKey}.colonizeStartTime`]: currentTime,
+                });
+              } else {
+                // Clear destination
+                batch.update(userDoc.ref, {
+                  [`ships.${shipKey}.destination`]: null,
+                });
+              }
+              return;
+            }
+
+            // Normalize direction
+            const normDir = {
+              x: dir.x / distance,
+              y: dir.y / distance,
+              z: dir.z / distance,
+            };
+
+            // Calculate movement step
+            const moveDist = Math.min(SHIP_SPEED * MOVEMENT_INTERVAL, distance);
+
+            // New position
+            const newPosition = {
+              x: position.x + normDir.x * moveDist,
+              y: position.y + normDir.y * moveDist,
+              z: position.z + normDir.z * moveDist,
+            };
+
+            // Update position
+            batch.update(userDoc.ref, {
+              [`ships.${shipKey}.position`]: newPosition,
+            });
+
+            // Clear destination if reached
+            if (moveDist >= distance) {
+              if (
+                type.toLowerCase() === 'colony ship' &&
+                destination.instanceId !== undefined
+              ) {
+                // Start colonization
+                batch.update(userDoc.ref, {
+                  [`ships.${shipKey}.isColonizing`]: true,
+                  [`ships.${shipKey}.colonizeStartTime`]: currentTime,
+                });
+              } else {
+                batch.update(userDoc.ref, {
+                  [`ships.${shipKey}.destination`]: null,
+                });
+              }
+            }
+          }
+
+          if (isColonizing) {
+            const timeElapsed = currentTime.seconds - colonizeStartTime.seconds;
+
+            if (timeElapsed >= COLONIZE_DURATION) {
+              // Complete colonization
+              // Assign ownership to the sphere
+              const dest = shipInfo.destination;
+              const cellRef = db.collection('cells').doc(dest.cellId);
+
+              batch.update(cellRef, {
+                [`positions.greenPositions.${dest.instanceId}.owner`]: ownerId,
+                // Add other fields like planetName, civilisationName if needed
+              });
+
+              // Update user's spheres
+              const newSphere = {
+                x: dest.x,
+                y: dest.y,
+                z: dest.z,
+                planetName: userData.homePlanetName || 'Unnamed Planet',
+                civilisationName:
+                  userData.civilisationName || 'Unnamed Civilization',
+              };
+
+              batch.update(userDoc.ref, {
+                spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+                [`ships.${shipKey}.isColonizing`]: false,
+                [`ships.${shipKey}.colonizeStartTime`]: null,
+                [`ships.${shipKey}.destination`]: null,
+                // Optionally delete the ship
+                // [`ships.${shipKey}`]: admin.firestore.FieldValue.delete(),
+              });
+            }
+          }
+        });
+      });
+
+      await batch.commit();
+      console.log(
+        'Scheduled function: updateShipPositions completed successfully'
+      );
+    } catch (error) {
+      console.error('Error in updateShipPositions:', error);
+    }
+
+    return null;
+  });
