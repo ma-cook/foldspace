@@ -200,7 +200,6 @@ const PlaneMesh = React.forwardRef(
                     x,
                     y,
                     z,
-                    cellId: object.userData.cellId, // Assuming you have cellId stored
                     instanceId,
                   };
 
