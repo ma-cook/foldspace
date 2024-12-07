@@ -35,6 +35,7 @@ const PlaneMesh = React.forwardRef(
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
     const colonizeMode = useStore((state) => state.colonizeMode);
+    const setColonizeMode = useStore((state) => state.setColonizeMode); // Add this line
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
     const isSelectingDestination = useStore(

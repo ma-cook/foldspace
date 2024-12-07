@@ -51,35 +51,34 @@ const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
 
   const completeColonization = async () => {
     try {
-      // Update the sphere data in Firestore to assign ownership
-      await updateDoc(doc(db, 'cells', shipInfo.destination.cellId), {
-        // Update the specific sphere in the cell's data
-        [`positions.greenPositions.${shipInfo.destination.instanceId}.owner`]:
-          user.uid,
-        [`positions.greenPositions.${shipInfo.destination.instanceId}.planetName`]:
-          user.uid, // Or any other name
-        [`positions.greenPositions.${shipInfo.destination.instanceId}.civilisationName`]:
-          user.displayName || user.email,
-      });
+      if (!user) {
+        console.error('User not authenticated');
+        return;
+      }
 
-      // Add the planet to the user's spheres
-      await updateDoc(doc(db, 'users', user.uid), {
-        spheres: admin.firestore.FieldValue.arrayUnion({
-          x: shipInfo.destination.x,
-          y: shipInfo.destination.y,
-          z: shipInfo.destination.z,
-          planetName: user.uid, // Or any other name
-          civilisationName: user.displayName || user.email,
-        }),
-      });
+      // Call the Cloud Function
+      const response = await fetch(
+        'https://us-central1-your-project-id.cloudfunctions.net/completeColonization',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            shipKey,
+            shipInfo,
+          }),
+        }
+      );
 
-      // Remove the ship or reset its state
-      await updateDoc(doc(db, 'ships', shipKey), {
-        isColonizing: false,
-        colonizeStartTime: null,
-        destination: null,
-        // Optionally, remove the ship
-      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to complete colonization');
+      }
+
+      console.log('Colonization completed successfully:', data.message);
     } catch (error) {
       console.error('Error completing colonization:', error);
     }
