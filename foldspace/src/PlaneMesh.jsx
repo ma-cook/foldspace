@@ -318,8 +318,7 @@ const PlaneMesh = React.forwardRef(
               });
               setLookAt(instancePosition);
             } else {
-              setTarget({ x: x + 50, y: y + 120, z: z + 90 });
-              setLookAt({ x: x, y: y, z: z });
+              console.log('no target');
             }
           }
         }
