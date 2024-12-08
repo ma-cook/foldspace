@@ -174,9 +174,8 @@ const App = React.memo(() => {
 
           await updateDoc(shipRef, {
             [`ships.${shipKey}.destination`]: destination,
-            // Ensure 'type' is not altered
-            // Alternatively, re-include 'type' if necessary
-            // [`ships.${shipKey}.type`]: type,
+
+            [`ships.${shipKey}.type`]: type,
           });
 
           console.log(`Destination for ship ${shipKey} set to:`, destination);
