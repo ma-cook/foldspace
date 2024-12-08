@@ -16,6 +16,7 @@ const UserPanel = ({
   );
   const setShipToMove = useStore((state) => state.setShipToMove);
   const setColonizeMode = useStore((state) => state.setColonizeMode);
+
   const toggleDropdown = (shipKey) => {
     setDropdownVisible((prev) => ({
       ...prev,
@@ -95,15 +96,22 @@ const UserPanel = ({
             <ul>
               {(() => {
                 const shipTypeCounts = {};
-                return Object.entries(shipsData).map(([shipKey, shipInfo]) => {
-                  const shipType = shipKey.replace(/\d+/g, '').trim();
-                  if (!shipTypeCounts[shipType]) {
-                    shipTypeCounts[shipType] = 1;
+
+                // Pre-calculate ship type counts
+                Object.values(shipsData).forEach((info) => {
+                  const type = info.type || '';
+                  if (!shipTypeCounts[type]) {
+                    shipTypeCounts[type] = 1;
                   } else {
-                    shipTypeCounts[shipType]++;
+                    shipTypeCounts[type]++;
                   }
-                  const shipNumber = shipTypeCounts[shipType];
-                  const shipDisplayName = `${shipType}${shipNumber}`;
+                });
+
+                return Object.entries(shipsData).map(([shipKey, shipInfo]) => {
+                  const shipType =
+                    shipInfo.type || shipKey.replace(/\d+/g, '').trim();
+                  const shipNumber = shipTypeCounts[shipType]++;
+                  const shipDisplayName = `${shipType} ${shipNumber}`;
                   const handleClick = () => toggleDropdown(shipKey);
                   return (
                     <li key={shipKey} style={{ cursor: 'pointer' }}>

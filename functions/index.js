@@ -211,119 +211,166 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
+    console.error('Missing userId in request body');
     return res.status(400).json({ error: 'Missing userId in request body' });
   }
 
   try {
+    // Fetch user data outside the transaction
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+    const { civilisationName, homePlanetName, spheres } = userData;
+
+    if (!civilisationName || !homePlanetName) {
+      throw new Error('User data is incomplete');
+    }
+
+    // Check if the user already has a starting planet
+    if (spheres && spheres.length > 0) {
+      throw new Error('User already has a starting planet');
+    }
+
+    // Fetch all users' spheres to check distance constraints (Outside Transaction)
+    const usersSnapshot = await db.collection('users').get();
+    const existingSpheres = [];
+    usersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.spheres) {
+        existingSpheres.push(...data.spheres);
+      }
+    });
+
+    // Fetch all cells (Outside Transaction)
+    const cellsSnapshot = await db.collection('cells').get();
+    let closestSphere = null;
+    let closestDistanceSq = Infinity;
+
+    // Iterate through cells to find the closest unowned green sphere outside 35,000 units
+    for (const doc of cellsSnapshot.docs) {
+      const data = doc.data();
+      const greenPositions = data.positions.greenPositions || [];
+
+      for (let i = 0; i < greenPositions.length; i++) {
+        const position = greenPositions[i];
+        if (position.owner) continue;
+
+        // Calculate squared distance from origin
+        const distanceSq = position.x ** 2 + position.y ** 2 + position.z ** 2;
+
+        // Check distance constraints with existing spheres
+        let isTooClose = false;
+        for (const sphere of existingSpheres) {
+          const dx = sphere.x - position.x;
+          const dy = sphere.y - position.y;
+          const dz = sphere.z - position.z;
+          const userDistanceSq = dx ** 2 + dy ** 2 + dz ** 2;
+          if (userDistanceSq <= 35000 ** 2) {
+            isTooClose = true;
+            break;
+          }
+        }
+
+        if (!isTooClose && distanceSq < closestDistanceSq) {
+          closestSphere = { cellId: doc.id, position, instanceId: i };
+          closestDistanceSq = distanceSq;
+        }
+      }
+
+      if (closestSphere && closestDistanceSq === 0) break; // Optimal sphere found
+    }
+
+    if (!closestSphere) {
+      throw new Error('No green spheres available');
+    }
+
+    // Now perform the transaction
     await db.runTransaction(async (transaction) => {
-      // Fetch user data
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new Error('User not found');
-      }
+      // Re-fetch the user document within the transaction
+      const userDocTxn = await transaction.get(userRef);
+      const userDataTxn = userDocTxn.data();
 
-      const userData = userDoc.data();
-      const { civilisationName, homePlanetName, spheres } = userData;
-
-      if (!civilisationName || !homePlanetName) {
-        throw new Error('User data is incomplete');
-      }
-
-      // Check if the user already has a starting planet
-      if (spheres && spheres.length > 0) {
+      // Double-check if the user already has a starting planet
+      const { spheres: spheresTxn } = userDataTxn;
+      if (spheresTxn && spheresTxn.length > 0) {
         throw new Error('User already has a starting planet');
       }
 
-      // Fetch all users' spheres to check distance constraints
-      const usersSnapshot = await transaction.get(db.collection('users'));
-      const existingSpheres = [];
-      usersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.spheres) {
-          existingSpheres.push(...data.spheres);
-        }
-      });
-
-      // Fetch all cells
-      const cellsSnapshot = await transaction.get(db.collection('cells'));
-      let closestSphere = null;
-      let closestDistanceSq = Infinity;
-
-      // Iterate through cells to find the closest unowned green sphere outside 25,000 distance
-      for (const doc of cellsSnapshot.docs) {
-        const data = doc.data();
-        const greenPositions = data.positions.greenPositions || [];
-
-        for (const position of greenPositions) {
-          if (position.owner) continue;
-
-          // Calculate squared distance from origin
-          const distanceSq =
-            position.x ** 2 + position.y ** 2 + position.z ** 2;
-
-          // Check distance constraints with existing spheres
-          let isTooClose = false;
-          for (const sphere of existingSpheres) {
-            const dx = sphere.x - position.x;
-            const dy = sphere.y - position.y;
-            const dz = sphere.z - position.z;
-            const userDistanceSq = dx ** 2 + dy ** 2 + dz ** 2;
-            if (userDistanceSq <= 35000 ** 2) {
-              isTooClose = true;
-              break;
-            }
-          }
-
-          if (!isTooClose && distanceSq < closestDistanceSq) {
-            closestSphere = { cellId: doc.id, position };
-            closestDistanceSq = distanceSq;
-          }
-        }
-
-        if (closestSphere && closestDistanceSq === 0) break; // Optimal sphere found
-      }
-
-      if (!closestSphere) {
-        throw new Error('No green spheres available');
-      }
-
-      // Assign ownership to the selected sphere
+      // Get the specific cell document
       const cellRef = db.collection('cells').doc(closestSphere.cellId);
       const cellDoc = await transaction.get(cellRef);
+
       if (!cellDoc.exists) {
         throw new Error('Selected cell does not exist');
       }
 
-      const updatedGreenPositions = cellDoc
-        .data()
-        .positions.greenPositions.map((pos) =>
-          pos.x === closestSphere.position.x &&
-          pos.y === closestSphere.position.y &&
-          pos.z === closestSphere.position.z
-            ? {
-                ...pos,
-                owner: userId,
-                civilisationName,
-                homePlanetName,
-                planetName: homePlanetName,
-              }
-            : pos
-        );
+      const cellData = cellDoc.data();
+      const greenPositions = cellData.positions.greenPositions || [];
+
+      // Ensure the sphere is still unowned
+      const position = greenPositions[closestSphere.instanceId];
+      if (position.owner) {
+        throw new Error('Selected sphere is no longer available');
+      }
+
+      // Assign ownership
+      greenPositions[closestSphere.instanceId] = {
+        ...position,
+        owner: userId,
+        civilisationName,
+        homePlanetName,
+        planetName: homePlanetName,
+      };
 
       // Update the cell with the assigned sphere
       transaction.update(cellRef, {
-        'positions.greenPositions': updatedGreenPositions,
+        'positions.greenPositions': greenPositions,
       });
 
-      // Update the user's document with the new sphere
+      // Prepare the new sphere data
       const newSphere = {
-        ...closestSphere.position,
+        ...position,
         planetName: homePlanetName,
         civilisationName,
       };
+
+      // Create initial ships for the user
+      const colonyShip = {
+        type: 'colony ship',
+        position: {
+          x: position.x + 50,
+          y: position.y,
+          z: position.z,
+        },
+        destination: null,
+        isColonizing: false,
+        ownerId: userId,
+      };
+
+      const scoutShip = {
+        type: 'scout',
+        position: {
+          x: position.x + 60,
+          y: position.y,
+          z: position.z,
+        },
+        destination: null,
+        isColonizing: false,
+        ownerId: userId,
+      };
+
+      // Update the user's document
       transaction.update(userRef, {
         spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+        ships: {
+          colonyShip1: colonyShip,
+          scout1: scoutShip,
+        },
       });
 
       console.log(`Assigned sphere ${closestSphere.cellId} to user ${userId}`);
@@ -331,10 +378,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
 
     res.json({ message: 'Ownership assigned successfully' });
   } catch (error) {
-    console.error(
-      `Error assigning ownership for userId ${userId}:`,
-      error.message
-    );
+    console.error(`Error assigning ownership for userId ${userId}:`, error);
 
     if (error.message === 'User not found') {
       res.status(404).json({ error: 'User not found' });
@@ -342,114 +386,15 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       res.status(400).json({ error: 'User data is incomplete' });
     } else if (error.message === 'User already has a starting planet') {
       res.status(400).json({ error: 'User already has a starting planet' });
+    } else if (error.message === 'Selected sphere is no longer available') {
+      res.status(400).json({ error: 'Selected sphere is no longer available' });
     } else if (error.message === 'No green spheres available') {
       res.status(404).json({ error: 'No green spheres available' });
+    } else if (error.message === 'Selected cell does not exist') {
+      res.status(404).json({ error: 'Selected cell does not exist' });
     } else {
       res.status(500).json({ error: 'Internal Server Error' });
     }
-  }
-});
-
-// Add this within your app setup
-app.post('/completeColonization', cors(corsOptions), async (req, res) => {
-  const { userId, shipKey, shipInfo } = req.body;
-
-  if (!userId || !shipKey || !shipInfo) {
-    return res.status(400).json({ error: 'Missing required parameters' });
-  }
-
-  try {
-    // Start a Firestore transaction
-    await db.runTransaction(async (transaction) => {
-      // Verify user exists
-      const userRef = db.collection('users').doc(userId);
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new Error('User not found');
-      }
-
-      const userData = userDoc.data();
-
-      // Verify ship exists
-      const shipRef = userRef;
-      const shipData = userData.ships && userData.ships[shipKey];
-      if (!shipData) {
-        throw new Error('Ship not found');
-      }
-
-      // Ensure the ship is in colonization mode
-      if (!shipData.isColonizing) {
-        throw new Error('Ship is not colonizing');
-      }
-
-      const dest = shipInfo.destination;
-      const { x, y, z, instanceId } = dest;
-
-      // Search for the cell containing the sphere
-      const cellsSnapshot = await db.collection('cells').get();
-      let targetCellId = null;
-      let targetPositionIndex = null;
-
-      for (const doc of cellsSnapshot.docs) {
-        const cellId = doc.id;
-        const cellData = doc.data();
-        const greenPositions = cellData.positions.greenPositions || [];
-
-        for (let i = 0; i < greenPositions.length; i++) {
-          const position = greenPositions[i];
-          if (
-            position.x === x &&
-            position.y === y &&
-            position.z === z &&
-            (instanceId === undefined || i === instanceId)
-          ) {
-            targetCellId = cellId;
-            targetPositionIndex = i;
-            break;
-          }
-        }
-
-        if (targetCellId) {
-          break;
-        }
-      }
-
-      if (!targetCellId || targetPositionIndex === null) {
-        throw new Error('Sphere not found');
-      }
-
-      // Update the sphere's data to assign ownership
-      const cellRef = db.collection('cells').doc(targetCellId);
-      transaction.update(cellRef, {
-        [`positions.greenPositions.${targetPositionIndex}.owner`]: userId,
-        [`positions.greenPositions.${targetPositionIndex}.planetName`]:
-          userData.homePlanetName || userId,
-        [`positions.greenPositions.${targetPositionIndex}.civilisationName`]:
-          userData.civilisationName || userData.email,
-      });
-
-      // Add the planet to the user's spheres
-      const newSphere = {
-        x,
-        y,
-        z,
-        planetName: userData.homePlanetName || userId,
-        civilisationName: userData.civilisationName || userData.email,
-      };
-
-      transaction.update(userRef, {
-        spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
-        [`ships.${shipKey}.isColonizing`]: false,
-        [`ships.${shipKey}.colonizeStartTime`]: null,
-        [`ships.${shipKey}.destination`]: null,
-        [`ships.${shipKey}`]: admin.firestore.FieldValue.delete(),
-      });
-    });
-
-    res.json({ message: 'Colonization completed successfully' });
-  } catch (error) {
-    console.error('Error in completeColonization:', error);
-    res.status(500).json({ error: error.message });
   }
 });
 
@@ -477,6 +422,8 @@ app.use((err, req, res, next) => {
 exports.api = functions.https.onRequest(app);
 
 // index.js
+// index.js
+
 exports.updateShipPositions = functions.pubsub
   .schedule('every minute')
   .onRun(async (context) => {
@@ -501,6 +448,28 @@ exports.updateShipPositions = functions.pubsub
             ownerId,
           } = shipInfo;
 
+          // Ensure 'position' and 'destination' exist
+          if (!position || !destination) {
+            console.warn(
+              `Ship ${shipKey} for user ${userDoc.id} is missing position or destination.`
+            );
+            return;
+          }
+
+          // Safely handle 'type' with default value
+          const shipType =
+            typeof type === 'string' ? type.toLowerCase() : 'scout';
+
+          if (shipType === 'scout' && typeof type !== 'string') {
+            // Assign default type if missing
+            batch.update(userDoc.ref, {
+              [`ships.${shipKey}.type`]: 'scout',
+            });
+            console.warn(
+              `Assigned default type 'scout' to ship ${shipKey} for user ${userDoc.id}.`
+            );
+          }
+
           if (destination && !isColonizing) {
             // Calculate direction and distance
             const dir = {
@@ -513,7 +482,7 @@ exports.updateShipPositions = functions.pubsub
             if (distance === 0) {
               // Destination reached
               if (
-                type.toLowerCase() === 'colony ship' &&
+                shipType === 'colony ship' &&
                 destination.instanceId !== undefined
               ) {
                 // Start colonization
@@ -555,7 +524,7 @@ exports.updateShipPositions = functions.pubsub
             // Clear destination if reached
             if (moveDist >= distance) {
               if (
-                type.toLowerCase() === 'colony ship' &&
+                shipType === 'colony ship' &&
                 destination.instanceId !== undefined
               ) {
                 // Start colonization
@@ -572,17 +541,32 @@ exports.updateShipPositions = functions.pubsub
           }
 
           if (isColonizing) {
+            if (
+              !colonizeStartTime ||
+              typeof colonizeStartTime.seconds !== 'number'
+            ) {
+              console.warn(
+                `Ship ${shipKey} for user ${userDoc.id} is colonizing but missing colonizeStartTime.`
+              );
+              return;
+            }
+
             const timeElapsed = currentTime.seconds - colonizeStartTime.seconds;
 
             if (timeElapsed >= COLONIZE_DURATION) {
               // Complete colonization
-              // Assign ownership to the sphere
               const dest = shipInfo.destination;
+              if (!dest || !dest.cellId || dest.instanceId === undefined) {
+                console.warn(
+                  `Ship ${shipKey} for user ${userDoc.id} has invalid destination for colonization.`
+                );
+                return;
+              }
+
               const cellRef = db.collection('cells').doc(dest.cellId);
 
               batch.update(cellRef, {
                 [`positions.greenPositions.${dest.instanceId}.owner`]: ownerId,
-                // Add other fields like planetName, civilisationName if needed
               });
 
               // Update user's spheres
@@ -600,10 +584,15 @@ exports.updateShipPositions = functions.pubsub
                 [`ships.${shipKey}.isColonizing`]: false,
                 [`ships.${shipKey}.colonizeStartTime`]: null,
                 [`ships.${shipKey}.destination`]: null,
-                // Optionally delete the ship
-                // [`ships.${shipKey}`]: admin.firestore.FieldValue.delete(),
               });
             }
+          }
+
+          // Log ships without a valid type
+          if (shipType === 'scout' && typeof type !== 'string') {
+            console.warn(
+              `Ship ${shipKey} for user ${userDoc.id} had missing 'type'. Assigned default 'scout'.`
+            );
           }
         });
       });
