@@ -1,5 +1,5 @@
 // Ship.jsx
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import ColonyShip from '../modelLoaders/ColonyShip';
 import ScoutShip from '../modelLoaders/ScoutShip';
@@ -10,21 +10,19 @@ const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
   const { user } = useAuth();
   const isOwnShip = user && shipInfo.ownerId === user.uid;
 
-  const [position, setPosition] = useState(shipInfo.position);
-
-  useEffect(() => {
-    setPosition(shipInfo.position);
-  }, [shipInfo.position]);
-
   useFrame(() => {
-    if (shipRef.current) {
-      shipRef.current.position.set(position.x, position.y, position.z);
+    if (shipRef.current && shipInfo.position) {
+      shipRef.current.position.set(
+        shipInfo.position.x,
+        shipInfo.position.y,
+        shipInfo.position.z
+      );
     }
   });
 
   const handleClick = () => {
     if (isOwnShip) {
-      handleShipClick(position);
+      handleShipClick(shipInfo.position);
     }
   };
 
@@ -36,13 +34,16 @@ const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
       shipInfo.destination
     ) {
       const colonizeDuration = 60 * 1000; // 1 minute in milliseconds
-      const timeElapsed = Date.now() - shipInfo.colonizeStartTime.toMillis();
+      const colonizeStartMillis =
+        shipInfo.colonizeStartTime._seconds * 1000 +
+        shipInfo.colonizeStartTime._nanoseconds / 1e6;
+      const timeElapsed = Date.now() - colonizeStartMillis;
 
       if (timeElapsed >= colonizeDuration) {
         // Colonization complete
         completeColonization();
       } else {
-        // Update UI or show countdown (optional)
+        // Optional: Implement countdown UI
       }
     }
   }, [shipInfo]);
@@ -88,7 +89,11 @@ const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
     return (
       <ColonyShip
         ref={shipRef}
-        position={[position.x, position.y, position.z]}
+        position={[
+          shipInfo.position.x,
+          shipInfo.position.y,
+          shipInfo.position.z,
+        ]}
         onClick={handleClick}
       />
     );
@@ -96,7 +101,11 @@ const Ship = ({ shipKey, shipInfo, handleShipClick }) => {
     return (
       <ScoutShip
         ref={shipRef}
-        position={[position.x, position.y, position.z]}
+        position={[
+          shipInfo.position.x,
+          shipInfo.position.y,
+          shipInfo.position.z,
+        ]}
         onClick={handleClick}
       />
     );

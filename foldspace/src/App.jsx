@@ -151,8 +151,6 @@ const App = React.memo(() => {
   };
 
   // Function to update ship's destination (passed to UserPanel)
-  // App.jsx (Excerpt)
-
   const updateShipDestination = useCallback(
     async (shipKey, destination) => {
       try {
