@@ -151,6 +151,8 @@ const App = React.memo(() => {
   };
 
   // Function to update ship's destination (passed to UserPanel)
+  // App.jsx (Excerpt)
+
   const updateShipDestination = useCallback(
     async (shipKey, destination) => {
       try {
@@ -174,8 +176,7 @@ const App = React.memo(() => {
 
           await updateDoc(shipRef, {
             [`ships.${shipKey}.destination`]: destination,
-
-            [`ships.${shipKey}.type`]: type,
+            [`ships.${shipKey}.type`]: type, // Ensure 'type' is not altered
           });
 
           console.log(`Destination for ship ${shipKey} set to:`, destination);
