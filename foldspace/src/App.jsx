@@ -161,11 +161,28 @@ const App = React.memo(() => {
         const userId = user.uid;
         const shipRef = doc(db, 'users', userId);
 
-        await updateDoc(shipRef, {
-          [`ships.${shipKey}.destination`]: destination,
-        });
+        // Fetch current ship data to preserve the 'type'
+        const shipDoc = await getDoc(shipRef);
+        if (shipDoc.exists()) {
+          const shipData = shipDoc.data().ships[shipKey];
+          if (!shipData) {
+            console.error(`Ship ${shipKey} does not exist.`);
+            return;
+          }
 
-        console.log(`Destination for ship ${shipKey} set to:`, destination);
+          const { type } = shipData; // Preserve the 'type'
+
+          await updateDoc(shipRef, {
+            [`ships.${shipKey}.destination`]: destination,
+            // Ensure 'type' is not altered
+            // Alternatively, re-include 'type' if necessary
+            // [`ships.${shipKey}.type`]: type,
+          });
+
+          console.log(`Destination for ship ${shipKey} set to:`, destination);
+        } else {
+          console.error('User document does not exist.');
+        }
       } catch (error) {
         console.error('Error updating ship destination:', error);
       }
