@@ -201,6 +201,7 @@ const PlaneMesh = React.forwardRef(
                     y,
                     z,
                     instanceId,
+                    cellKey,
                   };
 
                   updateShipDestination(shipToMove, destination);
