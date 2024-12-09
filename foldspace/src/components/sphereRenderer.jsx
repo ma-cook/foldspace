@@ -324,6 +324,7 @@ const SphereRenderer = forwardRef(
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
           planetNames={planetNames}
+          cellKey={cellKey}
         />
         <SphereGroup
           color="green"
@@ -332,12 +333,14 @@ const SphereRenderer = forwardRef(
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
           planetNames={planetNames}
+          cellKey={cellKey}
         />
         <SphereGroup
           color="blue"
           positions={filteredBluePositions}
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
+          cellKey={cellKey}
         />
         <SphereGroup
           color="purple"
@@ -345,6 +348,7 @@ const SphereRenderer = forwardRef(
           moonPositions={filteredPurpleMoonPositions}
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
+          cellKey={cellKey}
         />
         <SphereGroup
           color="brown"
@@ -352,6 +356,7 @@ const SphereRenderer = forwardRef(
           moonPositions={filteredBrownMoonPositions}
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
+          cellKey={cellKey}
         />
         <SphereGroup
           color="gas"
@@ -359,6 +364,7 @@ const SphereRenderer = forwardRef(
           moonPositions={filteredGasMoonPositions}
           sphereRefs={sphereRefs}
           materials={memoizedSphereMaterials}
+          cellKey={cellKey}
         />
       </>
     );

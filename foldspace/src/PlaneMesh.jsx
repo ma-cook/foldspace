@@ -65,6 +65,20 @@ const PlaneMesh = React.forwardRef(
       }
     };
 
+    // Ensure cellKey is defined before calling updateShipDestination
+    if (cellKey) {
+      const destination = {
+        x,
+        y,
+        z,
+        instanceId,
+        cellKey,
+      };
+      updateShipDestination(shipToMove, destination);
+    } else {
+      console.warn('cellKey is undefined');
+    }
+
     const isDragging = useRef(false);
     const mouseMoved = useRef(false);
 
