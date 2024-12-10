@@ -84,6 +84,12 @@ const PlaneMesh = React.forwardRef(
 
     const moveThreshold = 1; // Adjust based on sensitivity to movement
 
+    const calculateCellKey = (x, z) => {
+      const cellX = Math.floor(x / GRID_SIZE);
+      const cellZ = Math.floor(z / GRID_SIZE);
+      return `${cellX},${cellZ}`;
+    };
+
     const onMouseDown = useCallback(
       (event) => {
         if (event.target !== gl.domElement) return;
@@ -151,16 +157,15 @@ const PlaneMesh = React.forwardRef(
       (event) => {
         if (event.target !== gl.domElement) return;
         isMouseDown.current = false;
+
         if (!mouseMoved.current && !isDragging.current) {
-          const mouseDownDuration = Date.now() - lastMoveTimestamp.current; // Calculate how long the mouse was held down
+          const mouseDownDuration = Date.now() - lastMoveTimestamp.current;
           const currentTime = Date.now();
           if (currentTime - lastMoveTimestamp.current < 30) {
-            // Check if the mouse was held down for more than 1 second
-            return; // Do not execute the rest of the onMouseUp logic
+            return;
           } else if (mouseDownDuration > 100) {
-            // Check if the mouse was held down for more than 1 second
             isMouseDown.current = false;
-            return; // Do not execute the rest of the onMouseUp logic
+            return;
           }
 
           raycaster.setFromCamera(mouse, camera);
@@ -168,74 +173,47 @@ const PlaneMesh = React.forwardRef(
             [
               ...meshRefs.current,
               instancedMeshRef?.current,
-              lessDetailedMeshRef?.current, // Include lessDetailedMeshRef
+              lessDetailedMeshRef?.current,
               redInstancedMeshRef?.current,
-              greenInstancedMeshRef?.current, // Include greenInstancedMeshRef
-              blueInstancedMeshRef?.current, // Include redInstancedMeshRef
+              greenInstancedMeshRef?.current,
+              blueInstancedMeshRef?.current,
               purpleInstancedMeshRef?.current,
-              gasInstancedMeshRef?.current,
+              brownInstancedMeshRef?.current,
               greenMoonInstancedMeshRef?.current,
               purpleMoonInstancedMeshRef?.current,
-              brownInstancedMeshRef?.current,
+              gasInstancedMeshRef?.current,
               brownRingInstancedMeshRef?.current,
               systemRingInstancedMeshRef?.current,
               ...Object.values(sphereRefs).map((ref) => ref?.current),
             ].filter(Boolean)
           );
 
-          // Sort the intersects array so that any intersected sphere comes first
-          intersects.sort((a, b) => {
-            if (a.object === instancedMeshRef?.current) {
-              return -1;
-            } else if (b.object === instancedMeshRef?.current) {
-              return 1;
-            } else {
-              return 0;
-            }
-          });
+          if (isSelectingDestination && shipToMove) {
+            if (colonizeMode && intersects.length > 0) {
+              const { point, object } = intersects[0];
+              const { x, y, z } = point;
 
-          if (intersects.length > 0) {
-            const { point } = intersects[0];
-            const { x, y, z } = point;
+              // Calculate cellKey based on clicked sphere's position
+              const clickedCellKey = calculateCellKey(x, z);
 
-            if (isSelectingDestination && shipToMove) {
-              // Update the ship's destination
-              if (colonizeMode) {
-                // In colonize mode, get the position of the clicked sphere
-                if (intersects.length > 0) {
-                  const { point, object } = intersects[0];
-                  const { x, y, z } = point;
+              if (clickedCellKey) {
+                const destination = {
+                  x: x + 100,
+                  y: y + 280,
+                  z: z + 380,
+                  cellKey: clickedCellKey,
+                };
+                updateShipDestination(shipToMove, destination);
 
-                  // Get the instanceId if available (for instanced meshes)
-                  const instanceId = intersects[0].instanceId;
-
-                  // Store destination information including sphere data
-                  const destination = {
-                    x,
-                    y,
-                    z,
-                    instanceId,
-                    cellKey,
-                  };
-
-                  updateShipDestination(shipToMove, destination);
-
-                  // Reset selection mode
-                  setIsSelectingDestination(false);
-                  setShipToMove(null);
-                  setColonizeMode(false);
-                }
-              } else {
-                // Normal movement mode
-                const { x, y, z } = intersects[0].point;
-                updateShipDestination(shipToMove, { x, y, z });
-
-                // Reset selection mode
+                // Reset selection modes
                 setIsSelectingDestination(false);
                 setShipToMove(null);
+                setColonizeMode(false);
+              } else {
+                console.warn('Clicked cellKey is undefined');
               }
             } else {
-              // Existing logic to move the camera
+              // Handle normal movement mode
               console.log('no target');
             }
           }

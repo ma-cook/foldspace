@@ -39,7 +39,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     getCachedGeometry('lessDetailedSphere'),
     getCachedGeometry('torus')
   );
-  const currentCellKey = useStore((state) => state.currentCellKey);
   const activeBuffer = useStore((state) => state.activeBuffer);
   const positions = useStore((state) => state.positions[activeBuffer]);
   const redPositions = useStore((state) => state.redPositions[activeBuffer]);
@@ -253,22 +252,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     animate();
   }, []);
 
-  const calculateCellKey = (x, z) => {
-    const cellX = Math.floor(x / GRID_SIZE);
-    const cellZ = Math.floor(z / GRID_SIZE);
-    return `${cellX},${cellZ}`;
-  };
-
-  useEffect(() => {
-    if (planeMeshRef.current) {
-      const cellKey = calculateCellKey(
-        planeMeshRef.current.position.x,
-        planeMeshRef.current.position.z
-      );
-      useStore.getState().setCurrentCellKey(cellKey);
-    }
-  }, [planeMeshRef.current?.position.x, planeMeshRef.current?.position.z]);
-
   return (
     <>
       <PlaneMesh
@@ -290,7 +273,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
         gasInstancedMeshRef={sphereRefs.gas}
         brownRingInstancedMeshRef={sphereRefs.brownRing}
         systemRingInstancedMeshRef={sphereRefs.systemRing}
-        cellKey={currentCellKey} // Pass cellKey from store
       />
       <MemoizedSphere
         key={`systemRing-${getCachedGeometry('torus').uuid}`}
