@@ -337,6 +337,8 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         ...position,
         planetName: homePlanetName,
         civilisationName,
+        cellId: closestSphere.cellId, // Include cellId
+        instanceId: closestSphere.instanceId, // Include instanceId
       };
 
       // Create initial ships for the user
@@ -479,7 +481,7 @@ exports.updateShipPositions = functions.pubsub
             };
             const distance = Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2);
 
-            if (distance === 0) {
+            if (distance < 100) {
               // Destination reached
               if (
                 shipType === 'colony ship' &&
@@ -577,6 +579,8 @@ exports.updateShipPositions = functions.pubsub
                 planetName: userData.homePlanetName || 'Unnamed Planet',
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
+                cellId: dest.cellId, // Include cellId
+                instanceId: dest.instanceId, // Include instanceId
               };
 
               batch.update(userDoc.ref, {
