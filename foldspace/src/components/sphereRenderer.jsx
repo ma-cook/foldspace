@@ -224,10 +224,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
   }, [clearDetailedSpheres]);
 
-  useEffect(() => {
-    useStore.getState().setSphereRefs('someCellKey', sphereRefs);
-  }, []);
-
   const { detailedPositions, lessDetailedPositions } = useUpdateGeometry(
     cameraRef,
     positions,
