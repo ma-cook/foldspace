@@ -38,6 +38,7 @@ const PlaneMesh = React.forwardRef(
     const setColonizeMode = useStore((state) => state.setColonizeMode); // Add this line
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
+    const GRID_SIZE = 200000;
     const isSelectingDestination = useStore(
       (state) => state.isSelectingDestination
     );
