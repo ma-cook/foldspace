@@ -41,6 +41,8 @@ export const useStore = create((set) => ({
   isSelectingDestination: false,
   shipToMove: null,
   colonizeMode: false,
+  currentCellKey: null,
+  setCurrentCellKey: (cellKey) => set({ currentCellKey: cellKey }),
   setColonizeMode: (value) => set({ colonizeMode: value }),
   setIsSelectingDestination: (value) => set({ isSelectingDestination: value }),
   setShipToMove: (shipKey) => set({ shipToMove: shipKey }),

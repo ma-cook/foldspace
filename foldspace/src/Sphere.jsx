@@ -3,10 +3,6 @@ import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 import { Sprite, SpriteMaterial, TextureLoader } from 'three';
 import { createTextTexture } from './utils/textTexture';
-import { useStore } from './store'; // Ensure you have access to the store
-import { useAuth } from './hooks/useAuth'; // Assuming you have an auth hook
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from './firebase'; // Ensure Firebase is properly initialized
 
 const Sphere = forwardRef(
   (
@@ -17,13 +13,11 @@ const Sphere = forwardRef(
       scale = [1, 1, 1],
       rotation = [0, 0, 0],
       planetNames = {},
-      cellKey, // Accept cellKey prop
     },
     ref
   ) => {
     const meshRef = useRef();
     const spriteGroupRef = useRef();
-    const { user } = useAuth(); // Get the authenticated user
 
     useEffect(() => {
       const mesh = meshRef.current;
@@ -74,35 +68,6 @@ const Sphere = forwardRef(
       });
     }, [planetNames]);
 
-    const handleClick = async (event) => {
-      const instanceId = event.instanceId;
-      const shipToMove = useStore.getState().shipToMove; // Get the ship to move from the store
-
-      if (!shipToMove) {
-        console.warn('No ship selected to move');
-        return;
-      }
-
-      const destination = {
-        x: event.point.x,
-        y: event.point.y,
-        z: event.point.z,
-        instanceId,
-        cellKey, // Include cellKey
-      };
-
-      try {
-        const userId = user.uid;
-        const shipRef = doc(db, 'users', userId);
-        await updateDoc(shipRef, {
-          [`ships.${shipToMove}.destination`]: destination,
-        });
-        console.log(`Destination for ship ${shipToMove} set to:`, destination);
-      } catch (error) {
-        console.error('Error updating ship destination:', error);
-      }
-    };
-
     return (
       <>
         <instancedMesh
@@ -116,7 +81,6 @@ const Sphere = forwardRef(
           }}
           args={[geometry, material, positions.length]}
           frustumCulled={false}
-          onClick={handleClick} // Add click handler
         />
         <group ref={spriteGroupRef} />
       </>
