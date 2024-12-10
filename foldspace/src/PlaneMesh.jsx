@@ -171,19 +171,18 @@ const PlaneMesh = React.forwardRef(
 
           if (isSelectingDestination && shipToMove) {
             if (colonizeMode && intersects.length > 0) {
-              const { point, instanceId } = intersects[0];
+              const { point } = intersects[0];
               const { x, y, z } = point;
 
               // Calculate cellId (cellKey)
               const cellId = calculateCellKey(x, z);
 
-              if (cellId && instanceId !== undefined) {
+              if (cellId) {
                 const destination = {
                   x,
                   y,
                   z,
                   cellId,
-                  instanceId,
                 };
                 updateShipDestination(shipToMove, destination);
 
@@ -192,7 +191,7 @@ const PlaneMesh = React.forwardRef(
                 setShipToMove(null);
                 setColonizeMode(false);
               } else {
-                console.warn('cellId or instanceId is undefined');
+                console.warn('cellId is undefined');
               }
             } else {
               console.log('no target');
