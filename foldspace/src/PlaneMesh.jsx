@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { useStore } from './store';
 import { throttle } from 'lodash';
 import { useAuth } from './hooks/useAuth';
-
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -13,7 +12,7 @@ const PlaneMesh = React.forwardRef(
     {
       sphereRefs,
       instancedMeshRef,
-      lessDetailedMeshRef, // Add lessDetailedMeshRef prop
+      lessDetailedMeshRef,
       redInstancedMeshRef,
       greenInstancedMeshRef,
       blueInstancedMeshRef,
@@ -24,18 +23,17 @@ const PlaneMesh = React.forwardRef(
       gasInstancedMeshRef,
       brownRingInstancedMeshRef,
       systemRingInstancedMeshRef,
-      positions = [], // Provide a default value for positions
-      cellKey, // Add cellKey prop to identify the cell
+      positions = [],
     },
     ref
   ) => {
-    const { raycaster, mouse, camera, size, gl } = useThree();
-    const meshRefs = useRef([]); // Array of references for each plane mesh
-    const circleRef = useRef(); // Reference to the circle mesh
+    const { raycaster, mouse, camera, gl } = useThree();
+    const meshRefs = useRef([]);
+    const circleRef = useRef();
     const setTarget = useStore((state) => state.setTarget);
     const setLookAt = useStore((state) => state.setLookAt);
     const colonizeMode = useStore((state) => state.colonizeMode);
-    const setColonizeMode = useStore((state) => state.setColonizeMode); // Add this line
+    const setColonizeMode = useStore((state) => state.setColonizeMode);
     const isMouseDown = useRef(false);
     const lastMoveTimestamp = useRef(Date.now());
     const GRID_SIZE = 200000;
@@ -48,6 +46,7 @@ const PlaneMesh = React.forwardRef(
     );
     const setShipToMove = useStore((state) => state.setShipToMove);
     const { user } = useAuth();
+
     // Function to update the ship's destination in Firestore
     const updateShipDestination = async (shipKey, destination) => {
       try {
@@ -66,24 +65,9 @@ const PlaneMesh = React.forwardRef(
       }
     };
 
-    // Ensure cellKey is defined before calling updateShipDestination
-    if (cellKey) {
-      const destination = {
-        x,
-        y,
-        z,
-        instanceId,
-        cellKey,
-      };
-      updateShipDestination(shipToMove, destination);
-    } else {
-      console.warn('cellKey is undefined');
-    }
-
     const isDragging = useRef(false);
     const mouseMoved = useRef(false);
-
-    const moveThreshold = 1; // Adjust based on sensitivity to movement
+    const moveThreshold = 1;
 
     const calculateCellKey = (x, z) => {
       const cellX = Math.floor(x / GRID_SIZE);
@@ -103,7 +87,7 @@ const PlaneMesh = React.forwardRef(
           [
             ...meshRefs.current,
             instancedMeshRef?.current,
-            lessDetailedMeshRef?.current, // Include lessDetailedMeshRef
+            lessDetailedMeshRef?.current,
             redInstancedMeshRef?.current,
             greenInstancedMeshRef?.current,
             blueInstancedMeshRef?.current,
@@ -118,16 +102,12 @@ const PlaneMesh = React.forwardRef(
           ].filter(Boolean)
         );
         if (intersects.length > 0) {
-          // Set the position of the circleRef to the intersection point
           if (circleRef.current) {
             circleRef.current.position.copy(intersects[0].point);
-            // Raise the circle slightly above the plane
             circleRef.current.position.y += 0.01;
-            // Make the circle visible
             circleRef.current.visible = true;
           }
         } else {
-          // Hide the circle when the mouse is not over the plane
           if (circleRef.current) {
             circleRef.current.visible = false;
           }
@@ -140,7 +120,7 @@ const PlaneMesh = React.forwardRef(
         camera,
         sphereRefs,
         instancedMeshRef,
-        lessDetailedMeshRef, // Include lessDetailedMeshRef in dependencies
+        lessDetailedMeshRef,
         redInstancedMeshRef,
         greenInstancedMeshRef,
         blueInstancedMeshRef,
@@ -191,18 +171,19 @@ const PlaneMesh = React.forwardRef(
 
           if (isSelectingDestination && shipToMove) {
             if (colonizeMode && intersects.length > 0) {
-              const { point, object } = intersects[0];
+              const { point, instanceId } = intersects[0];
               const { x, y, z } = point;
 
-              // Calculate cellKey based on clicked sphere's position
-              const clickedCellKey = calculateCellKey(x, z);
+              // Calculate cellId (cellKey)
+              const cellId = calculateCellKey(x, z);
 
-              if (clickedCellKey) {
+              if (cellId && instanceId !== undefined) {
                 const destination = {
-                  x: x + 100,
-                  y: y + 280,
-                  z: z + 380,
-                  cellKey: clickedCellKey,
+                  x,
+                  y,
+                  z,
+                  cellId,
+                  instanceId,
                 };
                 updateShipDestination(shipToMove, destination);
 
@@ -211,17 +192,16 @@ const PlaneMesh = React.forwardRef(
                 setShipToMove(null);
                 setColonizeMode(false);
               } else {
-                console.warn('Clicked cellKey is undefined');
+                console.warn('cellId or instanceId is undefined');
               }
             } else {
-              // Handle normal movement mode
               console.log('no target');
             }
           }
 
-          if (intersects.length > 0 && isSelectingDestination === false) {
-            const { x, y, z } = intersects[0].point;
-            const instanceId = intersects[0].instanceId;
+          if (intersects.length > 0 && !isSelectingDestination) {
+            const { point, instanceId } = intersects[0];
+            const { x, y, z } = point;
 
             if (instanceId !== undefined) {
               const instanceMatrix = new THREE.Matrix4();
@@ -251,7 +231,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === greenInstancedMeshRef?.current
               ) {
-                // Check if the green sphere was clicked
                 greenInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -260,7 +239,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === blueInstancedMeshRef?.current
               ) {
-                // Check if the blue sphere was clicked
                 blueInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -269,7 +247,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === purpleInstancedMeshRef?.current
               ) {
-                // Check if the purple sphere was clicked
                 purpleInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -278,7 +255,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === greenMoonInstancedMeshRef?.current
               ) {
-                // Check if the green moon sphere was clicked
                 greenMoonInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -287,7 +263,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === purpleMoonInstancedMeshRef?.current
               ) {
-                // Check if the purple moon sphere was clicked
                 purpleMoonInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -296,7 +271,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === gasInstancedMeshRef?.current
               ) {
-                // Check if the gas sphere was clicked
                 gasInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -305,7 +279,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === brownInstancedMeshRef?.current
               ) {
-                // Check if the brown sphere was clicked
                 brownInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -314,7 +287,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === brownRingInstancedMeshRef?.current
               ) {
-                // Check if the brown ring was clicked
                 brownRingInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -323,7 +295,6 @@ const PlaneMesh = React.forwardRef(
               } else if (
                 intersects[0].object === systemRingInstancedMeshRef?.current
               ) {
-                // Check if the system ring was clicked
                 systemRingInstancedMeshRef.current.getMatrixAt(
                   instanceId,
                   instanceMatrix
@@ -357,7 +328,7 @@ const PlaneMesh = React.forwardRef(
         setLookAt,
         sphereRefs,
         instancedMeshRef,
-        lessDetailedMeshRef, // Include lessDetailedMeshRef in dependencies
+        lessDetailedMeshRef,
         redInstancedMeshRef,
         greenInstancedMeshRef,
         blueInstancedMeshRef,
@@ -378,7 +349,6 @@ const PlaneMesh = React.forwardRef(
 
     useEffect(() => {
       const onMouseMove = throttle((event) => {
-        // The following code will only execute when the mouse button is down
         if (isMouseDown.current) {
           const currentTime = Date.now();
           lastMoveTimestamp.current = currentTime;
@@ -394,12 +364,10 @@ const PlaneMesh = React.forwardRef(
             isDragging.current = true;
           }
 
-          // Change the rotation based on the mouse movement
           const rotation = useStore.getState().rotation;
           rotation.y -= movementX * 0.002;
           rotation.x -= movementY * 0.002;
 
-          // Store the updated rotation back in the state
           useStore.getState().setRotation(rotation);
         }
       }, 16); // Throttle to 60fps
@@ -422,7 +390,6 @@ const PlaneMesh = React.forwardRef(
       camera,
       setTarget,
       setLookAt,
-      size,
       sphereRefs,
       gl.domElement,
       onMouseDown,
