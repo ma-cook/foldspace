@@ -25,6 +25,7 @@ const App = React.memo(() => {
   const setTarget = useStore((state) => state.setTarget);
   const setLookAt = useStore((state) => state.setLookAt);
   const [shipsData, setShipsData] = useState(null);
+  const isInitialCameraSet = useRef(false);
 
   // Function to set up real-time listener for ships data
   const fetchShipsData = useCallback((userId) => {
@@ -123,7 +124,7 @@ const App = React.memo(() => {
 
   // Set initial camera position based on the first owned planet
   useEffect(() => {
-    if (ownedPlanets.length > 0) {
+    if (!isInitialCameraSet.current && ownedPlanets.length > 0) {
       const firstPlanet = ownedPlanets[0];
       const newPosition = {
         x: firstPlanet.x + 100,
@@ -136,6 +137,7 @@ const App = React.memo(() => {
         y: firstPlanet.y,
         z: firstPlanet.z,
       });
+      isInitialCameraSet.current = true;
     }
   }, [ownedPlanets, setTarget, setLookAt]);
 
