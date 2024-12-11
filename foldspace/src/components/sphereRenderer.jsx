@@ -281,7 +281,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       />
       <MemoizedSphere
         key={`central-${getCachedGeometry('sphere').uuid}`}
-        ref={sphereRefs.centralDetailed} // Unique ref
+        ref={sphereRefs.centralGlow} // Unique ref
         positions={memoizedDetailedPositions}
         material={memoizedSphereMaterials.sun}
         geometry={getCachedGeometry('sphere')}
@@ -290,7 +290,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       />
       <MemoizedSphere
         key={`centralGlow-${getCachedGeometry('sphere').uuid}`}
-        ref={sphereRefs.centralGlow} // Separate unique ref
+        ref={sphereRefs.centralDetailed} // Separate unique ref
         positions={memoizedDetailedPositions}
         material={memoizedSphereMaterials.sunGlow}
         geometry={getCachedGeometry('sphere')}

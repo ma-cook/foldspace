@@ -43,8 +43,8 @@ const fileQueue = async.queue(async (task, callback) => {
   }
 }, 1);
 
-const SHIP_SPEED = 5000; // Units per minute
-const MOVEMENT_INTERVAL = 2;
+const SHIP_SPEED = 15000; // Units per minute
+const MOVEMENT_INTERVAL = 1;
 const COLONIZE_DURATION = 60;
 
 const app = express();
@@ -510,7 +510,7 @@ exports.updateShipPositions = functions.pubsub
 
             // Calculate movement step
             const moveDist = Math.min(
-              (SHIP_SPEED * MOVEMENT_INTERVAL) / 30,
+              (SHIP_SPEED * MOVEMENT_INTERVAL) / 60,
               distance
             );
 
