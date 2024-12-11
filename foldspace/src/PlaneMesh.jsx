@@ -171,7 +171,7 @@ const PlaneMesh = React.forwardRef(
 
           if (isSelectingDestination && shipToMove) {
             if (intersects.length > 0) {
-              const { point } = intersects[0];
+              const { point, instanceId } = intersects[0];
               const { x, y, z } = point;
 
               // Calculate cellId (cellKey)
@@ -183,6 +183,7 @@ const PlaneMesh = React.forwardRef(
                   y,
                   z,
                   cellId,
+                  instanceId,
                 };
                 updateShipDestination(shipToMove, destination);
 

@@ -43,7 +43,7 @@ const fileQueue = async.queue(async (task, callback) => {
   }
 }, 1);
 
-const SHIP_SPEED = 15000; // Units per minute
+const SHIP_SPEED = 75000; // Units per minute
 const MOVEMENT_INTERVAL = 1;
 const COLONIZE_DURATION = 60;
 
@@ -569,57 +569,56 @@ exports.updateShipPositions = functions.pubsub
               }
 
               const cellRef = db.collection('cells').doc(dest.cellId);
+              const cellDoc = await cellRef.get();
 
-              // Fetch the current positions
-              batch.get(cellRef).then((cellDoc) => {
-                if (!cellDoc.exists) {
-                  console.warn(`Cell document ${dest.cellId} does not exist.`);
-                  return;
-                }
+              if (!cellDoc.exists) {
+                console.warn(`Cell document ${dest.cellId} does not exist.`);
+                continue;
+              }
 
-                const cellData = cellDoc.data();
-                const greenPositions = cellData.positions.greenPositions || [];
+              const cellData = cellDoc.data();
+              const greenPositions = cellData.positions.greenPositions || [];
 
-                // Ensure the sphere exists
-                if (!greenPositions[dest.instanceId]) {
-                  console.warn(
-                    `No sphere found at instanceId ${dest.instanceId} in cell ${dest.cellId}`
-                  );
-                  return;
-                }
+              // Ensure the sphere exists
+              if (!greenPositions[dest.instanceId]) {
+                console.warn(
+                  `No sphere found at instanceId ${dest.instanceId} in cell ${dest.cellId}`
+                );
+                continue;
+              }
 
-                // Update the sphere's data
-                greenPositions[dest.instanceId] = {
-                  ...greenPositions[dest.instanceId],
-                  owner: ownerId,
-                  planetName: userData.homePlanetName || 'Unnamed Planet',
-                  civilisationName:
-                    userData.civilisationName || 'Unnamed Civilization',
-                };
+              // Assign ownership
+              greenPositions[dest.instanceId] = {
+                ...greenPositions[dest.instanceId],
+                owner: ownerId,
+                planetName: userData.homePlanetName || 'Unnamed Planet',
+                civilisationName:
+                  userData.civilisationName || 'Unnamed Civilization',
+              };
 
-                // Update the cell with the assigned sphere
-                batch.update(cellRef, {
-                  'positions.greenPositions': greenPositions,
-                });
+              // Update the cell with the assigned sphere
+              batch.update(cellRef, {
+                'positions.greenPositions': greenPositions,
+              });
 
-                // Update user's spheres
-                const newSphere = {
-                  x: greenPositions[dest.instanceId].x,
-                  y: greenPositions[dest.instanceId].y,
-                  z: greenPositions[dest.instanceId].z,
-                  planetName: userData.homePlanetName || 'Unnamed Planet',
-                  civilisationName:
-                    userData.civilisationName || 'Unnamed Civilization',
-                  cellId: dest.cellId,
-                  instanceId: dest.instanceId,
-                };
+              // Prepare the new sphere data
+              const newSphere = {
+                x: greenPositions[dest.instanceId].x,
+                y: greenPositions[dest.instanceId].y,
+                z: greenPositions[dest.instanceId].z,
+                planetName: userData.homePlanetName || 'Unnamed Planet',
+                civilisationName:
+                  userData.civilisationName || 'Unnamed Civilization',
+                cellId: dest.cellId,
+                instanceId: dest.instanceId,
+              };
 
-                batch.update(userDoc.ref, {
-                  spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
-                  [`ships.${shipKey}.isColonizing`]: false,
-                  [`ships.${shipKey}.colonizeStartTime`]: null,
-                  [`ships.${shipKey}.destination`]: null,
-                });
+              // Update user's ships and spheres
+              batch.update(userDoc.ref, {
+                spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+                [`ships.${shipKey}.isColonizing`]: false,
+                [`ships.${shipKey}.colonizeStartTime`]: null,
+                [`ships.${shipKey}.destination`]: null,
               });
             }
           }
