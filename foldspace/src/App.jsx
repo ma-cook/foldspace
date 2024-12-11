@@ -54,46 +54,26 @@ const App = React.memo(() => {
   }, []);
 
   // Function to set up real-time listener for owned planets
-  const fetchOwnedPlanets = useCallback(
-    (userId) => {
-      const userDocRef = doc(db, 'users', userId);
-      const unsubscribe = onSnapshot(
-        userDocRef,
-        (userDoc) => {
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const planets = userData.spheres || [];
-            setOwnedPlanets(planets);
-
-            if (planets.length > 0) {
-              const firstPlanet = planets[0];
-              const newPosition = {
-                x: firstPlanet.x + 100,
-                y: firstPlanet.y + 280,
-                z: firstPlanet.z + 380,
-              };
-              setTarget(newPosition);
-              setLookAt({
-                x: firstPlanet.x,
-                y: firstPlanet.y,
-                z: firstPlanet.z,
-              });
-            } else {
-              console.log('No owned planets found for this user.');
-            }
-          } else {
-            console.error('User not found');
-          }
-        },
-        (error) => {
-          console.error('Error listening to owned planets:', error);
+  const fetchOwnedPlanets = useCallback((userId) => {
+    const userDocRef = doc(db, 'users', userId);
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const planets = userData.spheres || [];
+          setOwnedPlanets(planets);
+        } else {
+          console.error('User not found');
         }
-      );
+      },
+      (error) => {
+        console.error('Error listening to owned planets:', error);
+      }
+    );
 
-      return unsubscribe;
-    },
-    [setTarget, setLookAt]
-  );
+    return unsubscribe;
+  }, []);
 
   const assignGreenSphere = useCallback(async (userId) => {
     try {
@@ -140,6 +120,24 @@ const App = React.memo(() => {
       if (unsubscribePlanets) unsubscribePlanets();
     };
   }, [user, assignGreenSphere, fetchOwnedPlanets, fetchShipsData]);
+
+  // Set initial camera position based on the first owned planet
+  useEffect(() => {
+    if (ownedPlanets.length > 0) {
+      const firstPlanet = ownedPlanets[0];
+      const newPosition = {
+        x: firstPlanet.x + 100,
+        y: firstPlanet.y + 280,
+        z: firstPlanet.z + 380,
+      };
+      setTarget(newPosition);
+      setLookAt({
+        x: firstPlanet.x,
+        y: firstPlanet.y,
+        z: firstPlanet.z,
+      });
+    }
+  }, [ownedPlanets, setTarget, setLookAt]);
 
   const handleShipClick = (shipPosition) => {
     const offsetPosition = {
