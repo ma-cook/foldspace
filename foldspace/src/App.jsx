@@ -10,7 +10,13 @@ import React, {
 import { useStore } from './store';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
-import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+  collection,
+} from 'firebase/firestore';
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
 import LoadingMessage from './components/LoadingMessage';
