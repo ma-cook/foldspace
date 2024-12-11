@@ -43,8 +43,8 @@ const fileQueue = async.queue(async (task, callback) => {
   }
 }, 1);
 
-const SHIP_SPEED = 600; // Units per minute
-const MOVEMENT_INTERVAL = 1;
+const SHIP_SPEED = 5000; // Units per minute
+const MOVEMENT_INTERVAL = 2;
 const COLONIZE_DURATION = 60;
 
 const app = express();
@@ -436,11 +436,11 @@ exports.updateShipPositions = functions.pubsub
       const batch = db.batch();
       const currentTime = admin.firestore.Timestamp.now();
 
-      usersSnapshot.forEach((userDoc) => {
+      for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         const ships = userData.ships || {};
 
-        Object.entries(ships).forEach(([shipKey, shipInfo]) => {
+        for (const [shipKey, shipInfo] of Object.entries(ships)) {
           const {
             position,
             destination,
@@ -455,7 +455,7 @@ exports.updateShipPositions = functions.pubsub
             console.warn(
               `Ship ${shipKey} for user ${userDoc.id} is missing position or destination.`
             );
-            return;
+            continue;
           }
 
           // Safely handle 'type' with default value
@@ -498,7 +498,7 @@ exports.updateShipPositions = functions.pubsub
                   [`ships.${shipKey}.destination`]: null,
                 });
               }
-              return;
+              continue;
             }
 
             // Normalize direction
@@ -509,7 +509,10 @@ exports.updateShipPositions = functions.pubsub
             };
 
             // Calculate movement step
-            const moveDist = Math.min(SHIP_SPEED * MOVEMENT_INTERVAL, distance);
+            const moveDist = Math.min(
+              (SHIP_SPEED * MOVEMENT_INTERVAL) / 30,
+              distance
+            );
 
             // New position
             const newPosition = {
@@ -550,7 +553,7 @@ exports.updateShipPositions = functions.pubsub
               console.warn(
                 `Ship ${shipKey} for user ${userDoc.id} is colonizing but missing colonizeStartTime.`
               );
-              return;
+              continue;
             }
 
             const timeElapsed = currentTime.seconds - colonizeStartTime.seconds;
@@ -562,44 +565,66 @@ exports.updateShipPositions = functions.pubsub
                 console.warn(
                   `Ship ${shipKey} for user ${userDoc.id} has invalid destination for colonization.`
                 );
-                return;
+                continue;
               }
 
               const cellRef = db.collection('cells').doc(dest.cellId);
 
-              batch.update(cellRef, {
-                [`positions.greenPositions.${dest.instanceId}.owner`]: ownerId,
-              });
+              // Fetch the current positions
+              batch.get(cellRef).then((cellDoc) => {
+                if (!cellDoc.exists) {
+                  console.warn(`Cell document ${dest.cellId} does not exist.`);
+                  return;
+                }
 
-              // Update user's spheres
-              const newSphere = {
-                x: dest.x,
-                y: dest.y,
-                z: dest.z,
-                planetName: userData.homePlanetName || 'Unnamed Planet',
-                civilisationName:
-                  userData.civilisationName || 'Unnamed Civilization',
-                cellId: dest.cellId, // Include cellId
-                instanceId: dest.instanceId, // Include instanceId
-              };
+                const cellData = cellDoc.data();
+                const greenPositions = cellData.positions.greenPositions || [];
 
-              batch.update(userDoc.ref, {
-                spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
-                [`ships.${shipKey}.isColonizing`]: false,
-                [`ships.${shipKey}.colonizeStartTime`]: null,
-                [`ships.${shipKey}.destination`]: null,
+                // Ensure the sphere exists
+                if (!greenPositions[dest.instanceId]) {
+                  console.warn(
+                    `No sphere found at instanceId ${dest.instanceId} in cell ${dest.cellId}`
+                  );
+                  return;
+                }
+
+                // Update the sphere's data
+                greenPositions[dest.instanceId] = {
+                  ...greenPositions[dest.instanceId],
+                  owner: ownerId,
+                  planetName: userData.homePlanetName || 'Unnamed Planet',
+                  civilisationName:
+                    userData.civilisationName || 'Unnamed Civilization',
+                };
+
+                // Update the cell with the assigned sphere
+                batch.update(cellRef, {
+                  'positions.greenPositions': greenPositions,
+                });
+
+                // Update user's spheres
+                const newSphere = {
+                  x: greenPositions[dest.instanceId].x,
+                  y: greenPositions[dest.instanceId].y,
+                  z: greenPositions[dest.instanceId].z,
+                  planetName: userData.homePlanetName || 'Unnamed Planet',
+                  civilisationName:
+                    userData.civilisationName || 'Unnamed Civilization',
+                  cellId: dest.cellId,
+                  instanceId: dest.instanceId,
+                };
+
+                batch.update(userDoc.ref, {
+                  spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+                  [`ships.${shipKey}.isColonizing`]: false,
+                  [`ships.${shipKey}.colonizeStartTime`]: null,
+                  [`ships.${shipKey}.destination`]: null,
+                });
               });
             }
           }
-
-          // Log ships without a valid type
-          if (shipType === 'scout' && typeof type !== 'string') {
-            console.warn(
-              `Ship ${shipKey} for user ${userDoc.id} had missing 'type'. Assigned default 'scout'.`
-            );
-          }
-        });
-      });
+        }
+      }
 
       await batch.commit();
       console.log(

@@ -170,7 +170,7 @@ const PlaneMesh = React.forwardRef(
           );
 
           if (isSelectingDestination && shipToMove) {
-            if (colonizeMode && intersects.length > 0) {
+            if (intersects.length > 0) {
               const { point } = intersects[0];
               const { x, y, z } = point;
 
@@ -189,7 +189,9 @@ const PlaneMesh = React.forwardRef(
                 // Reset selection modes
                 setIsSelectingDestination(false);
                 setShipToMove(null);
-                setColonizeMode(false);
+                if (!colonizeMode) {
+                  setColonizeMode(false);
+                }
               } else {
                 console.warn('cellId is undefined');
               }
