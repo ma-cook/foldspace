@@ -132,47 +132,51 @@ const UserPanel = ({
               </li>
             ))}
           </ul>
-          <h3>Ships:</h3>
+          <h3>Your Ships:</h3>
           {shipsData ? (
             <ul>
-              {Object.entries(shipsData).map(([shipKey, shipInfo]) => {
-                const shipType =
-                  shipInfo.type || shipKey.replace(/\d+/g, '').trim();
-                const handleClick = () => toggleDropdown(shipKey);
-                return (
-                  <li key={shipKey} style={{ cursor: 'pointer' }}>
-                    <div onClick={handleClick}>
-                      {shipType} at position ({shipInfo.position.x.toFixed(2)},{' '}
-                      {shipInfo.position.y.toFixed(2)},{' '}
-                      {shipInfo.position.z.toFixed(2)})
-                    </div>
-                    {dropdownVisible[shipKey] && (
-                      <div style={{ marginLeft: '20px' }}>
-                        <button onClick={() => handleMoveToClick(shipKey)}>
-                          Move to
-                        </button>
-                        <button onClick={() => handleMoveShipClick(shipKey)}>
-                          Move ship
-                        </button>
-                        {shipType.toLowerCase() === 'colony ship' && (
-                          <button onClick={() => handleColonizeClick(shipKey)}>
-                            Colonize
+              {Object.entries(shipsData)
+                .filter(([shipKey, shipInfo]) => shipInfo.ownerId === user.uid)
+                .map(([shipKey, shipInfo]) => {
+                  const shipType =
+                    shipInfo.type || shipKey.replace(/\d+/g, '').trim();
+                  const handleClick = () => toggleDropdown(shipKey);
+                  return (
+                    <li key={shipKey} style={{ cursor: 'pointer' }}>
+                      <div onClick={handleClick}>
+                        {shipType} at position ({shipInfo.position.x.toFixed(2)}
+                        , {shipInfo.position.y.toFixed(2)},{' '}
+                        {shipInfo.position.z.toFixed(2)})
+                      </div>
+                      {dropdownVisible[shipKey] && (
+                        <div style={{ marginLeft: '20px' }}>
+                          <button onClick={() => handleMoveToClick(shipKey)}>
+                            Move to
                           </button>
-                        )}
-                        <button onClick={() => handleStopClick(shipKey)}>
-                          Stop
-                        </button>
-                      </div>
-                    )}
-                    {/* Display the message */}
-                    {shipMessages[shipKey] && (
-                      <div style={{ color: 'red', marginLeft: '20px' }}>
-                        {shipMessages[shipKey]}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+                          <button onClick={() => handleMoveShipClick(shipKey)}>
+                            Move ship
+                          </button>
+                          {shipType.toLowerCase() === 'colony ship' && (
+                            <button
+                              onClick={() => handleColonizeClick(shipKey)}
+                            >
+                              Colonize
+                            </button>
+                          )}
+                          <button onClick={() => handleStopClick(shipKey)}>
+                            Stop
+                          </button>
+                        </div>
+                      )}
+                      {/* Display the message */}
+                      {shipMessages[shipKey] && (
+                        <div style={{ color: 'red', marginLeft: '20px' }}>
+                          {shipMessages[shipKey]}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
             </ul>
           ) : (
             <p>No ship data available.</p>
