@@ -606,7 +606,7 @@ exports.updateShipPositions = functions.pubsub
                 x: greenPositions[dest.instanceId].x,
                 y: greenPositions[dest.instanceId].y,
                 z: greenPositions[dest.instanceId].z,
-                planetName: userData.homePlanetName || 'Unnamed Planet',
+                planetName: dest.instanceId,
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
                 cellId: dest.cellId,

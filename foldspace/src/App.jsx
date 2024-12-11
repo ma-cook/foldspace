@@ -10,12 +10,7 @@ import React, {
 import { useStore } from './store';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
-import {
-  doc,
-  getDoc,
-  onSnapshot,
-  updateDoc, // Import onSnapshot for real-time updates
-} from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
 import LoadingMessage from './components/LoadingMessage';
@@ -58,40 +53,44 @@ const App = React.memo(() => {
     return unsubscribe;
   }, []);
 
+  // Function to set up real-time listener for owned planets
   const fetchOwnedPlanets = useCallback(
-    async (userId) => {
-      try {
-        const userDocRef = doc(db, 'users', userId);
-        const userDoc = await getDoc(userDocRef);
+    (userId) => {
+      const userDocRef = doc(db, 'users', userId);
+      const unsubscribe = onSnapshot(
+        userDocRef,
+        (userDoc) => {
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const planets = userData.spheres || [];
+            setOwnedPlanets(planets);
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const planets = userData.spheres || [];
-
-          setOwnedPlanets(planets);
-
-          if (planets.length > 0) {
-            const firstPlanet = planets[0];
-            const newPosition = {
-              x: firstPlanet.x + 100,
-              y: firstPlanet.y + 280,
-              z: firstPlanet.z + 380,
-            };
-            setTarget(newPosition);
-            setLookAt({
-              x: firstPlanet.x,
-              y: firstPlanet.y,
-              z: firstPlanet.z,
-            });
+            if (planets.length > 0) {
+              const firstPlanet = planets[0];
+              const newPosition = {
+                x: firstPlanet.x + 100,
+                y: firstPlanet.y + 280,
+                z: firstPlanet.z + 380,
+              };
+              setTarget(newPosition);
+              setLookAt({
+                x: firstPlanet.x,
+                y: firstPlanet.y,
+                z: firstPlanet.z,
+              });
+            } else {
+              console.log('No owned planets found for this user.');
+            }
           } else {
-            console.log('No owned planets found for this user.');
+            console.error('User not found');
           }
-        } else {
-          console.error('User not found');
+        },
+        (error) => {
+          console.error('Error listening to owned planets:', error);
         }
-      } catch (error) {
-        console.error('Error fetching owned planets:', error);
-      }
+      );
+
+      return unsubscribe;
     },
     [setTarget, setLookAt]
   );
@@ -127,16 +126,18 @@ const App = React.memo(() => {
 
   useEffect(() => {
     let unsubscribeShips = null;
+    let unsubscribePlanets = null;
     if (user) {
       assignGreenSphere(user.uid).then(() => {
-        fetchOwnedPlanets(user.uid);
+        unsubscribePlanets = fetchOwnedPlanets(user.uid); // Set up listener for owned planets
       });
-      unsubscribeShips = fetchShipsData(user.uid); // Set up listener
+      unsubscribeShips = fetchShipsData(user.uid); // Set up listener for ships data
     }
 
-    // Clean up the listener on unmount or when user changes
+    // Clean up the listeners on unmount or when user changes
     return () => {
       if (unsubscribeShips) unsubscribeShips();
+      if (unsubscribePlanets) unsubscribePlanets();
     };
   }, [user, assignGreenSphere, fetchOwnedPlanets, fetchShipsData]);
 
