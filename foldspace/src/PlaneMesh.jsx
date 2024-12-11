@@ -189,7 +189,7 @@ const PlaneMesh = React.forwardRef(
                 // Reset selection modes
                 setIsSelectingDestination(false);
                 setShipToMove(null);
-                if (!colonizeMode) {
+                if (colonizeMode) {
                   setColonizeMode(false);
                 }
               } else {
