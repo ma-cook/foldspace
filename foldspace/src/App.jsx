@@ -28,26 +28,28 @@ const App = React.memo(() => {
   const isInitialCameraSet = useRef(false);
 
   // Function to set up real-time listener for ships data
-  const fetchShipsData = useCallback((userId) => {
-    const userDocRef = doc(db, 'users', userId);
+  const fetchAllShipsData = useCallback(() => {
+    const usersCollectionRef = collection(db, 'users');
+
     const unsubscribe = onSnapshot(
-      userDocRef,
-      (userDoc) => {
-        if (userDoc.exists()) {
+      usersCollectionRef,
+      (snapshot) => {
+        const allShips = {};
+        snapshot.forEach((userDoc) => {
           const userData = userDoc.data();
-          if (userData.ships) {
-            setShipsData(userData.ships);
-          } else {
-            console.log('No ships data found for this user.');
-            setShipsData(null);
-          }
-        } else {
-          console.error('User not found');
-          setShipsData(null);
-        }
+          const userId = userDoc.id;
+          const ships = userData.ships || {};
+          Object.entries(ships).forEach(([shipKey, shipInfo]) => {
+            allShips[`${userId}_${shipKey}`] = {
+              ...shipInfo,
+              ownerId: userId,
+            };
+          });
+        });
+        setShipsData(allShips);
       },
       (error) => {
-        console.error('Error listening to ships data:', error);
+        console.error('Error fetching all ships data:', error);
       }
     );
 
@@ -109,18 +111,15 @@ const App = React.memo(() => {
     let unsubscribeShips = null;
     let unsubscribePlanets = null;
     if (user) {
-      assignGreenSphere(user.uid).then(() => {
-        unsubscribePlanets = fetchOwnedPlanets(user.uid); // Set up listener for owned planets
-      });
-      unsubscribeShips = fetchShipsData(user.uid); // Set up listener for ships data
+      unsubscribeShips = fetchAllShipsData();
+      unsubscribePlanets = fetchOwnedPlanets(user.uid);
     }
 
-    // Clean up the listeners on unmount or when user changes
     return () => {
       if (unsubscribeShips) unsubscribeShips();
       if (unsubscribePlanets) unsubscribePlanets();
     };
-  }, [user, assignGreenSphere, fetchOwnedPlanets, fetchShipsData]);
+  }, [user, fetchAllShipsData, fetchOwnedPlanets]);
 
   // Set initial camera position based on the first owned planet
   useEffect(() => {
