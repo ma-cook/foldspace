@@ -31,9 +31,12 @@ const UserPanel = ({
   };
 
   const handleMoveToClick = (shipKey) => {
-    const shipPosition = shipsData[shipKey].position;
-    handleShipClick(shipPosition);
-    // Additional logic for 'move to' can be added here
+    const shipPosition = shipsData[shipKey]?.position;
+    if (shipPosition) {
+      handleShipClick(shipPosition);
+    } else {
+      console.error(`Ship ${shipKey} position is undefined.`);
+    }
   };
 
   const handleMoveShipClick = (shipKey) => {
@@ -67,13 +70,17 @@ const UserPanel = ({
   };
 
   const handlePlanetClick = (planetPosition) => {
-    const offsetPosition = {
-      x: planetPosition.x + 100,
-      y: planetPosition.y + 280,
-      z: planetPosition.z + 380,
-    };
-    setTarget(offsetPosition);
-    setLookAt(planetPosition);
+    if (planetPosition) {
+      const offsetPosition = {
+        x: planetPosition.x + 100,
+        y: planetPosition.y + 280,
+        z: planetPosition.z + 380,
+      };
+      setTarget(offsetPosition);
+      setLookAt(planetPosition);
+    } else {
+      console.error('Planet position is undefined.');
+    }
   };
 
   // Effect to update message when destination is set
@@ -144,9 +151,10 @@ const UserPanel = ({
                   return (
                     <li key={shipKey} style={{ cursor: 'pointer' }}>
                       <div onClick={handleClick}>
-                        {shipType} at position ({shipInfo.position.x.toFixed(2)}
-                        , {shipInfo.position.y.toFixed(2)},{' '}
-                        {shipInfo.position.z.toFixed(2)})
+                        {shipType} at position (
+                        {shipInfo.position?.x.toFixed(2)},{' '}
+                        {shipInfo.position?.y.toFixed(2)},{' '}
+                        {shipInfo.position?.z.toFixed(2)})
                       </div>
                       {dropdownVisible[shipKey] && (
                         <div style={{ marginLeft: '20px' }}>
