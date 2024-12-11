@@ -1,5 +1,5 @@
 // UserPanel.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 
 const UserPanel = ({
@@ -11,6 +11,12 @@ const UserPanel = ({
   setLookAt,
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState({});
+  const [shipMessages, setShipMessages] = useState({});
+
+  const isSelectingDestination = useStore(
+    (state) => state.isSelectingDestination
+  );
+  const selectedShip = useStore((state) => state.shipToMove);
   const setIsSelectingDestination = useStore(
     (state) => state.setIsSelectingDestination
   );
@@ -33,6 +39,12 @@ const UserPanel = ({
   const handleMoveShipClick = (shipKey) => {
     setIsSelectingDestination(true);
     setShipToMove(shipKey);
+
+    // Set the message for this ship
+    setShipMessages((prev) => ({
+      ...prev,
+      [shipKey]: 'set destination',
+    }));
     console.log(`Select destination for ship: ${shipKey}`);
   };
 
@@ -40,6 +52,12 @@ const UserPanel = ({
     setIsSelectingDestination(true);
     setShipToMove(shipKey);
     setColonizeMode(true); // Enable colonize mode
+
+    // Set the message for this ship
+    setShipMessages((prev) => ({
+      ...prev,
+      [shipKey]: 'set destination',
+    }));
     console.log(`Select planet to colonize with ship: ${shipKey}`);
   };
 
@@ -57,6 +75,29 @@ const UserPanel = ({
     setTarget(offsetPosition);
     setLookAt(planetPosition);
   };
+
+  // Effect to update message when destination is set
+  useEffect(() => {
+    if (!isSelectingDestination && selectedShip) {
+      // Destination has been set for selectedShip
+      setShipMessages((prev) => ({
+        ...prev,
+        [selectedShip]: 'destination set',
+      }));
+
+      // Remove the message after 2 seconds
+      const timer = setTimeout(() => {
+        setShipMessages((prev) => {
+          const updated = { ...prev };
+          delete updated[selectedShip];
+          return updated;
+        });
+      }, 2000);
+
+      // Cleanup timer
+      return () => clearTimeout(timer);
+    }
+  }, [isSelectingDestination, selectedShip]);
 
   return (
     <div
@@ -94,57 +135,44 @@ const UserPanel = ({
           <h3>Ships:</h3>
           {shipsData ? (
             <ul>
-              {(() => {
-                const shipTypeCounts = {};
-
-                // Pre-calculate ship type counts
-                Object.values(shipsData).forEach((info) => {
-                  const type = info.type || '';
-                  if (!shipTypeCounts[type]) {
-                    shipTypeCounts[type] = 1;
-                  } else {
-                    shipTypeCounts[type]++;
-                  }
-                });
-
-                return Object.entries(shipsData).map(([shipKey, shipInfo]) => {
-                  const shipType =
-                    shipInfo.type || shipKey.replace(/\d+/g, '').trim();
-                  const shipNumber = shipTypeCounts[shipType]++;
-                  const shipDisplayName = `${shipType} ${shipNumber}`;
-                  const handleClick = () => toggleDropdown(shipKey);
-                  return (
-                    <li key={shipKey} style={{ cursor: 'pointer' }}>
-                      <div onClick={handleClick}>
-                        {shipDisplayName} at position (
-                        {shipInfo.position.x.toFixed(2)},{' '}
-                        {shipInfo.position.y.toFixed(2)},{' '}
-                        {shipInfo.position.z.toFixed(2)})
+              {Object.entries(shipsData).map(([shipKey, shipInfo]) => {
+                const shipType =
+                  shipInfo.type || shipKey.replace(/\d+/g, '').trim();
+                const handleClick = () => toggleDropdown(shipKey);
+                return (
+                  <li key={shipKey} style={{ cursor: 'pointer' }}>
+                    <div onClick={handleClick}>
+                      {shipType} at position ({shipInfo.position.x.toFixed(2)},{' '}
+                      {shipInfo.position.y.toFixed(2)},{' '}
+                      {shipInfo.position.z.toFixed(2)})
+                    </div>
+                    {dropdownVisible[shipKey] && (
+                      <div style={{ marginLeft: '20px' }}>
+                        <button onClick={() => handleMoveToClick(shipKey)}>
+                          Move to
+                        </button>
+                        <button onClick={() => handleMoveShipClick(shipKey)}>
+                          Move ship
+                        </button>
+                        {shipType.toLowerCase() === 'colony ship' && (
+                          <button onClick={() => handleColonizeClick(shipKey)}>
+                            Colonize
+                          </button>
+                        )}
+                        <button onClick={() => handleStopClick(shipKey)}>
+                          Stop
+                        </button>
                       </div>
-                      {dropdownVisible[shipKey] && (
-                        <div style={{ marginLeft: '20px' }}>
-                          <button onClick={() => handleMoveToClick(shipKey)}>
-                            Move to
-                          </button>
-                          <button onClick={() => handleMoveShipClick(shipKey)}>
-                            Move ship
-                          </button>
-                          {shipType.toLowerCase() === 'colony ship' && (
-                            <button
-                              onClick={() => handleColonizeClick(shipKey)}
-                            >
-                              Colonize
-                            </button>
-                          )}
-                          <button onClick={() => handleStopClick(shipKey)}>
-                            Stop
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  );
-                });
-              })()}
+                    )}
+                    {/* Display the message */}
+                    {shipMessages[shipKey] && (
+                      <div style={{ color: 'red', marginLeft: '20px' }}>
+                        {shipMessages[shipKey]}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p>No ship data available.</p>
