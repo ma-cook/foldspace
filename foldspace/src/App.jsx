@@ -119,13 +119,17 @@ const App = React.memo(() => {
     if (user) {
       unsubscribeShips = fetchAllShipsData();
       unsubscribePlanets = fetchOwnedPlanets(user.uid);
+      assignGreenSphere(user.uid).then(() => {
+        unsubscribePlanets = fetchOwnedPlanets(user.uid); // Set up listener for owned planets
+      });
+      unsubscribeShips = fetchShipsData(user.uid); // Set up listener for ships data
     }
 
     return () => {
       if (unsubscribeShips) unsubscribeShips();
       if (unsubscribePlanets) unsubscribePlanets();
     };
-  }, [user, fetchAllShipsData, fetchOwnedPlanets]);
+  }, [user, assignGreenSphere, fetchAllShipsData, fetchOwnedPlanets]);
 
   // Set initial camera position based on the first owned planet
   useEffect(() => {
