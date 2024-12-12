@@ -24,6 +24,10 @@ const App = React.memo(() => {
   const setTarget = useStore((state) => state.setTarget);
   const setLookAt = useStore((state) => state.setLookAt);
   const [shipsData, setShipsData] = useState(null);
+  const setIsSelectingDestination = useStore(
+    (state) => state.setIsSelectingDestination
+  );
+  const setShipToMove = useStore((state) => state.setShipToMove);
   const isInitialCameraSet = useRef(false);
 
   // Function to set up real-time listener for ships data
@@ -180,6 +184,8 @@ const App = React.memo(() => {
           });
 
           console.log(`Destination for ship ${shipKey} set to:`, destination);
+          setIsSelectingDestination(false);
+          setShipToMove(null);
         } else {
           console.error('User document does not exist.');
         }
