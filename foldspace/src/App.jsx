@@ -1,12 +1,5 @@
 // App.jsx
-import React, {
-  useRef,
-  useEffect,
-  useState,
-  useCallback,
-  Suspense,
-  useDeferredValue,
-} from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useStore } from './store';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
@@ -122,7 +115,6 @@ const App = React.memo(() => {
       assignGreenSphere(user.uid).then(() => {
         unsubscribePlanets = fetchOwnedPlanets(user.uid); // Set up listener for owned planets
       });
-      unsubscribeShips = fetchShipsData(user.uid); // Set up listener for ships data
     }
 
     return () => {
