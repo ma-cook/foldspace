@@ -596,7 +596,7 @@ exports.updateShipPositions = functions.pubsub
               greenPositions[dest.instanceId] = {
                 ...greenPositions[dest.instanceId],
                 owner: ownerId,
-                planetName: userData.homePlanetName || 'Unnamed Planet',
+                planetName: dest.instanceId,
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
               };

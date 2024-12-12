@@ -1,5 +1,5 @@
 // UserPanel.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store';
 
 const UserPanel = ({
@@ -22,6 +22,7 @@ const UserPanel = ({
   );
   const setShipToMove = useStore((state) => state.setShipToMove);
   const setColonizeMode = useStore((state) => state.setColonizeMode);
+  const selectedShipRef = useRef(selectedShip);
 
   const toggleDropdown = (shipKey) => {
     setDropdownVisible((prev) => ({
@@ -83,20 +84,28 @@ const UserPanel = ({
     }
   };
 
+  useEffect(() => {
+    if (selectedShip) {
+      selectedShipRef.current = selectedShip;
+    }
+  }, [selectedShip]);
+
   // Effect to update message when destination is set
   useEffect(() => {
-    if (!isSelectingDestination && selectedShip) {
-      // Destination has been set for selectedShip
+    if (!isSelectingDestination && selectedShipRef.current) {
+      const shipKey = selectedShipRef.current;
+
+      // Destination has been set for shipKey
       setShipMessages((prev) => ({
         ...prev,
-        [selectedShip]: 'destination set',
+        [shipKey]: 'destination set',
       }));
 
       // Remove the message after 2 seconds
       const timer = setTimeout(() => {
         setShipMessages((prev) => {
           const updated = { ...prev };
-          delete updated[selectedShip];
+          delete updated[shipKey];
           return updated;
         });
       }, 2000);
@@ -104,7 +113,7 @@ const UserPanel = ({
       // Cleanup timer
       return () => clearTimeout(timer);
     }
-  }, [isSelectingDestination, selectedShip]);
+  }, [isSelectingDestination]);
 
   return (
     <div
