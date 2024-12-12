@@ -39,7 +39,7 @@ const App = React.memo(() => {
           const userId = userDoc.id;
           const ships = userData.ships || {};
           Object.entries(ships).forEach(([shipKey, shipInfo]) => {
-            allShips[`${userId}_${shipKey}`] = {
+            allShips[shipKey] = {
               ...shipInfo,
               ownerId: userId,
             };

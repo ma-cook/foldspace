@@ -18,6 +18,7 @@ const db = admin.firestore();
 const cache = new NodeCache({ stdTTL: 600 });
 
 const dataFilePath = path.join(os.tmpdir(), 'cells.json');
+const { v4: uuidv4 } = require('uuid');
 
 const readCellDataFile = async () => {
   try {
@@ -341,8 +342,13 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         instanceId: closestSphere.instanceId, // Include instanceId
       };
 
+      // Generate unique ship IDs
+      const colonyShipId = uuidv4();
+      const scoutShipId = uuidv4();
+
       // Create initial ships for the user
       const colonyShip = {
+        id: colonyShipId,
         type: 'colony ship',
         position: {
           x: position.x + 50,
@@ -355,6 +361,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       };
 
       const scoutShip = {
+        id: scoutShipId,
         type: 'scout',
         position: {
           x: position.x + 60,
@@ -366,13 +373,11 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         ownerId: userId,
       };
 
-      // Update the user's document
+      // Update the user's document with the ships using unique IDs
       transaction.update(userRef, {
         spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
-        ships: {
-          colonyShip1: colonyShip,
-          scout1: scoutShip,
-        },
+        [`ships.${colonyShipId}`]: colonyShip,
+        [`ships.${scoutShipId}`]: scoutShip,
       });
 
       console.log(`Assigned sphere ${closestSphere.cellId} to user ${userId}`);
