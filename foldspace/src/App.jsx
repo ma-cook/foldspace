@@ -184,8 +184,14 @@ const App = React.memo(() => {
           });
 
           console.log(`Destination for ship ${shipKey} set to:`, destination);
+
+          // Set isSelectingDestination to false first
           setIsSelectingDestination(false);
-          setShipToMove(null);
+
+          // Delay resetting shipToMove to null
+          setTimeout(() => {
+            setShipToMove(null);
+          }, 0);
         } else {
           console.error('User document does not exist.');
         }
@@ -193,9 +199,8 @@ const App = React.memo(() => {
         console.error('Error updating ship destination:', error);
       }
     },
-    [user]
+    [user, setIsSelectingDestination, setShipToMove]
   );
-
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <UserPanel
