@@ -85,6 +85,15 @@ const UserPanel = ({
   };
 
   useEffect(() => {
+    // Initialize buildQueue for each planet
+    const initialQueue = {};
+    ownedPlanets.forEach((planet, index) => {
+      initialQueue[index] = planet.constructionQueue || [];
+    });
+    setBuildQueue(initialQueue);
+  }, [ownedPlanets]);
+
+  useEffect(() => {
     if (selectedShip) {
       selectedShipRef.current = selectedShip;
     }
@@ -241,11 +250,12 @@ const UserPanel = ({
                         <div>
                           <h4>Construction Queue:</h4>
                           <ul>
-                            {buildQueue[index].map((item, queueIndex) => (
-                              <li key={queueIndex}>
-                                {item.buildingName} - In Progress
-                              </li>
-                            ))}
+                            {Array.isArray(buildQueue[index]) &&
+                              buildQueue[index].map((item, queueIndex) => (
+                                <li key={queueIndex}>
+                                  {item.buildingName} - In Progress
+                                </li>
+                              ))}
                           </ul>
                         </div>
                       )}

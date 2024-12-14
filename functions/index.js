@@ -719,8 +719,6 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
   }
 });
 
-// Scheduled function to process construction queue
-// Scheduled function to process construction queue
 exports.processConstructionQueue = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
@@ -777,7 +775,9 @@ exports.processConstructionQueue = functions.pubsub
 
             // Update user's planet data
             batch.update(userRef, {
-              [`spheres.${planetIndex}`]: planet,
+              [`spheres.${planetIndex}.buildings`]: planet.buildings,
+              [`spheres.${planetIndex}.constructionQueue`]:
+                planet.constructionQueue,
             });
 
             // Update cell's sphere data
