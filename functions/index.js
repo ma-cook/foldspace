@@ -290,6 +290,22 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       throw new Error('No green spheres available');
     }
 
+    // Define the buildings metadata
+    const buildingsMetadata = {
+      buildings: {
+        'Housing complex': 10,
+        'Power plant': 5,
+        Mine: 5,
+        Laboratory: 1,
+        'Constr. facility': 1,
+        Shipyard: 1,
+        'Space shipyard': 0,
+        'Ground defense': 0,
+        'Planetary shield': 0,
+        'Space defense': 0,
+      },
+    };
+
     // Now perform the transaction
     await db.runTransaction(async (transaction) => {
       // Re-fetch the user document within the transaction
@@ -319,13 +335,14 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         throw new Error('Selected sphere is no longer available');
       }
 
-      // Assign ownership
+      // Assign ownership and add buildings metadata
       greenPositions[closestSphere.instanceId] = {
         ...position,
         owner: userId,
         civilisationName,
         homePlanetName,
         planetName: homePlanetName,
+        ...buildingsMetadata, // Add buildings metadata
       };
 
       // Update the cell with the assigned sphere
@@ -340,6 +357,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         civilisationName,
         cellId: closestSphere.cellId, // Include cellId
         instanceId: closestSphere.instanceId, // Include instanceId
+        ...buildingsMetadata, // Add buildings metadata
       };
 
       // Generate unique ship IDs
@@ -373,7 +391,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         ownerId: userId,
       };
 
-      // Update the user's document with the ships using unique IDs
+      // Update the user's document with the ships and the new sphere using unique IDs
       transaction.update(userRef, {
         spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
         [`ships.${colonyShipId}`]: colonyShip,
@@ -427,9 +445,6 @@ app.use((err, req, res, next) => {
 });
 
 exports.api = functions.https.onRequest(app);
-
-// index.js
-// index.js
 
 exports.updateShipPositions = functions.pubsub
   .schedule('every minute')
@@ -488,10 +503,7 @@ exports.updateShipPositions = functions.pubsub
 
             if (distance < 100) {
               // Destination reached
-              if (
-                shipType === 'colony ship' &&
-                destination.instanceId !== undefined
-              ) {
+              if (shipType === 'colony ship') {
                 // Start colonization
                 batch.update(userDoc.ref, {
                   [`ships.${shipKey}.isColonizing`]: true,
@@ -533,10 +545,7 @@ exports.updateShipPositions = functions.pubsub
 
             // Clear destination if reached
             if (moveDist >= distance) {
-              if (
-                shipType === 'colony ship' &&
-                destination.instanceId !== undefined
-              ) {
+              if (shipType === 'colony ship') {
                 // Start colonization
                 batch.update(userDoc.ref, {
                   [`ships.${shipKey}.isColonizing`]: true,
@@ -566,7 +575,7 @@ exports.updateShipPositions = functions.pubsub
             if (timeElapsed >= COLONIZE_DURATION) {
               // Complete colonization
               const dest = shipInfo.destination;
-              if (!dest || !dest.cellId || dest.instanceId === undefined) {
+              if (!dest || !dest.cellId) {
                 console.warn(
                   `Ship ${shipKey} for user ${userDoc.id} has invalid destination for colonization.`
                 );
@@ -584,19 +593,27 @@ exports.updateShipPositions = functions.pubsub
               const cellData = cellDoc.data();
               const greenPositions = cellData.positions.greenPositions || [];
 
-              // Ensure the sphere exists
-              if (!greenPositions[dest.instanceId]) {
+              // Find the sphere within 100 units of the destination coordinates
+              const sphereIndex = greenPositions.findIndex((sphere) => {
+                const dx = sphere.x - dest.x;
+                const dy = sphere.y - dest.y;
+                const dz = sphere.z - dest.z;
+                const distance = Math.sqrt(dx ** 2 + dy ** 2 + dz ** 2);
+                return distance <= 100;
+              });
+
+              if (sphereIndex === -1) {
                 console.warn(
-                  `No sphere found at instanceId ${dest.instanceId} in cell ${dest.cellId}`
+                  `No sphere found within 100 units of destination coordinates (${dest.x}, ${dest.y}, ${dest.z}) in cell ${dest.cellId}`
                 );
                 continue;
               }
 
               // Assign ownership
-              greenPositions[dest.instanceId] = {
-                ...greenPositions[dest.instanceId],
+              greenPositions[sphereIndex] = {
+                ...greenPositions[sphereIndex],
                 owner: ownerId,
-                planetName: dest.instanceId,
+                planetName: sphereIndex,
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
               };
@@ -608,14 +625,14 @@ exports.updateShipPositions = functions.pubsub
 
               // Prepare the new sphere data
               const newSphere = {
-                x: greenPositions[dest.instanceId].x,
-                y: greenPositions[dest.instanceId].y,
-                z: greenPositions[dest.instanceId].z,
-                planetName: dest.instanceId,
+                x: greenPositions[sphereIndex].x,
+                y: greenPositions[sphereIndex].y,
+                z: greenPositions[sphereIndex].z,
+                planetName: sphereIndex,
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
                 cellId: dest.cellId,
-                instanceId: dest.instanceId,
+                instanceId: sphereIndex,
               };
 
               // Update user's ships and spheres
