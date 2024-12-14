@@ -139,18 +139,21 @@ const UserPanel = ({
         return;
       }
 
-      const response = await fetch('/addBuildingToQueue', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          planetId: planet.instanceId,
-          cellId: planet.cellId,
-          buildingName: buildingName,
-        }),
-      });
+      const response = await fetch(
+        'https://us-central1-foldspace-6483c.cloudfunctions.net/api/addBuildingToQueue',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            planetId: planet.instanceId,
+            cellId: planet.cellId,
+            buildingName: buildingName,
+          }),
+        }
+      );
 
       if (!response.ok) {
         console.error('Failed to add building to build queue.');
