@@ -1,7 +1,6 @@
 // UserPanel.jsx
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store';
-import axios from 'axios'; // Ensure axios is installed and imported
 
 const UserPanel = ({
   user,
@@ -48,7 +47,6 @@ const UserPanel = ({
     setIsSelectingDestination(true);
     setShipToMove(shipKey);
 
-    // Set the message for this ship
     setShipMessages((prev) => ({
       ...prev,
       [shipKey]: 'set destination',
@@ -59,9 +57,8 @@ const UserPanel = ({
   const handleColonizeClick = (shipKey) => {
     setIsSelectingDestination(true);
     setShipToMove(shipKey);
-    setColonizeMode(true); // Enable colonize mode
+    setColonizeMode(true);
 
-    // Set the message for this ship
     setShipMessages((prev) => ({
       ...prev,
       [shipKey]: 'set destination',
@@ -70,7 +67,6 @@ const UserPanel = ({
   };
 
   const handleStopClick = (shipKey) => {
-    // Logic for 'stop' can be added here
     console.log(`Stopping ship: ${shipKey}`);
   };
 
@@ -94,18 +90,15 @@ const UserPanel = ({
     }
   }, [selectedShip]);
 
-  // Effect to update message when destination is set
   useEffect(() => {
     if (!isSelectingDestination && selectedShipRef.current) {
       const shipKey = selectedShipRef.current;
 
-      // Destination has been set for shipKey
       setShipMessages((prev) => ({
         ...prev,
         [shipKey]: 'destination set',
       }));
 
-      // Remove the message after 2 seconds
       const timer = setTimeout(() => {
         setShipMessages((prev) => {
           const updated = { ...prev };
@@ -114,7 +107,6 @@ const UserPanel = ({
         });
       }, 2000);
 
-      // Cleanup timer
       return () => clearTimeout(timer);
     }
   }, [isSelectingDestination]);
@@ -124,7 +116,6 @@ const UserPanel = ({
       ...prev,
       [planetIndex]: !prev[planetIndex],
     }));
-    // Fetch buildings data for the selected planet
     const buildings = ownedPlanets[planetIndex]?.buildings;
     if (buildings) {
       setBuildingsData((prev) => ({
@@ -148,16 +139,27 @@ const UserPanel = ({
         return;
       }
 
-      // Send request to the server to add building to construction queue
-      const response = await axios.post('/addBuildingToQueue', {
-        userId: user.uid,
-        planetId: planet.instanceId,
-        cellId: planet.cellId,
-        buildingName: buildingName,
+      const response = await fetch('/addBuildingToQueue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          planetId: planet.instanceId,
+          cellId: planet.cellId,
+          buildingName: buildingName,
+        }),
       });
 
-      if (response.data.success) {
-        // Optionally, update build queue state to reflect the change
+      if (!response.ok) {
+        console.error('Failed to add building to build queue.');
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
         setBuildQueue((prev) => ({
           ...prev,
           [planetIndex]: [
@@ -211,7 +213,6 @@ const UserPanel = ({
                 </div>
                 {planetBuildVisible[index] && (
                   <div style={{ marginLeft: '20px' }}>
-                    {/* Display buildings list with '+' buttons */}
                     {buildingsData[index] && (
                       <ul>
                         {Object.entries(buildingsData[index]).map(
@@ -239,7 +240,7 @@ const UserPanel = ({
           {shipsData ? (
             <ul>
               {Object.entries(shipsData)
-                .filter(([shipKey, shipInfo]) => shipInfo.ownerId === user.uid)
+                .filter(([, shipInfo]) => shipInfo.ownerId === user.uid)
                 .map(([shipKey, shipInfo]) => {
                   const shipType =
                     shipInfo.type || shipKey.replace(/\d+/g, '').trim();
@@ -272,7 +273,6 @@ const UserPanel = ({
                           </button>
                         </div>
                       )}
-                      {/* Display the message */}
                       {shipMessages[shipKey] && (
                         <div style={{ color: 'red', marginLeft: '20px' }}>
                           {shipMessages[shipKey]}
