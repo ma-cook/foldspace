@@ -12,6 +12,8 @@ const UserPanel = ({
 }) => {
   const [dropdownVisible, setDropdownVisible] = useState({});
   const [shipMessages, setShipMessages] = useState({});
+  const [planetBuildVisible, setPlanetBuildVisible] = useState({});
+  const [buildingsData, setBuildingsData] = useState({});
 
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
@@ -115,6 +117,26 @@ const UserPanel = ({
     }
   }, [isSelectingDestination]);
 
+  const toggleBuildButton = (planetIndex) => {
+    setPlanetBuildVisible((prev) => ({
+      ...prev,
+      [planetIndex]: !prev[planetIndex],
+    }));
+  };
+
+  const handleBuildClick = (planetIndex) => {
+    // Fetch buildings data for the selected planet
+    const buildings = ownedPlanets[planetIndex]?.buildings;
+    if (buildings) {
+      setBuildingsData((prev) => ({
+        ...prev,
+        [planetIndex]: buildings,
+      }));
+    } else {
+      console.error('No buildings data available for this planet.');
+    }
+  };
+
   return (
     <div
       style={{
@@ -138,13 +160,30 @@ const UserPanel = ({
           <h3>Owned Planets:</h3>
           <ul>
             {ownedPlanets.map((planet, index) => (
-              <li
-                key={index}
-                onClick={() => handlePlanetClick(planet)}
-                style={{ cursor: 'pointer' }}
-              >
-                {planet.planetName}: ({planet.x.toFixed(2)},{' '}
-                {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
+              <li key={index} style={{ cursor: 'pointer' }}>
+                <div onClick={() => toggleBuildButton(index)}>
+                  {planet.planetName}: ({planet.x.toFixed(2)},{' '}
+                  {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
+                </div>
+                {planetBuildVisible[index] && (
+                  <div style={{ marginLeft: '20px' }}>
+                    <button onClick={() => handleBuildClick(index)}>
+                      Build
+                    </button>
+                  </div>
+                )}
+                {/* Display buildings list */}
+                {buildingsData[index] && (
+                  <ul style={{ marginLeft: '20px' }}>
+                    {Object.entries(buildingsData[index]).map(
+                      ([buildingName, quantity]) => (
+                        <li key={buildingName}>
+                          {buildingName}: {quantity}
+                        </li>
+                      )
+                    )}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
