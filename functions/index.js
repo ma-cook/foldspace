@@ -707,7 +707,7 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
       startTime: admin.firestore.Timestamp.now(),
     });
 
-    // Update the user's spheres array
+    // Update only the constructionQueue field of the user's spheres array
     await userRef.update({
       [`spheres.${planetIndex}.constructionQueue`]: planet.constructionQueue,
     });
