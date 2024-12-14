@@ -1,6 +1,7 @@
 // UserPanel.jsx
 import React, { useRef, useState, useEffect } from 'react';
 import { useStore } from '../store';
+import axios from 'axios'; // Ensure axios is installed and imported
 
 const UserPanel = ({
   user,
@@ -14,6 +15,7 @@ const UserPanel = ({
   const [shipMessages, setShipMessages] = useState({});
   const [planetBuildVisible, setPlanetBuildVisible] = useState({});
   const [buildingsData, setBuildingsData] = useState({});
+  const [buildQueue, setBuildQueue] = useState({});
 
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
@@ -122,9 +124,6 @@ const UserPanel = ({
       ...prev,
       [planetIndex]: !prev[planetIndex],
     }));
-  };
-
-  const handleBuildClick = (planetIndex) => {
     // Fetch buildings data for the selected planet
     const buildings = ownedPlanets[planetIndex]?.buildings;
     if (buildings) {
@@ -134,6 +133,51 @@ const UserPanel = ({
       }));
     } else {
       console.error('No buildings data available for this planet.');
+    }
+  };
+
+  const handleAddBuilding = async (planetIndex, buildingName) => {
+    try {
+      if (!user) {
+        console.error('User not authenticated.');
+        return;
+      }
+      const planet = ownedPlanets[planetIndex];
+      if (!planet) {
+        console.error('Planet not found.');
+        return;
+      }
+
+      // Send request to the server to add building to construction queue
+      const response = await axios.post('/addBuildingToQueue', {
+        userId: user.uid,
+        planetId: planet.instanceId,
+        cellId: planet.cellId,
+        buildingName: buildingName,
+      });
+
+      if (response.data.success) {
+        // Optionally, update build queue state to reflect the change
+        setBuildQueue((prev) => ({
+          ...prev,
+          [planetIndex]: [
+            ...(prev[planetIndex] || []),
+            {
+              buildingName: buildingName,
+              startTime: Date.now(),
+              status: 'In Queue',
+            },
+          ],
+        }));
+
+        console.log(
+          `Added ${buildingName} to build queue on planet ${planet.planetName}`
+        );
+      } else {
+        console.error('Failed to add building to build queue.');
+      }
+    } catch (error) {
+      console.error('Error adding building to build queue:', error);
     }
   };
 
@@ -167,22 +211,26 @@ const UserPanel = ({
                 </div>
                 {planetBuildVisible[index] && (
                   <div style={{ marginLeft: '20px' }}>
-                    <button onClick={() => handleBuildClick(index)}>
-                      Build
-                    </button>
-                  </div>
-                )}
-                {/* Display buildings list */}
-                {buildingsData[index] && (
-                  <ul style={{ marginLeft: '20px' }}>
-                    {Object.entries(buildingsData[index]).map(
-                      ([buildingName, quantity]) => (
-                        <li key={buildingName}>
-                          {buildingName}: {quantity}
-                        </li>
-                      )
+                    {/* Display buildings list with '+' buttons */}
+                    {buildingsData[index] && (
+                      <ul>
+                        {Object.entries(buildingsData[index]).map(
+                          ([buildingName, quantity]) => (
+                            <li key={buildingName}>
+                              {buildingName}: {quantity}{' '}
+                              <button
+                                onClick={() =>
+                                  handleAddBuilding(index, buildingName)
+                                }
+                              >
+                                +
+                              </button>
+                            </li>
+                          )
+                        )}
+                      </ul>
                     )}
-                  </ul>
+                  </div>
                 )}
               </li>
             ))}

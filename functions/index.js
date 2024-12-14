@@ -89,6 +89,8 @@ const deleteDocumentsInBatches = async (collectionRef) => {
   }
 };
 
+const BUILDING_CONSTRUCTION_TIME = 60;
+
 app.use(cors(corsOptions));
 
 // Explicitly handle OPTIONS requests
@@ -653,6 +655,165 @@ exports.updateShipPositions = functions.pubsub
       );
     } catch (error) {
       console.error('Error in updateShipPositions:', error);
+    }
+
+    return null;
+  });
+
+app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
+  const { userId, planetId, cellId, buildingName } = req.body;
+
+  if (!userId || !planetId || !cellId || !buildingName) {
+    console.error('Missing parameters in request body');
+    return res
+      .status(400)
+      .json({ error: 'Missing parameters in request body' });
+  }
+
+  try {
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+
+    // Validate that the user owns the planet
+    const planetIndex = userData.spheres.findIndex(
+      (sphere) => sphere.instanceId === planetId && sphere.cellId === cellId
+    );
+
+    if (planetIndex === -1) {
+      throw new Error('Planet not found in user data');
+    }
+
+    const constructionQueue = userData.constructionQueue || [];
+
+    // Add building to construction queue
+    constructionQueue.push({
+      planetId,
+      cellId,
+      buildingName,
+      startTime: admin.firestore.Timestamp.now(),
+    });
+
+    // Update user's construction queue
+    await userRef.update({
+      constructionQueue,
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error adding building to construction queue:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Scheduled function to process construction queue
+exports.processConstructionQueue = functions.pubsub
+  .schedule('every 1 minutes')
+  .onRun(async (context) => {
+    console.log('Scheduled function: processConstructionQueue started');
+
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      const batch = db.batch();
+      const currentTime = admin.firestore.Timestamp.now();
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        const constructionQueue = userData.constructionQueue || [];
+
+        const completedBuildings = [];
+        const remainingQueue = [];
+
+        for (const item of constructionQueue) {
+          const { planetId, cellId, buildingName, startTime } = item;
+          const elapsedTime = currentTime.seconds - startTime.seconds;
+
+          if (elapsedTime >= BUILDING_CONSTRUCTION_TIME) {
+            // Building construction complete
+            completedBuildings.push(item);
+          } else {
+            // Keep in queue
+            remainingQueue.push(item);
+          }
+        }
+
+        // Update user's construction queue
+        batch.update(userDoc.ref, {
+          constructionQueue: remainingQueue,
+        });
+
+        // Process completed buildings
+        for (const item of completedBuildings) {
+          const { planetId, cellId, buildingName } = item;
+
+          // Update user's sphere array
+          const sphereIndex = userData.spheres.findIndex(
+            (sphere) =>
+              sphere.instanceId === planetId && sphere.cellId === cellId
+          );
+
+          if (sphereIndex === -1) {
+            console.warn(
+              `Planet ${planetId} not found in user ${userDoc.id}'s spheres`
+            );
+            continue;
+          }
+
+          const sphere = userData.spheres[sphereIndex];
+
+          // Update building count
+          sphere.buildings[buildingName] =
+            (sphere.buildings[buildingName] || 0) + 1;
+
+          // Update user's sphere array
+          batch.update(userDoc.ref, {
+            [`spheres.${sphereIndex}.buildings`]: sphere.buildings,
+          });
+
+          // Update cell's sphere data
+          const cellRef = db.collection('cells').doc(cellId);
+          const cellDoc = await cellRef.get();
+
+          if (!cellDoc.exists) {
+            console.warn(`Cell document ${cellId} does not exist.`);
+            continue;
+          }
+
+          const cellData = cellDoc.data();
+          const greenPositions = cellData.positions.greenPositions || [];
+
+          // Find the sphere in the cell
+          const cellSphere = greenPositions[planetId];
+          if (!cellSphere) {
+            console.warn(`Sphere ${planetId} not found in cell ${cellId}`);
+            continue;
+          }
+
+          // Update building count in cell's sphere data
+          cellSphere.buildings[buildingName] =
+            (cellSphere.buildings[buildingName] || 0) + 1;
+
+          // Update the cell document
+          batch.update(cellRef, {
+            [`positions.greenPositions.${planetId}.buildings`]:
+              cellSphere.buildings,
+          });
+
+          console.log(
+            `Building ${buildingName} constructed on planet ${planetId} for user ${userDoc.id}`
+          );
+        }
+      }
+
+      await batch.commit();
+      console.log('Scheduled function: processConstructionQueue completed');
+    } catch (error) {
+      console.error('Error in processConstructionQueue:', error);
     }
 
     return null;
