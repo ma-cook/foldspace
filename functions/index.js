@@ -660,6 +660,10 @@ exports.updateShipPositions = functions.pubsub
     return null;
   });
 
+// index.js
+
+// index.js
+
 app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
   const { userId, planetId, cellId, buildingName } = req.body;
 
@@ -680,7 +684,7 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
 
     const userData = userDoc.data();
 
-    // Validate that the user owns the planet
+    // Find the planet in the user's spheres array
     const planetIndex = userData.spheres.findIndex(
       (sphere) => sphere.instanceId === planetId && sphere.cellId === cellId
     );
@@ -689,19 +693,23 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
       throw new Error('Planet not found in user data');
     }
 
-    const constructionQueue = userData.constructionQueue || [];
+    const spheres = userData.spheres;
+    const planet = spheres[planetIndex];
 
-    // Add building to construction queue
-    constructionQueue.push({
-      planetId,
-      cellId,
+    // Ensure the planet has a constructionQueue array
+    if (!planet.constructionQueue) {
+      planet.constructionQueue = [];
+    }
+
+    // Add building to planet's construction queue
+    planet.constructionQueue.push({
       buildingName,
       startTime: admin.firestore.Timestamp.now(),
     });
 
-    // Update user's construction queue
+    // Update the user's spheres array
     await userRef.update({
-      constructionQueue,
+      [`spheres.${planetIndex}.constructionQueue`]: planet.constructionQueue,
     });
 
     res.json({ success: true });
@@ -712,6 +720,7 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
 });
 
 // Scheduled function to process construction queue
+// Scheduled function to process construction queue
 exports.processConstructionQueue = functions.pubsub
   .schedule('every 1 minutes')
   .onRun(async (context) => {
@@ -720,93 +729,102 @@ exports.processConstructionQueue = functions.pubsub
     try {
       const usersSnapshot = await db.collection('users').get();
       const batch = db.batch();
-      const currentTime = admin.firestore.Timestamp.now();
 
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
-        const constructionQueue = userData.constructionQueue || [];
+        const userRef = userDoc.ref;
+        const spheres = userData.spheres || [];
 
-        const completedBuildings = [];
-        const remainingQueue = [];
+        for (let planetIndex = 0; planetIndex < spheres.length; planetIndex++) {
+          const planet = spheres[planetIndex];
+          const {
+            instanceId: planetId,
+            cellId,
+            constructionQueue = [],
+          } = planet;
 
-        for (const item of constructionQueue) {
-          const { planetId, cellId, buildingName, startTime } = item;
-          const elapsedTime = currentTime.seconds - startTime.seconds;
-
-          if (elapsedTime >= BUILDING_CONSTRUCTION_TIME) {
-            // Building construction complete
-            completedBuildings.push(item);
-          } else {
-            // Keep in queue
-            remainingQueue.push(item);
+          if (constructionQueue.length === 0) {
+            continue; // No buildings in queue for this planet
           }
-        }
 
-        // Update user's construction queue
-        batch.update(userDoc.ref, {
-          constructionQueue: remainingQueue,
-        });
+          const currentTime = admin.firestore.Timestamp.now();
+          const completedBuildings = [];
+          const remainingQueue = [];
 
-        // Process completed buildings
-        for (const item of completedBuildings) {
-          const { planetId, cellId, buildingName } = item;
+          for (const item of constructionQueue) {
+            const { buildingName, startTime } = item;
+            const elapsedTime = currentTime.seconds - startTime.seconds;
 
-          // Update user's sphere array
-          const sphereIndex = userData.spheres.findIndex(
-            (sphere) =>
-              sphere.instanceId === planetId && sphere.cellId === cellId
-          );
+            if (elapsedTime >= BUILDING_CONSTRUCTION_TIME) {
+              // Building construction complete
+              completedBuildings.push(item);
+            } else {
+              // Keep in queue
+              remainingQueue.push(item);
+            }
+          }
 
-          if (sphereIndex === -1) {
-            console.warn(
-              `Planet ${planetId} not found in user ${userDoc.id}'s spheres`
+          if (completedBuildings.length > 0) {
+            // Update planet's buildings
+            for (const item of completedBuildings) {
+              const { buildingName } = item;
+              planet.buildings[buildingName] =
+                (planet.buildings[buildingName] || 0) + 1;
+            }
+
+            // Update planet's constructionQueue
+            planet.constructionQueue = remainingQueue;
+
+            // Update user's planet data
+            batch.update(userRef, {
+              [`spheres.${planetIndex}`]: planet,
+            });
+
+            // Update cell's sphere data
+            const cellRef = db.collection('cells').doc(cellId);
+            const cellDoc = await cellRef.get();
+
+            if (!cellDoc.exists) {
+              console.warn(`Cell document ${cellId} does not exist.`);
+              continue;
+            }
+
+            const cellData = cellDoc.data();
+            const greenPositions = cellData.positions.greenPositions || {};
+
+            // Find the sphere in the cell
+            const cellSphere = greenPositions[planetId];
+            if (!cellSphere) {
+              console.warn(`Sphere ${planetId} not found in cell ${cellId}`);
+              continue;
+            }
+
+            // Update building counts in cell's sphere data
+            for (const item of completedBuildings) {
+              const { buildingName } = item;
+              cellSphere.buildings[buildingName] =
+                (cellSphere.buildings[buildingName] || 0) + 1;
+            }
+
+            // Update the cell document
+            batch.update(cellRef, {
+              [`positions.greenPositions.${planetId}.buildings`]:
+                cellSphere.buildings,
+            });
+
+            console.log(
+              `Buildings constructed on planet ${planetId} for user ${userDoc.id}`
             );
-            continue;
+          } else {
+            // Update planet's constructionQueue if no buildings were completed
+            planet.constructionQueue = remainingQueue;
+
+            // Update user's planet data
+            batch.update(userRef, {
+              [`spheres.${planetIndex}.constructionQueue`]:
+                planet.constructionQueue,
+            });
           }
-
-          const sphere = userData.spheres[sphereIndex];
-
-          // Update building count
-          sphere.buildings[buildingName] =
-            (sphere.buildings[buildingName] || 0) + 1;
-
-          // Update user's sphere array
-          batch.update(userDoc.ref, {
-            [`spheres.${sphereIndex}.buildings`]: sphere.buildings,
-          });
-
-          // Update cell's sphere data
-          const cellRef = db.collection('cells').doc(cellId);
-          const cellDoc = await cellRef.get();
-
-          if (!cellDoc.exists) {
-            console.warn(`Cell document ${cellId} does not exist.`);
-            continue;
-          }
-
-          const cellData = cellDoc.data();
-          const greenPositions = cellData.positions.greenPositions || [];
-
-          // Find the sphere in the cell
-          const cellSphere = greenPositions[planetId];
-          if (!cellSphere) {
-            console.warn(`Sphere ${planetId} not found in cell ${cellId}`);
-            continue;
-          }
-
-          // Update building count in cell's sphere data
-          cellSphere.buildings[buildingName] =
-            (cellSphere.buildings[buildingName] || 0) + 1;
-
-          // Update the cell document
-          batch.update(cellRef, {
-            [`positions.greenPositions.${planetId}.buildings`]:
-              cellSphere.buildings,
-          });
-
-          console.log(
-            `Building ${buildingName} constructed on planet ${planetId} for user ${userDoc.id}`
-          );
         }
       }
 

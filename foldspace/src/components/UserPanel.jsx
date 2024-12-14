@@ -163,17 +163,18 @@ const UserPanel = ({
       const data = await response.json();
 
       if (data.success) {
-        setBuildQueue((prev) => ({
-          ...prev,
-          [planetIndex]: [
-            ...(prev[planetIndex] || []),
-            {
-              buildingName: buildingName,
-              startTime: Date.now(),
-              status: 'In Queue',
-            },
-          ],
-        }));
+        // Update the local buildQueue state for the planet
+        setBuildQueue((prev) => {
+          const updatedQueue = { ...prev };
+          if (!updatedQueue[planetIndex]) {
+            updatedQueue[planetIndex] = [];
+          }
+          updatedQueue[planetIndex].push({
+            buildingName: buildingName,
+            startTime: Date.now(),
+          });
+          return updatedQueue;
+        });
 
         console.log(
           `Added ${buildingName} to build queue on planet ${planet.planetName}`
@@ -234,6 +235,20 @@ const UserPanel = ({
                         )}
                       </ul>
                     )}
+                    {/* Display the planet's construction queue */}
+                    {Array.isArray(buildQueue[index]) &&
+                      buildQueue[index].length > 0 && (
+                        <div>
+                          <h4>Construction Queue:</h4>
+                          <ul>
+                            {buildQueue[index].map((item, queueIndex) => (
+                              <li key={queueIndex}>
+                                {item.buildingName} - In Progress
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                   </div>
                 )}
               </li>
