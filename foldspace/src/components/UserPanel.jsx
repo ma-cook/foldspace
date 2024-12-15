@@ -133,11 +133,27 @@ const UserPanel = ({
         console.error('User not authenticated.');
         return;
       }
+
       const planet = ownedPlanets[planetIndex];
       if (!planet) {
         console.error('Planet not found.');
         return;
       }
+
+      // Validate required fields
+      if (!planet.instanceId || !planet.cellId) {
+        console.error('Missing required planet data:', { planet });
+        return;
+      }
+
+      const payload = {
+        userId: user.uid,
+        planetId: planet.instanceId,
+        cellId: planet.cellId,
+        buildingName: buildingName,
+      };
+
+      console.log('Sending build request:', payload); // Debug log
 
       const response = await fetch(
         'https://us-central1-foldspace-6483c.cloudfunctions.net/api/addBuildingToQueue',
@@ -146,24 +162,18 @@ const UserPanel = ({
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            userId: user.uid,
-            planetId: planet.instanceId,
-            cellId: planet.cellId,
-            buildingName: buildingName,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
-      if (!response.ok) {
-        console.error('Failed to add building to build queue.');
-        return;
-      }
-
       const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(`Server error: ${data.error || response.statusText}`);
+      }
+
       if (data.success) {
-        // Update the local buildQueue state for the planet
+        // Update local queue
         setBuildQueue((prev) => {
           const updatedQueue = { ...prev };
           if (!updatedQueue[planetIndex]) {
@@ -180,10 +190,12 @@ const UserPanel = ({
           `Added ${buildingName} to build queue on planet ${planet.planetName}`
         );
       } else {
-        console.error('Failed to add building to build queue.');
+        throw new Error('Failed to add building - server returned no success');
       }
     } catch (error) {
       console.error('Error adding building to build queue:', error);
+      // Could add UI feedback here
+      alert(`Failed to add building: ${error.message}`);
     }
   };
 
