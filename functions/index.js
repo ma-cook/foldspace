@@ -683,12 +683,15 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
     }
 
     const userData = userDoc.data();
-    const spheres = userData.spheres || [];
-    const planetIndex = spheres.findIndex(
-      (sphere) => sphere.instanceId === planetId && sphere.cellId === cellId
+    const spheres = userData.spheres || {};
+
+    // Find the sphere using the key (in this case "0")
+    const sphereKey = Object.keys(spheres).find(
+      (key) =>
+        spheres[key].instanceId === planetId && spheres[key].cellId === cellId
     );
 
-    if (planetIndex === -1) {
+    if (!sphereKey) {
       throw new Error('Planet not found in user data');
     }
 
@@ -698,18 +701,21 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
       startTime: admin.firestore.Timestamp.now(),
     };
 
-    // Use arrayUnion to add to the construction queue without affecting other fields
+    // Initialize constructionQueue if it doesn't exist
+    const currentQueue = spheres[sphereKey].constructionQueue || [];
+
+    // Update the specific sphere with the new queue
     await userRef.update({
-      [`spheres.${planetIndex}`]: {
-        ...spheres[planetIndex], // Preserve all existing sphere data
-        constructionQueue: admin.firestore.FieldValue.arrayUnion(newQueueItem),
-      },
+      [`spheres.${sphereKey}.constructionQueue`]: [
+        ...currentQueue,
+        newQueueItem,
+      ],
     });
 
     res.json({ success: true });
   } catch (error) {
     console.error('Error adding building to construction queue:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error.message });
   }
 });
 

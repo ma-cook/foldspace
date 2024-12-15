@@ -15,7 +15,7 @@ const UserPanel = ({
   const [planetBuildVisible, setPlanetBuildVisible] = useState({});
   const [buildingsData, setBuildingsData] = useState({});
   const [buildQueue, setBuildQueue] = useState({});
-
+  const [localPlanets, setLocalPlanets] = useState(ownedPlanets);
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
   );
@@ -91,6 +91,10 @@ const UserPanel = ({
   }, [selectedShip]);
 
   useEffect(() => {
+    setLocalPlanets(ownedPlanets);
+  }, [ownedPlanets]);
+
+  useEffect(() => {
     if (!isSelectingDestination && selectedShipRef.current) {
       const shipKey = selectedShipRef.current;
 
@@ -134,7 +138,7 @@ const UserPanel = ({
         return;
       }
 
-      const planet = ownedPlanets[planetIndex];
+      const planet = localPlanets[planetIndex];
       if (!planet) {
         console.error('Planet not found.');
         return;
@@ -152,8 +156,6 @@ const UserPanel = ({
         cellId: planet.cellId,
         buildingName: buildingName,
       };
-
-      console.log('Sending build request:', payload); // Debug log
 
       const response = await fetch(
         'https://us-central1-foldspace-6483c.cloudfunctions.net/api/addBuildingToQueue',
@@ -189,12 +191,9 @@ const UserPanel = ({
         console.log(
           `Added ${buildingName} to build queue on planet ${planet.planetName}`
         );
-      } else {
-        throw new Error('Failed to add building - server returned no success');
       }
     } catch (error) {
       console.error('Error adding building to build queue:', error);
-      // Could add UI feedback here
       alert(`Failed to add building: ${error.message}`);
     }
   };
@@ -220,13 +219,14 @@ const UserPanel = ({
             {user.displayName || user.email}
           </span>
           <h3>Owned Planets:</h3>
-          {Array.isArray(ownedPlanets) && ownedPlanets.length > 0 ? (
+          {Array.isArray(localPlanets) && localPlanets.length > 0 ? (
             <ul>
-              {ownedPlanets.map((planet, index) => (
+              {localPlanets.map((planet, index) => (
                 <li key={index} style={{ cursor: 'pointer' }}>
                   <div onClick={() => toggleBuildButton(index)}>
-                    {planet.planetName}: ({planet.x.toFixed(2)},{' '}
-                    {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
+                    {planet.planetName}: ({planet.x ? planet.x.toFixed(2) : '?'}
+                    ,{planet.y ? planet.y.toFixed(2) : '?'},
+                    {planet.z ? planet.z.toFixed(2) : '?'})
                   </div>
                   {planetBuildVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
