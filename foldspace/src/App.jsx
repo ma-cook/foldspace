@@ -67,7 +67,25 @@ const App = React.memo(() => {
       (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const planets = userData.spheres || [];
+          console.log('User data:', userData); // Debug log
+
+          // Convert spheres map to array if needed
+          let planets = [];
+          if (userData.spheres) {
+            if (Array.isArray(userData.spheres)) {
+              planets = userData.spheres;
+            } else {
+              // Convert map to array
+              planets = Object.entries(userData.spheres).map(
+                ([key, sphere]) => ({
+                  ...sphere,
+                  index: key,
+                })
+              );
+            }
+          }
+
+          console.log('Processed planets:', planets); // Debug log
           setOwnedPlanets(planets);
         } else {
           console.error('User not found');
