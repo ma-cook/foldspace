@@ -4,7 +4,7 @@ import { useStore } from '../store';
 
 const UserPanel = ({
   user,
-  ownedPlanets,
+  ownedPlanets = [],
   shipsData,
   handleShipClick,
   setTarget,
@@ -208,38 +208,42 @@ const UserPanel = ({
             {user.displayName || user.email}
           </span>
           <h3>Owned Planets:</h3>
-          <ul>
-            {ownedPlanets.map((planet, index) => (
-              <li key={index} style={{ cursor: 'pointer' }}>
-                <div onClick={() => toggleBuildButton(index)}>
-                  {planet.planetName}: ({planet.x.toFixed(2)},{' '}
-                  {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
-                </div>
-                {planetBuildVisible[index] && (
-                  <div style={{ marginLeft: '20px' }}>
-                    {buildingsData[index] && (
-                      <ul>
-                        {Object.entries(buildingsData[index]).map(
-                          ([buildingName, quantity]) => (
-                            <li key={buildingName}>
-                              {buildingName}: {quantity}{' '}
-                              <button
-                                onClick={() =>
-                                  handleAddBuilding(index, buildingName)
-                                }
-                              >
-                                +
-                              </button>
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    )}
+          {Array.isArray(ownedPlanets) && ownedPlanets.length > 0 ? (
+            <ul>
+              {ownedPlanets.map((planet, index) => (
+                <li key={index} style={{ cursor: 'pointer' }}>
+                  <div onClick={() => toggleBuildButton(index)}>
+                    {planet.planetName}: ({planet.x.toFixed(2)},{' '}
+                    {planet.y.toFixed(2)}, {planet.z.toFixed(2)})
                   </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {planetBuildVisible[index] && (
+                    <div style={{ marginLeft: '20px' }}>
+                      {buildingsData[index] && (
+                        <ul>
+                          {Object.entries(buildingsData[index]).map(
+                            ([buildingName, quantity]) => (
+                              <li key={buildingName}>
+                                {buildingName}: {quantity}{' '}
+                                <button
+                                  onClick={() =>
+                                    handleAddBuilding(index, buildingName)
+                                  }
+                                >
+                                  +
+                                </button>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No planets owned.</p>
+          )}
           <h3>Your Ships:</h3>
           {shipsData ? (
             <ul>

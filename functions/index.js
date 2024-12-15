@@ -733,11 +733,10 @@ exports.processConstructionQueue = functions.pubsub
             instanceId: planetId,
             cellId,
             constructionQueue = [],
+            buildings = {}, // Initialize buildings if not exists
           } = planet;
 
-          if (constructionQueue.length === 0) {
-            continue; // No buildings in queue for this planet
-          }
+          if (constructionQueue.length === 0) continue;
 
           const currentTime = admin.firestore.Timestamp.now();
           const completedBuildings = [];
@@ -748,75 +747,62 @@ exports.processConstructionQueue = functions.pubsub
             const elapsedTime = currentTime.seconds - startTime.seconds;
 
             if (elapsedTime >= BUILDING_CONSTRUCTION_TIME) {
-              // Building construction complete
               completedBuildings.push(item);
             } else {
-              // Keep in queue
               remainingQueue.push(item);
             }
           }
 
           if (completedBuildings.length > 0) {
-            // Update planet's buildings
+            // Create a copy of the buildings object
+            const updatedBuildings = { ...buildings };
+
+            // Update building counts
             for (const item of completedBuildings) {
               const { buildingName } = item;
-              planet.buildings[buildingName] =
-                (planet.buildings[buildingName] || 0) + 1;
+              updatedBuildings[buildingName] =
+                (updatedBuildings[buildingName] || 0) + 1;
             }
 
-            // Update planet's constructionQueue
-            planet.constructionQueue = remainingQueue;
-
-            // Update user's planet data
+            // Update user's sphere data with both buildings and queue
             batch.update(userRef, {
-              [`spheres.${planetIndex}.buildings`]: planet.buildings,
-              [`spheres.${planetIndex}.constructionQueue`]:
-                planet.constructionQueue,
+              [`spheres.${planetIndex}.buildings`]: updatedBuildings,
+              [`spheres.${planetIndex}.constructionQueue`]: remainingQueue,
             });
 
-            // Update cell's sphere data
+            // Update cell data
             const cellRef = db.collection('cells').doc(cellId);
             const cellDoc = await cellRef.get();
 
-            if (!cellDoc.exists) {
-              console.warn(`Cell document ${cellId} does not exist.`);
-              continue;
+            if (cellDoc.exists) {
+              const cellData = cellDoc.data();
+              const greenPositions = cellData.positions?.greenPositions || {};
+              const cellSphere = greenPositions[planetId];
+
+              if (cellSphere) {
+                const updatedCellBuildings = { ...cellSphere.buildings };
+
+                // Update building counts in cell
+                for (const item of completedBuildings) {
+                  const { buildingName } = item;
+                  updatedCellBuildings[buildingName] =
+                    (updatedCellBuildings[buildingName] || 0) + 1;
+                }
+
+                batch.update(cellRef, {
+                  [`positions.greenPositions.${planetId}.buildings`]:
+                    updatedCellBuildings,
+                });
+              }
             }
-
-            const cellData = cellDoc.data();
-            const greenPositions = cellData.positions.greenPositions || {};
-
-            // Find the sphere in the cell
-            const cellSphere = greenPositions[planetId];
-            if (!cellSphere) {
-              console.warn(`Sphere ${planetId} not found in cell ${cellId}`);
-              continue;
-            }
-
-            // Update building counts in cell's sphere data
-            for (const item of completedBuildings) {
-              const { buildingName } = item;
-              cellSphere.buildings[buildingName] =
-                (cellSphere.buildings[buildingName] || 0) + 1;
-            }
-
-            // Update the cell document
-            batch.update(cellRef, {
-              [`positions.greenPositions.${planetId}.buildings`]:
-                cellSphere.buildings,
-            });
 
             console.log(
               `Buildings constructed on planet ${planetId} for user ${userDoc.id}`
             );
           } else {
-            // Update planet's constructionQueue if no buildings were completed
-            planet.constructionQueue = remainingQueue;
-
-            // Update user's planet data
+            // Only update construction queue if no buildings completed
             batch.update(userRef, {
-              [`spheres.${planetIndex}.constructionQueue`]:
-                planet.constructionQueue,
+              [`spheres.${planetIndex}.constructionQueue`]: remainingQueue,
             });
           }
         }
