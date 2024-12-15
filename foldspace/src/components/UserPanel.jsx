@@ -85,15 +85,6 @@ const UserPanel = ({
   };
 
   useEffect(() => {
-    // Initialize buildQueue for each planet
-    const initialQueue = {};
-    ownedPlanets.forEach((planet, index) => {
-      initialQueue[index] = planet.constructionQueue || [];
-    });
-    setBuildQueue(initialQueue);
-  }, [ownedPlanets]);
-
-  useEffect(() => {
     if (selectedShip) {
       selectedShipRef.current = selectedShip;
     }
