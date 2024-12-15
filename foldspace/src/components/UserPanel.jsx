@@ -244,21 +244,6 @@ const UserPanel = ({
                         )}
                       </ul>
                     )}
-                    {/* Display the planet's construction queue */}
-                    {Array.isArray(buildQueue[index]) &&
-                      buildQueue[index].length > 0 && (
-                        <div>
-                          <h4>Construction Queue:</h4>
-                          <ul>
-                            {Array.isArray(buildQueue[index]) &&
-                              buildQueue[index].map((item, queueIndex) => (
-                                <li key={queueIndex}>
-                                  {item.buildingName} - In Progress
-                                </li>
-                              ))}
-                          </ul>
-                        </div>
-                      )}
                   </div>
                 )}
               </li>

@@ -683,9 +683,8 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
     }
 
     const userData = userDoc.data();
-
-    // Find the planet in the user's spheres array
-    const planetIndex = userData.spheres.findIndex(
+    const spheres = userData.spheres || [];
+    const planetIndex = spheres.findIndex(
       (sphere) => sphere.instanceId === planetId && sphere.cellId === cellId
     );
 
@@ -693,23 +692,18 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
       throw new Error('Planet not found in user data');
     }
 
-    const spheres = userData.spheres;
-    const planet = spheres[planetIndex];
-
-    // Ensure the planet has a constructionQueue array
-    if (!planet.constructionQueue) {
-      planet.constructionQueue = [];
-    }
-
-    // Add building to planet's construction queue
-    planet.constructionQueue.push({
+    // Create new construction queue item
+    const newQueueItem = {
       buildingName,
       startTime: admin.firestore.Timestamp.now(),
-    });
+    };
 
-    // Update only the constructionQueue field of the user's spheres array
+    // Use arrayUnion to add to the construction queue without affecting other fields
     await userRef.update({
-      [`spheres.${planetIndex}.constructionQueue`]: planet.constructionQueue,
+      [`spheres.${planetIndex}`]: {
+        ...spheres[planetIndex], // Preserve all existing sphere data
+        constructionQueue: admin.firestore.FieldValue.arrayUnion(newQueueItem),
+      },
     });
 
     res.json({ success: true });
