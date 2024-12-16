@@ -219,7 +219,6 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
   }
 
   try {
-    // Fetch user data outside the transaction
     const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
 
@@ -234,62 +233,82 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       throw new Error('User data is incomplete');
     }
 
-    // Check if the user already has a starting planet
-    if (spheres && spheres.length > 0) {
+    // Check if user already has spheres
+    if (spheres && Object.keys(spheres).length > 0) {
       throw new Error('User already has a starting planet');
     }
 
-    // Fetch all users' spheres to check distance constraints (Outside Transaction)
+    // Fetch all users' spheres
     const usersSnapshot = await db.collection('users').get();
     const existingSpheres = [];
+
     usersSnapshot.forEach((doc) => {
       const data = doc.data();
       if (data.spheres) {
-        existingSpheres.push(...data.spheres);
+        // Handle both array and map structures
+        if (Array.isArray(data.spheres)) {
+          existingSpheres.push(...data.spheres);
+        } else {
+          existingSpheres.push(...Object.values(data.spheres));
+        }
       }
     });
 
-    // Fetch all cells (Outside Transaction)
+    console.log('Existing spheres:', existingSpheres.length);
+
+    // Fetch cells
     const cellsSnapshot = await db.collection('cells').get();
     let closestSphere = null;
     let closestDistanceSq = Infinity;
 
-    // Iterate through cells to find the closest unowned green sphere outside 35,000 units
     for (const doc of cellsSnapshot.docs) {
       const data = doc.data();
-      const greenPositions = data.positions.greenPositions || [];
+      const greenPositions = data.positions?.greenPositions || {};
 
-      for (let i = 0; i < greenPositions.length; i++) {
-        const position = greenPositions[i];
+      // Handle positions as object/map
+      for (const [index, position] of Object.entries(greenPositions)) {
         if (position.owner) continue;
 
-        // Calculate squared distance from origin
         const distanceSq = position.x ** 2 + position.y ** 2 + position.z ** 2;
 
-        // Check distance constraints with existing spheres
+        // Check minimum distance from other spheres
         let isTooClose = false;
         for (const sphere of existingSpheres) {
+          if (!sphere.x || !sphere.y || !sphere.z) continue;
+
           const dx = sphere.x - position.x;
           const dy = sphere.y - position.y;
           const dz = sphere.z - position.z;
           const userDistanceSq = dx ** 2 + dy ** 2 + dz ** 2;
+
           if (userDistanceSq <= 35000 ** 2) {
+            console.log('Sphere too close:', {
+              distance: Math.sqrt(userDistanceSq),
+              position,
+              existingSphere: sphere,
+            });
             isTooClose = true;
             break;
           }
         }
 
         if (!isTooClose && distanceSq < closestDistanceSq) {
-          closestSphere = { cellId: doc.id, position, instanceId: i };
+          closestSphere = {
+            cellId: doc.id,
+            position,
+            instanceId: parseInt(index),
+          };
           closestDistanceSq = distanceSq;
+          console.log('Found potential sphere:', {
+            distance: Math.sqrt(distanceSq),
+            position,
+          });
         }
       }
-
-      if (closestSphere && closestDistanceSq === 0) break; // Optimal sphere found
     }
 
     if (!closestSphere) {
-      throw new Error('No green spheres available');
+      throw new Error('No available green spheres found');
     }
 
     // Define the buildings metadata
@@ -306,6 +325,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         'Planetary shield': 0,
         'Space defense': 0,
       },
+      constructionQueue: [],
     };
 
     // Now perform the transaction
@@ -352,6 +372,8 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         'positions.greenPositions': greenPositions,
       });
 
+      const sphereKey = `sphere_${closestSphere.instanceId}_${Date.now()}`;
+
       // Prepare the new sphere data
       const newSphere = {
         ...position,
@@ -395,7 +417,7 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
 
       // Update the user's document with the ships and the new sphere using unique IDs
       transaction.update(userRef, {
-        spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+        [`spheres.${sphereKey}`]: newSphere,
         [`ships.${colonyShipId}`]: colonyShip,
         [`ships.${scoutShipId}`]: scoutShip,
       });
@@ -668,7 +690,6 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
   const { userId, planetId, cellId, buildingName } = req.body;
 
   if (!userId || !planetId || !cellId || !buildingName) {
-    console.error('Missing parameters in request body');
     return res
       .status(400)
       .json({ error: 'Missing parameters in request body' });
@@ -683,38 +704,47 @@ app.post('/addBuildingToQueue', cors(corsOptions), async (req, res) => {
     }
 
     const userData = userDoc.data();
-    const spheres = userData.spheres || {};
+    const spheres = userData.spheres;
 
-    // Find the sphere using the key (in this case "0")
+    if (!spheres) {
+      throw new Error('No spheres found for user');
+    }
+
+    // Ensure spheres is a map, not an array
+    if (Array.isArray(spheres)) {
+      throw new Error('Spheres is an array. Expected an object/map.');
+    }
+
+    // Find sphere
     const sphereKey = Object.keys(spheres).find(
       (key) =>
         spheres[key].instanceId === planetId && spheres[key].cellId === cellId
     );
 
     if (!sphereKey) {
-      throw new Error('Planet not found in user data');
+      throw new Error('Planet not found');
     }
 
-    // Create new construction queue item
+    // Create new queue item
     const newQueueItem = {
       buildingName,
       startTime: admin.firestore.Timestamp.now(),
     };
 
-    // Initialize constructionQueue if it doesn't exist
-    const currentQueue = spheres[sphereKey].constructionQueue || [];
-
-    // Update the specific sphere with the new queue
+    // Use arrayUnion to add the new item
     await userRef.update({
-      [`spheres.${sphereKey}.constructionQueue`]: [
-        ...currentQueue,
-        newQueueItem,
-      ],
+      [`spheres.${sphereKey}.constructionQueue`]:
+        admin.firestore.FieldValue.arrayUnion(newQueueItem),
+    });
+
+    console.log('Added to queue:', {
+      sphereKey,
+      buildingName,
     });
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error adding building to construction queue:', error);
+    console.error('Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -731,16 +761,31 @@ exports.processConstructionQueue = functions.pubsub
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         const userRef = userDoc.ref;
-        const spheres = userData.spheres || [];
+        const spheres = userData.spheres || {};
 
-        for (let planetIndex = 0; planetIndex < spheres.length; planetIndex++) {
-          const planet = spheres[planetIndex];
+        // Check if spheres is a map
+        if (Array.isArray(spheres)) {
+          console.error(
+            `Spheres for user ${userDoc.id} is an array. Expected an object/map.`
+          );
+          continue; // Skip this user or handle conversion
+        }
+
+        // Process each sphere in the map
+        for (const [sphereKey, sphere] of Object.entries(spheres)) {
           const {
             instanceId: planetId,
             cellId,
             constructionQueue = [],
-            buildings = {}, // Initialize buildings if not exists
-          } = planet;
+            buildings = {},
+          } = sphere;
+
+          if (!planetId || !cellId) {
+            console.error(
+              `Missing planetId or cellId for sphere ${sphereKey} of user ${userDoc.id}`
+            );
+            continue;
+          }
 
           if (constructionQueue.length === 0) continue;
 
@@ -760,20 +805,18 @@ exports.processConstructionQueue = functions.pubsub
           }
 
           if (completedBuildings.length > 0) {
-            // Create a copy of the buildings object
-            const updatedBuildings = { ...buildings };
-
             // Update building counts
+            const updatedBuildings = { ...buildings };
             for (const item of completedBuildings) {
               const { buildingName } = item;
               updatedBuildings[buildingName] =
                 (updatedBuildings[buildingName] || 0) + 1;
             }
 
-            // Update user's sphere data with both buildings and queue
+            // Update user's sphere data without overwriting other metadata
             batch.update(userRef, {
-              [`spheres.${planetIndex}.buildings`]: updatedBuildings,
-              [`spheres.${planetIndex}.constructionQueue`]: remainingQueue,
+              [`spheres.${sphereKey}.buildings`]: updatedBuildings,
+              [`spheres.${sphereKey}.constructionQueue`]: remainingQueue,
             });
 
             // Update cell data
@@ -787,8 +830,6 @@ exports.processConstructionQueue = functions.pubsub
 
               if (cellSphere) {
                 const updatedCellBuildings = { ...cellSphere.buildings };
-
-                // Update building counts in cell
                 for (const item of completedBuildings) {
                   const { buildingName } = item;
                   updatedCellBuildings[buildingName] =
@@ -803,13 +844,9 @@ exports.processConstructionQueue = functions.pubsub
             }
 
             console.log(
-              `Buildings constructed on planet ${planetId} for user ${userDoc.id}`
+              `Buildings constructed on planet ${planetId} for user ${userDoc.id}:`,
+              completedBuildings.map((b) => b.buildingName).join(', ')
             );
-          } else {
-            // Only update construction queue if no buildings completed
-            batch.update(userRef, {
-              [`spheres.${planetIndex}.constructionQueue`]: remainingQueue,
-            });
           }
         }
       }

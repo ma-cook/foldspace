@@ -16,6 +16,8 @@ const UserPanel = ({
   const [buildingsData, setBuildingsData] = useState({});
   const [buildQueue, setBuildQueue] = useState({});
   const [localPlanets, setLocalPlanets] = useState(ownedPlanets);
+  const [planetOptionsVisible, setPlanetOptionsVisible] = useState({});
+
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
   );
@@ -26,6 +28,13 @@ const UserPanel = ({
   const setShipToMove = useStore((state) => state.setShipToMove);
   const setColonizeMode = useStore((state) => state.setColonizeMode);
   const selectedShipRef = useRef(selectedShip);
+
+  const togglePlanetOptions = (planetIndex) => {
+    setPlanetOptionsVisible((prev) => ({
+      ...prev,
+      [planetIndex]: !prev[planetIndex],
+    }));
+  };
 
   const toggleDropdown = (shipKey) => {
     setDropdownVisible((prev) => ({
@@ -223,13 +232,27 @@ const UserPanel = ({
             <ul>
               {localPlanets.map((planet, index) => (
                 <li key={index} style={{ cursor: 'pointer' }}>
-                  <div onClick={() => toggleBuildButton(index)}>
+                  <div onClick={() => togglePlanetOptions(index)}>
                     {planet.planetName}: ({planet.x ? planet.x.toFixed(2) : '?'}
-                    ,{planet.y ? planet.y.toFixed(2) : '?'},
+                    ,{planet.y ? planet.y.toFixed(2) : '?'},{' '}
                     {planet.z ? planet.z.toFixed(2) : '?'})
                   </div>
-                  {planetBuildVisible[index] && (
+                  {planetOptionsVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
+                      <button onClick={() => toggleBuildButton(index)}>
+                        Build
+                      </button>
+                      <button
+                        onClick={() => {
+                          /* Placeholder for ships button */
+                        }}
+                      >
+                        Ships
+                      </button>
+                    </div>
+                  )}
+                  {planetBuildVisible[index] && (
+                    <div style={{ marginLeft: '40px' }}>
                       {buildingsData[index] && (
                         <ul>
                           {Object.entries(buildingsData[index]).map(
