@@ -763,15 +763,10 @@ exports.processConstructionQueue = functions.pubsub
         const userRef = userDoc.ref;
         const spheres = userData.spheres || {};
 
-        // Check if spheres is a map
-        if (Array.isArray(spheres)) {
-          console.error(
-            `Spheres for user ${userDoc.id} is an array. Expected an object/map.`
-          );
-          continue; // Skip this user or handle conversion
-        }
+        // Skip if spheres is an array
+        if (Array.isArray(spheres)) continue;
 
-        // Process each sphere in the map
+        // Process each sphere
         for (const [sphereKey, sphere] of Object.entries(spheres)) {
           const {
             instanceId: planetId,
@@ -780,13 +775,7 @@ exports.processConstructionQueue = functions.pubsub
             buildings = {},
           } = sphere;
 
-          if (!planetId || !cellId) {
-            console.error(
-              `Missing planetId or cellId for sphere ${sphereKey} of user ${userDoc.id}`
-            );
-            continue;
-          }
-
+          if (!planetId || !cellId) continue;
           if (constructionQueue.length === 0) continue;
 
           const currentTime = admin.firestore.Timestamp.now();
@@ -813,7 +802,7 @@ exports.processConstructionQueue = functions.pubsub
                 (updatedBuildings[buildingName] || 0) + 1;
             }
 
-            // Update user's sphere data without overwriting other metadata
+            // Update user's sphere data
             batch.update(userRef, {
               [`spheres.${sphereKey}.buildings`]: updatedBuildings,
               [`spheres.${sphereKey}.constructionQueue`]: remainingQueue,
@@ -826,19 +815,14 @@ exports.processConstructionQueue = functions.pubsub
             if (cellDoc.exists) {
               const cellData = cellDoc.data();
               const greenPositions = cellData.positions?.greenPositions || {};
-              const cellSphere = greenPositions[planetId];
+              const planetIdStr = planetId.toString();
+              const cellSphere = greenPositions[planetIdStr];
 
               if (cellSphere) {
-                const updatedCellBuildings = { ...cellSphere.buildings };
-                for (const item of completedBuildings) {
-                  const { buildingName } = item;
-                  updatedCellBuildings[buildingName] =
-                    (updatedCellBuildings[buildingName] || 0) + 1;
-                }
-
+                // Update only the 'buildings' field within the sphere
                 batch.update(cellRef, {
-                  [`positions.greenPositions.${planetId}.buildings`]:
-                    updatedCellBuildings,
+                  [`positions.greenPositions.${planetIdStr}.buildings`]:
+                    updatedBuildings,
                 });
               }
             }

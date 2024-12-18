@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import cellCache from './cellCache';
 
 // Add deserialization function
-const deserializeVector3Array = (positions) => {
-  if (!Array.isArray(positions)) {
+const deserializeVector3Map = (positions) => {
+  if (typeof positions !== 'object' || positions === null) {
     return [];
   }
 
-  return positions
+  return Object.values(positions)
     .map((pos) => {
       if (
         pos &&
@@ -17,37 +17,20 @@ const deserializeVector3Array = (positions) => {
         'z' in pos
       ) {
         return new THREE.Vector3(pos.x, pos.y, pos.z);
-      } else {
-        console.warn('Invalid position:', pos);
-        return null;
       }
+      console.warn('Invalid position:', pos);
+      return null;
     })
     .filter(Boolean);
 };
 
-const createVector3Array = (positions) => {
-  if (!Array.isArray(positions)) {
-    return [];
-  }
-
-  return positions.reduce((acc, pos, index) => {
-    if (
-      pos &&
-      typeof pos === 'object' &&
-      'x' in pos &&
-      'y' in pos &&
-      'z' in pos
-    ) {
-      acc.push(new THREE.Vector3(pos.x, pos.y, pos.z));
-    } else {
-      console.warn(`Element at index ${index} is invalid:`, pos);
-    }
-    return acc;
-  }, []);
-};
-
 const updatePositions = (setPositions, newPositions) => {
-  setPositions((prevPositions) => [...prevPositions, ...newPositions]);
+  setPositions((prevPositions) => {
+    const nextBuffer = (prevPositions.length + 1) % 2;
+    const updatedPositions = [...prevPositions];
+    updatedPositions[nextBuffer] = newPositions;
+    return updatedPositions;
+  });
 };
 
 const worker = new Worker(new URL('./cellWorker.js', import.meta.url));
@@ -145,46 +128,46 @@ const loadCell = (
       results.forEach((result) => {
         const {
           cellKey,
-          newPositions = [],
-          newRedPositions = [],
-          newGreenPositions = [],
-          newBluePositions = [],
-          newPurplePositions = [],
-          newBrownPositions = [],
-          newGreenMoonPositions = [],
-          newPurpleMoonPositions = [],
-          newGasPositions = [],
-          newRedMoonPositions = [],
-          newGasMoonPositions = [],
-          newBrownMoonPositions = [],
+          newPositions = {},
+          newRedPositions = {},
+          newGreenPositions = {},
+          newBluePositions = {},
+          newPurplePositions = {},
+          newBrownPositions = {},
+          newGreenMoonPositions = {},
+          newPurpleMoonPositions = {},
+          newGasPositions = {},
+          newRedMoonPositions = {},
+          newGasMoonPositions = {},
+          newBrownMoonPositions = {},
           loadDetail,
         } = result;
 
         // Deserialize the positions
-        const deserializedNewPositions = deserializeVector3Array(newPositions);
+        const deserializedNewPositions = deserializeVector3Map(newPositions);
         const deserializedNewRedPositions =
-          deserializeVector3Array(newRedPositions);
+          deserializeVector3Map(newRedPositions);
         const deserializedNewGreenPositions =
-          deserializeVector3Array(newGreenPositions);
+          deserializeVector3Map(newGreenPositions);
         const deserializedNewBluePositions =
-          deserializeVector3Array(newBluePositions);
+          deserializeVector3Map(newBluePositions);
         const deserializedNewPurplePositions =
-          deserializeVector3Array(newPurplePositions);
+          deserializeVector3Map(newPurplePositions);
         const deserializedNewBrownPositions =
-          deserializeVector3Array(newBrownPositions);
-        const deserializedNewGreenMoonPositions = deserializeVector3Array(
+          deserializeVector3Map(newBrownPositions);
+        const deserializedNewGreenMoonPositions = deserializeVector3Map(
           newGreenMoonPositions
         );
-        const deserializedNewPurpleMoonPositions = deserializeVector3Array(
+        const deserializedNewPurpleMoonPositions = deserializeVector3Map(
           newPurpleMoonPositions
         );
         const deserializedNewGasPositions =
-          deserializeVector3Array(newGasPositions);
+          deserializeVector3Map(newGasPositions);
         const deserializedNewRedMoonPositions =
-          deserializeVector3Array(newRedMoonPositions);
+          deserializeVector3Map(newRedMoonPositions);
         const deserializedNewGasMoonPositions =
-          deserializeVector3Array(newGasMoonPositions);
-        const deserializedNewBrownMoonPositions = deserializeVector3Array(
+          deserializeVector3Map(newGasMoonPositions);
+        const deserializedNewBrownMoonPositions = deserializeVector3Map(
           newBrownMoonPositions
         );
 
@@ -214,8 +197,8 @@ const loadCell = (
           );
 
           const planetNames = {};
-          if (Array.isArray(newGreenPositions)) {
-            newGreenPositions.forEach((position) => {
+          if (typeof newGreenPositions === 'object') {
+            Object.values(newGreenPositions).forEach((position) => {
               if (position.planetName) {
                 const key = `${position.x},${position.y},${position.z}`;
                 planetNames[key] = position.planetName;

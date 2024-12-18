@@ -23,7 +23,7 @@ const PlaneMesh = React.forwardRef(
       gasInstancedMeshRef,
       brownRingInstancedMeshRef,
       systemRingInstancedMeshRef,
-      positions = [],
+      positions = {},
     },
     ref
   ) => {

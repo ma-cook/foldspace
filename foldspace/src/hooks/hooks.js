@@ -5,19 +5,21 @@ import { createInstancedMesh } from '../utils';
 import { lessDetailedSphereGeometry, torusGeometry } from '../SphereData';
 
 export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
-  const [filteredPositions, setFilteredPositions] = useState([]);
+  return useMemo(() => {
+    if (!positions || !cameraRef.current) return {};
 
-  useFrame(() => {
-    if (!cameraRef.current) return;
+    const filteredPositions = {};
     const cameraPosition = cameraRef.current.position;
-    const newFilteredPositions = positions.filter((pos) => {
-      const distance = cameraPosition.distanceTo(pos);
-      return distance < maxDistance;
-    });
-    setFilteredPositions(newFilteredPositions);
-  });
 
-  return filteredPositions;
+    Object.entries(positions).forEach(([key, pos]) => {
+      const distance = cameraPosition.distanceTo(pos);
+      if (distance < maxDistance) {
+        filteredPositions[key] = pos;
+      }
+    });
+
+    return filteredPositions;
+  }, [positions, cameraRef, maxDistance]);
 };
 
 export const useSpherePools = (geometry) => {

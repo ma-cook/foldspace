@@ -4,36 +4,39 @@ importScripts(
 
 const cellCache = {};
 
-const createVector3Array = (positions) => {
-  if (!Array.isArray(positions)) {
-    return [];
+const createVector3Map = (positions) => {
+  if (typeof positions !== 'object' || positions === null) {
+    return {};
   }
-  return positions
-    .map((pos) => {
-      if (pos && 'x' in pos && 'y' in pos && 'z' in pos) {
-        return {
-          x: pos.x,
-          y: pos.y,
-          z: pos.z,
-          planetName: pos.planetName || null,
-        };
-      } else {
-        console.warn('Invalid position:', pos);
-        return null;
-      }
-    })
-    .filter(Boolean);
+  const result = {};
+  for (const key in positions) {
+    const pos = positions[key];
+    if (pos && 'x' in pos && 'y' in pos && 'z' in pos) {
+      result[key] = {
+        x: pos.x,
+        y: pos.y,
+        z: pos.z,
+        planetName: pos.planetName || null,
+      };
+    } else {
+      console.warn('Invalid position:', pos);
+    }
+  }
+  return result;
 };
 
-const serializeVector3Array = (vectorArray) => {
-  return vectorArray.map((vector) => {
-    return {
+const serializeVector3Map = (vectorMap) => {
+  const result = {};
+  for (const key in vectorMap) {
+    const vector = vectorMap[key];
+    result[key] = {
       x: vector.x,
       y: vector.y,
       z: vector.z,
       planetName: vector.planetName || null,
     };
-  });
+  }
+  return result;
 };
 
 const fetchCellDataInBatches = async (cellKeys) => {
@@ -79,21 +82,35 @@ const fetchCellDataInBatches = async (cellKeys) => {
     return cachedData;
   }
 };
+const GRID_SIZE = 200000;
+const generateRandomPositions = (count, x, z, idCounterRef) => {
+  const positions = {};
+  for (let i = 0; i < count; i++) {
+    const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
+    const posY = Math.floor(Math.random() * 20) * 5000;
+    const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
+    positions[idCounterRef.current++] = new THREE.Vector3(posX, posY, posZ);
+  }
+  return positions;
+};
 
 const generateNewPositions = (x, z) => {
-  const GRID_SIZE = 200000;
-  const newPositions = [];
-  const newRedPositions = [];
-  const newGreenPositions = [];
-  const newBluePositions = [];
-  const newPurplePositions = [];
-  const newBrownPositions = [];
-  const newGreenMoonPositions = [];
-  const newPurpleMoonPositions = [];
-  const newGasPositions = [];
-  const newRedMoonPositions = [];
-  const newGasMoonPositions = [];
-  const newBrownMoonPositions = [];
+  const idCounterRef = { current: 0 };
+
+  const newPositions = {};
+  const newRedPositions = {};
+  const newGreenPositions = {};
+  const newBluePositions = {};
+  const newPurplePositions = {};
+  const newBrownPositions = {};
+  const newGreenMoonPositions = {};
+  const newPurpleMoonPositions = {};
+  const newGasPositions = {};
+  const newRedMoonPositions = {};
+  const newGasMoonPositions = {};
+  const newBrownMoonPositions = {};
+
+  const positions = generateRandomPositions(600, x, z, idCounterRef);
 
   const calculateRandomOrbitPosition = (
     centralPosition,
@@ -111,56 +128,48 @@ const generateNewPositions = (x, z) => {
     );
   };
 
-  const generateRandomPositions = (count, x, z) => {
-    const positions = new Array(count);
-    for (let i = 0; i < count; i++) {
-      const posX = x * GRID_SIZE + Math.random() * GRID_SIZE;
-      const posY = Math.floor(Math.random() * 20) * 5000;
-      const posZ = z * GRID_SIZE + Math.random() * GRID_SIZE;
-      positions[i] = new THREE.Vector3(posX, posY, posZ);
-    }
-    return positions;
-  };
+  for (const key in positions) {
+    const position = positions[key];
 
-  const positions = generateRandomPositions(600, x, z);
+    newPositions[key] = position;
 
-  positions.forEach((position) => {
-    newPositions.push(position);
-    newRedPositions.push(calculateRandomOrbitPosition(position, 600, 650));
-    newGreenPositions.push(calculateRandomOrbitPosition(position, 900, 1000));
-    newBluePositions.push(calculateRandomOrbitPosition(position, 1400, 1450));
-    newPurplePositions.push(calculateRandomOrbitPosition(position, 1750, 1800));
-    newBrownPositions.push(calculateRandomOrbitPosition(position, 2100, 2150));
-    newGasPositions.push(calculateRandomOrbitPosition(position, 2500, 2600));
-  });
+    // Generate orbiting positions
+    const redPos = calculateRandomOrbitPosition(position, 600, 650);
+    newRedPositions[idCounterRef.current++] = redPos;
 
-  newGreenPositions.forEach((greenPosition) => {
-    newGreenMoonPositions.push(
-      calculateRandomOrbitPosition(greenPosition, 90, 90)
+    const greenPos = calculateRandomOrbitPosition(position, 900, 1000);
+    newGreenPositions[idCounterRef.current++] = greenPos;
+
+    const bluePos = calculateRandomOrbitPosition(position, 1400, 1450);
+    newBluePositions[idCounterRef.current++] = bluePos;
+
+    const purplePos = calculateRandomOrbitPosition(position, 1750, 1800);
+    newPurplePositions[idCounterRef.current++] = purplePos;
+
+    const brownPos = calculateRandomOrbitPosition(position, 2100, 2150);
+    newBrownPositions[idCounterRef.current++] = brownPos;
+
+    const gasPos = calculateRandomOrbitPosition(position, 2500, 2600);
+    newGasPositions[idCounterRef.current++] = gasPos;
+
+    // Generate moons
+    newGreenMoonPositions[idCounterRef.current++] =
+      calculateRandomOrbitPosition(greenPos, 90, 90);
+    newPurpleMoonPositions[idCounterRef.current++] =
+      calculateRandomOrbitPosition(purplePos, 90, 90);
+    newRedMoonPositions[idCounterRef.current++] = calculateRandomOrbitPosition(
+      redPos,
+      90,
+      90
     );
-  });
-
-  newPurplePositions.forEach((purplePosition) => {
-    newPurpleMoonPositions.push(
-      calculateRandomOrbitPosition(purplePosition, 90, 90)
+    newGasMoonPositions[idCounterRef.current++] = calculateRandomOrbitPosition(
+      gasPos,
+      110,
+      110
     );
-  });
-
-  newRedPositions.forEach((redPosition) => {
-    newRedMoonPositions.push(calculateRandomOrbitPosition(redPosition, 90, 90));
-  });
-
-  newGasPositions.forEach((gasPosition) => {
-    newGasMoonPositions.push(
-      calculateRandomOrbitPosition(gasPosition, 110, 110)
-    );
-  });
-
-  newBrownPositions.forEach((brownPosition) => {
-    newBrownMoonPositions.push(
-      calculateRandomOrbitPosition(brownPosition, 110, 110)
-    );
-  });
+    newBrownMoonPositions[idCounterRef.current++] =
+      calculateRandomOrbitPosition(brownPos, 110, 110);
+  }
 
   return {
     newPositions,
@@ -217,79 +226,66 @@ self.onmessage = async (event) => {
 
   try {
     const cellData = await fetchCellDataInBatches(cellKeysToLoad);
-
     const results = [];
 
     for (const cellKey of cellKeysToLoad) {
       try {
-        let newPositions = [];
-        let newRedPositions = [];
-        let newGreenPositions = [];
-        let newBluePositions = [];
-        let newPurplePositions = [];
-        let newBrownPositions = [];
-        let newGreenMoonPositions = [];
-        let newPurpleMoonPositions = [];
-        let newGasPositions = [];
-        let newRedMoonPositions = [];
-        let newGasMoonPositions = [];
-        let newBrownMoonPositions = [];
+        let newPositions = {};
+        let newRedPositions = {};
+        let newGreenPositions = {};
+        let newBluePositions = {};
+        let newPurplePositions = {};
+        let newBrownPositions = {};
+        let newGreenMoonPositions = {};
+        let newPurpleMoonPositions = {};
+        let newGasPositions = {};
+        let newRedMoonPositions = {};
+        let newGasMoonPositions = {};
+        let newBrownMoonPositions = {};
 
         if (cellData[cellKey]) {
           const savedPositions = cellData[cellKey];
 
-          // Check if 'positions' is an array or an object with categorized positions
-          if (Array.isArray(savedPositions.positions)) {
-            newPositions = createVector3Array(savedPositions.positions || []);
-          } else if (typeof savedPositions.positions === 'object') {
-            // If 'positions' contains categorized arrays
-            newPositions = createVector3Array(
-              savedPositions.positions.positions || []
+          // Process positions as maps
+          if (typeof savedPositions.positions === 'object') {
+            newPositions = createVector3Map(
+              savedPositions.positions.positions || {}
             );
-            newRedPositions = createVector3Array(
-              savedPositions.positions.redPositions || []
+            newRedPositions = createVector3Map(
+              savedPositions.positions.redPositions || {}
             );
-            newGreenPositions = createVector3Array(
-              savedPositions.positions.greenPositions || []
+            newGreenPositions = createVector3Map(
+              savedPositions.positions.greenPositions || {}
             );
-            newBluePositions = createVector3Array(
-              savedPositions.positions.bluePositions || []
+            newBluePositions = createVector3Map(
+              savedPositions.positions.bluePositions || {}
             );
-            newPurplePositions = createVector3Array(
-              savedPositions.positions.purplePositions || []
+            newPurplePositions = createVector3Map(
+              savedPositions.positions.purplePositions || {}
             );
-            newBrownPositions = createVector3Array(
-              savedPositions.positions.brownPositions || []
+            newBrownPositions = createVector3Map(
+              savedPositions.positions.brownPositions || {}
             );
-            newGreenMoonPositions = createVector3Array(
-              savedPositions.positions.greenMoonPositions || []
+            newGreenMoonPositions = createVector3Map(
+              savedPositions.positions.greenMoonPositions || {}
             );
-            newPurpleMoonPositions = createVector3Array(
-              savedPositions.positions.purpleMoonPositions || []
+            newPurpleMoonPositions = createVector3Map(
+              savedPositions.positions.purpleMoonPositions || {}
             );
-            newGasPositions = createVector3Array(
-              savedPositions.positions.gasPositions || []
+            newGasPositions = createVector3Map(
+              savedPositions.positions.gasPositions || {}
             );
-            newRedMoonPositions = createVector3Array(
-              savedPositions.positions.redMoonPositions || []
+            newRedMoonPositions = createVector3Map(
+              savedPositions.positions.redMoonPositions || {}
             );
-            newGasMoonPositions = createVector3Array(
-              savedPositions.positions.gasMoonPositions || []
+            newGasMoonPositions = createVector3Map(
+              savedPositions.positions.gasMoonPositions || {}
             );
-            newBrownMoonPositions = createVector3Array(
-              savedPositions.positions.brownMoonPositions || []
+            newBrownMoonPositions = createVector3Map(
+              savedPositions.positions.brownMoonPositions || {}
             );
-          }
-
-          // Extract planet names
-          const planetNames = {};
-          if (Array.isArray(savedPositions.positions)) {
-            savedPositions.positions.forEach((pos) => {
-              if (pos.planetName) {
-                const key = `${pos.x},${pos.y},${pos.z}`;
-                planetNames[key] = pos.planetName;
-              }
-            });
+          } else {
+            console.warn(`Invalid positions data in cell ${cellKey}`);
           }
         } else {
           // Parse cellKey into x and z coordinates
@@ -311,40 +307,39 @@ self.onmessage = async (event) => {
 
           // Save the newly generated positions
           await saveCellData(cellKey, {
-            positions: newPositions,
-            redPositions: newRedPositions,
-            greenPositions: newGreenPositions,
-            bluePositions: newBluePositions,
-            purplePositions: newPurplePositions,
-            brownPositions: newBrownPositions,
-            greenMoonPositions: newGreenMoonPositions,
-            purpleMoonPositions: newPurpleMoonPositions,
-            gasPositions: newGasPositions,
-            redMoonPositions: newRedMoonPositions,
-            gasMoonPositions: newGasMoonPositions,
-            brownMoonPositions: newBrownMoonPositions,
+            positions: serializeVector3Map(newPositions),
+            redPositions: serializeVector3Map(newRedPositions),
+            greenPositions: serializeVector3Map(newGreenPositions),
+            bluePositions: serializeVector3Map(newBluePositions),
+            purplePositions: serializeVector3Map(newPurplePositions),
+            brownPositions: serializeVector3Map(newBrownPositions),
+            greenMoonPositions: serializeVector3Map(newGreenMoonPositions),
+            purpleMoonPositions: serializeVector3Map(newPurpleMoonPositions),
+            gasPositions: serializeVector3Map(newGasPositions),
+            redMoonPositions: serializeVector3Map(newRedMoonPositions),
+            gasMoonPositions: serializeVector3Map(newGasMoonPositions),
+            brownMoonPositions: serializeVector3Map(newBrownMoonPositions),
           });
         }
 
         results.push({
           cellKey,
-          newPositions: serializeVector3Array(newPositions),
-          newRedPositions: serializeVector3Array(newRedPositions),
-          newGreenPositions: serializeVector3Array(newGreenPositions),
-          newBluePositions: serializeVector3Array(newBluePositions),
-          newPurplePositions: serializeVector3Array(newPurplePositions),
-          newBrownPositions: serializeVector3Array(newBrownPositions),
-          newGreenMoonPositions: serializeVector3Array(newGreenMoonPositions),
-          newPurpleMoonPositions: serializeVector3Array(newPurpleMoonPositions),
-          newGasPositions: serializeVector3Array(newGasPositions),
-          newRedMoonPositions: serializeVector3Array(newRedMoonPositions),
-          newGasMoonPositions: serializeVector3Array(newGasMoonPositions),
-          newBrownMoonPositions: serializeVector3Array(newBrownMoonPositions),
+          newPositions: serializeVector3Map(newPositions),
+          newRedPositions: serializeVector3Map(newRedPositions),
+          newGreenPositions: serializeVector3Map(newGreenPositions),
+          newBluePositions: serializeVector3Map(newBluePositions),
+          newPurplePositions: serializeVector3Map(newPurplePositions),
+          newBrownPositions: serializeVector3Map(newBrownPositions),
+          newGreenMoonPositions: serializeVector3Map(newGreenMoonPositions),
+          newPurpleMoonPositions: serializeVector3Map(newPurpleMoonPositions),
+          newGasPositions: serializeVector3Map(newGasPositions),
+          newRedMoonPositions: serializeVector3Map(newRedMoonPositions),
+          newGasMoonPositions: serializeVector3Map(newGasMoonPositions),
+          newBrownMoonPositions: serializeVector3Map(newBrownMoonPositions),
           loadDetail,
         });
       } catch (error) {
         console.error(`Error processing cellKey ${cellKey}:`, error);
-        // Optionally, you could push an error object to results or skip this cellKey
       }
     }
 

@@ -1,4 +1,3 @@
-// SphereGroup.jsx
 import React, { useMemo } from 'react';
 import { MemoizedSphere } from '../Sphere';
 import { getCachedGeometry } from '../resourceCache';
@@ -12,8 +11,16 @@ const SphereGroup = ({
   planetNames,
   cellKey,
 }) => {
-  const memoizedPositions = useMemo(() => positions, [positions]);
-  const memoizedMoonPositions = useMemo(() => moonPositions, [moonPositions]);
+  // Convert position maps to arrays for rendering
+  const memoizedPositions = useMemo(
+    () => Object.values(positions || {}),
+    [positions]
+  );
+
+  const memoizedMoonPositions = useMemo(
+    () => Object.values(moonPositions || {}),
+    [moonPositions]
+  );
 
   return (
     <>

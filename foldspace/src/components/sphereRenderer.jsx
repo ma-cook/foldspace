@@ -40,33 +40,41 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     getCachedGeometry('torus')
   );
   const activeBuffer = useStore((state) => state.activeBuffer);
-  const positions = useStore((state) => state.positions[activeBuffer]);
-  const redPositions = useStore((state) => state.redPositions[activeBuffer]);
-  const greenPositions = useStore(
-    (state) => state.greenPositions[activeBuffer]
+  const positions = useStore((state) =>
+    Object.values(state.positions[activeBuffer] || {})
   );
-  const bluePositions = useStore((state) => state.bluePositions[activeBuffer]);
-  const purplePositions = useStore(
-    (state) => state.purplePositions[activeBuffer]
+  const redPositions = useStore((state) =>
+    Object.values(state.redPositions[activeBuffer] || {})
   );
-  const greenMoonPositions = useStore(
-    (state) => state.greenMoonPositions[activeBuffer]
+  const greenPositions = useStore((state) =>
+    Object.values(state.greenPositions[activeBuffer] || {})
   );
-  const purpleMoonPositions = useStore(
-    (state) => state.purpleMoonPositions[activeBuffer]
+  const bluePositions = useStore((state) =>
+    Object.values(state.bluePositions[activeBuffer] || {})
   );
-  const brownPositions = useStore(
-    (state) => state.brownPositions[activeBuffer]
+  const purplePositions = useStore((state) =>
+    Object.values(state.purplePositions[activeBuffer] || {})
   );
-  const gasPositions = useStore((state) => state.gasPositions[activeBuffer]);
-  const redMoonPositions = useStore(
-    (state) => state.redMoonPositions[activeBuffer]
+  const greenMoonPositions = useStore((state) =>
+    Object.values(state.greenMoonPositions[activeBuffer] || {})
   );
-  const gasMoonPositions = useStore(
-    (state) => state.gasMoonPositions[activeBuffer]
+  const purpleMoonPositions = useStore((state) =>
+    Object.values(state.purpleMoonPositions[activeBuffer] || {})
   );
-  const brownMoonPositions = useStore(
-    (state) => state.brownMoonPositions[activeBuffer]
+  const brownPositions = useStore((state) =>
+    Object.values(state.brownPositions[activeBuffer] || {})
+  );
+  const gasPositions = useStore((state) =>
+    Object.values(state.gasPositions[activeBuffer] || {})
+  );
+  const redMoonPositions = useStore((state) =>
+    Object.values(state.redMoonPositions[activeBuffer] || {})
+  );
+  const gasMoonPositions = useStore((state) =>
+    Object.values(state.gasMoonPositions[activeBuffer] || {})
+  );
+  const brownMoonPositions = useStore((state) =>
+    Object.values(state.brownMoonPositions[activeBuffer] || {})
   );
   const bvh = useStore((state) => state.bvh[activeBuffer]);
   const planetNames = useStore((state) => state.planetNames);
@@ -159,7 +167,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   );
 
   useEffect(() => {
-    const newYellowPositions = flattenedPositions.filter(
+    const newYellowPositions = Object.values(flattenedPositions || {}).filter(
       (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
     );
 
@@ -273,7 +281,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       <MemoizedSphere
         key={`systemRing-${getCachedGeometry('torus').uuid}`}
         ref={sphereRefs.systemRing} // Unique ref
-        positions={memoizedDetailedPositions}
+        positions={Object.values(memoizedDetailedPositions || {})}
         material={memoizedSphereMaterials.systemRing}
         geometry={getCachedGeometry('torus')}
         rotation={[-Math.PI / 2, 0, 0]}
@@ -282,7 +290,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       <MemoizedSphere
         key={`central-${getCachedGeometry('sphere').uuid}`}
         ref={sphereRefs.centralGlow} // Unique ref
-        positions={memoizedDetailedPositions}
+        positions={Object.values(memoizedDetailedPositions || {})}
         material={memoizedSphereMaterials.sun}
         geometry={getCachedGeometry('sphere')}
         frustumCulled={false}
@@ -291,7 +299,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       <MemoizedSphere
         key={`centralGlow-${getCachedGeometry('sphere').uuid}`}
         ref={sphereRefs.centralDetailed} // Separate unique ref
-        positions={memoizedDetailedPositions}
+        positions={Object.values(memoizedDetailedPositions || {})}
         material={memoizedSphereMaterials.sunGlow}
         geometry={getCachedGeometry('sphere')}
         frustumCulled={false}
@@ -302,7 +310,7 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
           getCachedGeometry('lessDetailedSphere').uuid
         }`}
         ref={sphereRefs.centralLessDetailed}
-        positions={memoizedLessDetailedPositions}
+        positions={Object.values(memoizedLessDetailedPositions || {})}
         material={memoizedSphereMaterials.distantSun}
         geometry={getCachedGeometry('lessDetailedSphere')}
         frustumCulled={false}
@@ -310,44 +318,44 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
       />
       <SphereGroup
         color="red"
-        positions={filteredRedPositions}
-        moonPositions={filteredRedMoonPositions}
+        positions={Object.values(filteredRedPositions || {})}
+        moonPositions={Object.values(filteredRedMoonPositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
         planetNames={planetNames}
       />
       <SphereGroup
         color="green"
-        positions={filteredGreenPositions}
-        moonPositions={filteredGreenMoonPositions}
+        positions={Object.values(filteredGreenPositions || {})}
+        moonPositions={Object.values(filteredGreenMoonPositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
         planetNames={planetNames}
       />
       <SphereGroup
         color="blue"
-        positions={filteredBluePositions}
+        positions={Object.values(filteredBluePositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
       />
       <SphereGroup
         color="purple"
-        positions={filteredPurplePositions}
-        moonPositions={filteredPurpleMoonPositions}
+        positions={Object.values(filteredPurplePositions || {})}
+        moonPositions={Object.values(filteredPurpleMoonPositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
       />
       <SphereGroup
         color="brown"
-        positions={filteredBrownPositions}
-        moonPositions={filteredBrownMoonPositions}
+        positions={Object.values(filteredBrownPositions || {})}
+        moonPositions={Object.values(filteredBrownMoonPositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
       />
       <SphereGroup
         color="gas"
-        positions={filteredGasPositions}
-        moonPositions={filteredGasMoonPositions}
+        positions={Object.values(filteredGasPositions || {})}
+        moonPositions={Object.values(filteredGasMoonPositions || {})}
         sphereRefs={sphereRefs}
         materials={memoizedSphereMaterials}
       />

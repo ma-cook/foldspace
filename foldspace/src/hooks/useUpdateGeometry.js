@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { DETAIL_DISTANCE } from '../config';
 
+import { useEffect, useState } from 'react';
+import { DETAIL_DISTANCE } from '../config';
+
 export const useUpdateGeometry = (cameraRef, positions, bvh) => {
-  const [detailedPositions, setDetailedPositions] = useState([]);
-  const [lessDetailedPositions, setLessDetailedPositions] = useState([]);
+  const [detailedPositions, setDetailedPositions] = useState({});
+  const [lessDetailedPositions, setLessDetailedPositions] = useState({});
 
   useEffect(() => {
     const updateGeometry = () => {
-      if (!cameraRef.current || !bvh) return;
+      if (!cameraRef.current || !bvh || !positions) return;
+
       const cameraPosition = cameraRef.current.position;
       const detailBoundingBox = {
         min: {
@@ -22,17 +26,26 @@ export const useUpdateGeometry = (cameraRef, positions, bvh) => {
         },
       };
 
-      const newDetailedPositions = bvh.query(detailBoundingBox);
-      const newLessDetailedPositions = positions.filter(
-        (pos) => !newDetailedPositions.includes(pos)
-      );
+      // Query BVH and create detailed positions map
+      const detailedPositionsArray = bvh.query(detailBoundingBox);
+      const newDetailedPositions = {};
+      const newLessDetailedPositions = {};
+
+      // Process all positions into either detailed or less detailed maps
+      Object.entries(positions).forEach(([key, pos]) => {
+        if (detailedPositionsArray.includes(pos)) {
+          newDetailedPositions[key] = pos;
+        } else {
+          newLessDetailedPositions[key] = pos;
+        }
+      });
 
       setDetailedPositions(newDetailedPositions);
       setLessDetailedPositions(newLessDetailedPositions);
     };
 
     updateGeometry();
-    const interval = setInterval(updateGeometry, 100); // Check every second
+    const interval = setInterval(updateGeometry, 100);
 
     return () => clearInterval(interval);
   }, [cameraRef, positions, bvh]);

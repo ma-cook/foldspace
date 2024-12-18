@@ -1,7 +1,6 @@
-// Sphere.jsx
-import React, { useEffect, useRef, forwardRef } from 'react';
+import React, { useEffect, useRef, forwardRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { Sprite, SpriteMaterial, TextureLoader } from 'three';
+import { Sprite, SpriteMaterial } from 'three';
 import { createTextTexture } from './utils/textTexture';
 
 const Sphere = forwardRef(
@@ -19,6 +18,12 @@ const Sphere = forwardRef(
     const meshRef = useRef();
     const spriteGroupRef = useRef();
 
+    // Convert positions map to array for Three.js
+    const positionsArray = useMemo(
+      () => Object.values(positions || {}),
+      [positions]
+    );
+
     useEffect(() => {
       const mesh = meshRef.current;
       if (!mesh) return;
@@ -28,7 +33,7 @@ const Sphere = forwardRef(
       );
       const scaleVector = new THREE.Vector3(...scale);
 
-      positions.forEach((position, index) => {
+      positionsArray.forEach((position, index) => {
         const posVector =
           position instanceof THREE.Vector3
             ? position
@@ -42,14 +47,13 @@ const Sphere = forwardRef(
       });
 
       mesh.instanceMatrix.needsUpdate = true;
-    }, [positions, scale, rotation]);
+    }, [positionsArray, scale, rotation]);
 
-    // Create sprites for planet names
+    // Rest of sprite handling code remains the same
     useEffect(() => {
       const spriteGroup = spriteGroupRef.current;
       if (!spriteGroup) return;
 
-      // Clear existing sprites
       while (spriteGroup.children.length) {
         spriteGroup.remove(spriteGroup.children[0]);
       }
@@ -63,7 +67,7 @@ const Sphere = forwardRef(
         });
         const sprite = new Sprite(spriteMaterial);
         sprite.position.set(x, y + 50, z);
-        sprite.scale.set(50, 25, 1); // Adjust size as needed
+        sprite.scale.set(50, 25, 1);
         spriteGroup.add(sprite);
       });
     }, [planetNames]);
@@ -79,7 +83,7 @@ const Sphere = forwardRef(
               ref.current = node;
             }
           }}
-          args={[geometry, material, positions.length]}
+          args={[geometry, material, positionsArray.length]}
           frustumCulled={false}
         />
         <group ref={spriteGroupRef} />

@@ -141,14 +141,10 @@ const Scene = ({
   );
 
   const flattenedPositions = useMemo(() => {
-    if (
-      Array.isArray(deferredPositions) &&
-      deferredPositions.length > 0 &&
-      Array.isArray(deferredPositions[0])
-    ) {
-      return deferredPositions.flat();
+    if (typeof deferredPositions === 'object' && deferredPositions !== null) {
+      return Object.values(deferredPositions);
     }
-    return deferredPositions;
+    return [];
   }, [deferredPositions]);
 
   function CustomEnvironment() {
@@ -184,20 +180,18 @@ const Scene = ({
           <SphereRenderer
             cameraRef={cameraRef}
             ref={sphereRendererRef}
-            flattenedPositions={
-              Array.isArray(flattenedPositions) ? flattenedPositions : []
-            }
-            redPositions={redPositions}
-            greenPositions={greenPositions}
-            bluePositions={bluePositions}
-            purplePositions={purplePositions}
-            brownPositions={brownPositions}
-            greenMoonPositions={greenMoonPositions}
-            purpleMoonPositions={purpleMoonPositions}
-            gasPositions={gasPositions}
-            redMoonPositions={redMoonPositions}
-            gasMoonPositions={gasMoonPositions}
-            brownMoonPositions={brownMoonPositions}
+            flattenedPositions={flattenedPositions}
+            redPositions={Object.values(redPositions || {})}
+            greenPositions={Object.values(greenPositions || {})}
+            bluePositions={Object.values(bluePositions || {})}
+            purplePositions={Object.values(purplePositions || {})}
+            brownPositions={Object.values(brownPositions || {})}
+            greenMoonPositions={Object.values(greenMoonPositions || {})}
+            purpleMoonPositions={Object.values(purpleMoonPositions || {})}
+            gasPositions={Object.values(gasPositions || {})}
+            redMoonPositions={Object.values(redMoonPositions || {})}
+            gasMoonPositions={Object.values(gasMoonPositions || {})}
+            brownMoonPositions={Object.values(brownMoonPositions || {})}
           />
           <CustomEnvironment />
           <CustomCamera ref={cameraRef} />
