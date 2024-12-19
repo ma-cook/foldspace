@@ -4,6 +4,22 @@ importScripts(
 
 const cellCache = {};
 
+const chunkPositions = (positions, chunkSize = 100) => {
+  const chunks = [];
+  const keys = Object.keys(positions);
+
+  for (let i = 0; i < keys.length; i += chunkSize) {
+    const chunk = {};
+    const chunkKeys = keys.slice(i, i + chunkSize);
+    chunkKeys.forEach((key) => {
+      chunk[key] = positions[key];
+    });
+    chunks.push(chunk);
+  }
+
+  return chunks;
+};
+
 const createVector3Map = (positions) => {
   if (typeof positions !== 'object' || positions === null) {
     return {};
@@ -189,6 +205,21 @@ const generateNewPositions = (x, z) => {
 
 const saveCellData = async (cellKey, positions) => {
   try {
+    // Create composite key from position data
+    const compressedData = {
+      key: cellKey,
+      chunks: [],
+    };
+
+    // Process each position type in chunks
+    for (const [posType, posData] of Object.entries(positions)) {
+      const chunks = chunkPositions(posData);
+      compressedData.chunks.push({
+        type: posType,
+        data: chunks.map((chunk) => serializeVector3Map(chunk)),
+      });
+    }
+
     const response = await fetch(
       'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
       {
@@ -196,159 +227,115 @@ const saveCellData = async (cellKey, positions) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ cellKey, positions }),
+        body: JSON.stringify(compressedData),
       }
     );
 
     if (!response.ok) {
-      console.error('Error saving cell data:', response.statusText);
-    } else {
-      console.log('Saved cell data:', { cellKey, positions });
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
   } catch (error) {
     console.error('Error saving cell data:', error);
+    // Add to retry queue
+    throw error;
   }
+};
+
+const serializeAllPositions = (positions) => ({
+  newPositions: serializeVector3Map(positions.newPositions),
+  newRedPositions: serializeVector3Map(positions.newRedPositions),
+  newGreenPositions: serializeVector3Map(positions.newGreenPositions),
+  newBluePositions: serializeVector3Map(positions.newBluePositions),
+  newPurplePositions: serializeVector3Map(positions.newPurplePositions),
+  newBrownPositions: serializeVector3Map(positions.newBrownPositions),
+  newGreenMoonPositions: serializeVector3Map(positions.newGreenMoonPositions),
+  newPurpleMoonPositions: serializeVector3Map(positions.newPurpleMoonPositions),
+  newGasPositions: serializeVector3Map(positions.newGasPositions),
+  newRedMoonPositions: serializeVector3Map(positions.newRedMoonPositions),
+  newGasMoonPositions: serializeVector3Map(positions.newGasMoonPositions),
+  newBrownMoonPositions: serializeVector3Map(positions.newBrownMoonPositions),
+});
+
+const processCellData = (cellKey, savedData) => {
+  if (!savedData?.positions || typeof savedData.positions !== 'object') {
+    return null;
+  }
+
+  return {
+    newPositions: createVector3Map(savedData.positions.positions || {}),
+    newRedPositions: createVector3Map(savedData.positions.redPositions || {}),
+    newGreenPositions: createVector3Map(
+      savedData.positions.greenPositions || {}
+    ),
+    newBluePositions: createVector3Map(savedData.positions.bluePositions || {}),
+    newPurplePositions: createVector3Map(
+      savedData.positions.purplePositions || {}
+    ),
+    newBrownPositions: createVector3Map(
+      savedData.positions.brownPositions || {}
+    ),
+    newGreenMoonPositions: createVector3Map(
+      savedData.positions.greenMoonPositions || {}
+    ),
+    newPurpleMoonPositions: createVector3Map(
+      savedData.positions.purpleMoonPositions || {}
+    ),
+    newGasPositions: createVector3Map(savedData.positions.gasPositions || {}),
+    newRedMoonPositions: createVector3Map(
+      savedData.positions.redMoonPositions || {}
+    ),
+    newGasMoonPositions: createVector3Map(
+      savedData.positions.gasMoonPositions || {}
+    ),
+    newBrownMoonPositions: createVector3Map(
+      savedData.positions.brownMoonPositions || {}
+    ),
+  };
 };
 
 self.onmessage = async (event) => {
   const { requestId, cellKeysToLoad = [], loadDetail } = event.data;
 
-  if (
-    !Array.isArray(cellKeysToLoad) ||
-    cellKeysToLoad.some((key) => key === undefined)
-  ) {
-    self.postMessage({
-      requestId,
-      error: 'Invalid cellKeysToLoad',
-    });
-    return;
-  }
-
   try {
-    const cellData = await fetchCellDataInBatches(cellKeysToLoad);
+    if (!Array.isArray(cellKeysToLoad) || cellKeysToLoad.some((key) => !key)) {
+      throw new Error('Invalid cellKeysToLoad');
+    }
+
     const results = [];
+    const cellData = await fetchCellDataInBatches(cellKeysToLoad);
 
     for (const cellKey of cellKeysToLoad) {
       try {
-        let newPositions = {};
-        let newRedPositions = {};
-        let newGreenPositions = {};
-        let newBluePositions = {};
-        let newPurplePositions = {};
-        let newBrownPositions = {};
-        let newGreenMoonPositions = {};
-        let newPurpleMoonPositions = {};
-        let newGasPositions = {};
-        let newRedMoonPositions = {};
-        let newGasMoonPositions = {};
-        let newBrownMoonPositions = {};
+        const processedData = processCellData(cellKey, cellData[cellKey]);
 
-        if (cellData[cellKey]) {
-          const savedPositions = cellData[cellKey];
-
-          // Process positions as maps
-          if (typeof savedPositions.positions === 'object') {
-            newPositions = createVector3Map(
-              savedPositions.positions.positions || {}
-            );
-            newRedPositions = createVector3Map(
-              savedPositions.positions.redPositions || {}
-            );
-            newGreenPositions = createVector3Map(
-              savedPositions.positions.greenPositions || {}
-            );
-            newBluePositions = createVector3Map(
-              savedPositions.positions.bluePositions || {}
-            );
-            newPurplePositions = createVector3Map(
-              savedPositions.positions.purplePositions || {}
-            );
-            newBrownPositions = createVector3Map(
-              savedPositions.positions.brownPositions || {}
-            );
-            newGreenMoonPositions = createVector3Map(
-              savedPositions.positions.greenMoonPositions || {}
-            );
-            newPurpleMoonPositions = createVector3Map(
-              savedPositions.positions.purpleMoonPositions || {}
-            );
-            newGasPositions = createVector3Map(
-              savedPositions.positions.gasPositions || {}
-            );
-            newRedMoonPositions = createVector3Map(
-              savedPositions.positions.redMoonPositions || {}
-            );
-            newGasMoonPositions = createVector3Map(
-              savedPositions.positions.gasMoonPositions || {}
-            );
-            newBrownMoonPositions = createVector3Map(
-              savedPositions.positions.brownMoonPositions || {}
-            );
-          } else {
-            console.warn(`Invalid positions data in cell ${cellKey}`);
-          }
-        } else {
-          // Parse cellKey into x and z coordinates
+        if (!processedData) {
           const [x, z] = cellKey.split(',').map(Number);
-
           const generated = generateNewPositions(x, z);
-          newPositions = generated.newPositions;
-          newRedPositions = generated.newRedPositions;
-          newGreenPositions = generated.newGreenPositions;
-          newBluePositions = generated.newBluePositions;
-          newPurplePositions = generated.newPurplePositions;
-          newBrownPositions = generated.newBrownPositions;
-          newGreenMoonPositions = generated.newGreenMoonPositions;
-          newPurpleMoonPositions = generated.newPurpleMoonPositions;
-          newGasPositions = generated.newGasPositions;
-          newRedMoonPositions = generated.newRedMoonPositions;
-          newGasMoonPositions = generated.newGasMoonPositions;
-          newBrownMoonPositions = generated.newBrownMoonPositions;
 
-          // Save the newly generated positions
           await saveCellData(cellKey, {
-            positions: serializeVector3Map(newPositions),
-            redPositions: serializeVector3Map(newRedPositions),
-            greenPositions: serializeVector3Map(newGreenPositions),
-            bluePositions: serializeVector3Map(newBluePositions),
-            purplePositions: serializeVector3Map(newPurplePositions),
-            brownPositions: serializeVector3Map(newBrownPositions),
-            greenMoonPositions: serializeVector3Map(newGreenMoonPositions),
-            purpleMoonPositions: serializeVector3Map(newPurpleMoonPositions),
-            gasPositions: serializeVector3Map(newGasPositions),
-            redMoonPositions: serializeVector3Map(newRedMoonPositions),
-            gasMoonPositions: serializeVector3Map(newGasMoonPositions),
-            brownMoonPositions: serializeVector3Map(newBrownMoonPositions),
+            positions: serializeAllPositions(generated),
+          });
+
+          results.push({
+            cellKey,
+            ...serializeAllPositions(generated),
+            loadDetail,
+          });
+        } else {
+          results.push({
+            cellKey,
+            ...processedData,
+            loadDetail,
           });
         }
-
-        results.push({
-          cellKey,
-          newPositions: serializeVector3Map(newPositions),
-          newRedPositions: serializeVector3Map(newRedPositions),
-          newGreenPositions: serializeVector3Map(newGreenPositions),
-          newBluePositions: serializeVector3Map(newBluePositions),
-          newPurplePositions: serializeVector3Map(newPurplePositions),
-          newBrownPositions: serializeVector3Map(newBrownPositions),
-          newGreenMoonPositions: serializeVector3Map(newGreenMoonPositions),
-          newPurpleMoonPositions: serializeVector3Map(newPurpleMoonPositions),
-          newGasPositions: serializeVector3Map(newGasPositions),
-          newRedMoonPositions: serializeVector3Map(newRedMoonPositions),
-          newGasMoonPositions: serializeVector3Map(newGasMoonPositions),
-          newBrownMoonPositions: serializeVector3Map(newBrownMoonPositions),
-          loadDetail,
-        });
       } catch (error) {
-        console.error(`Error processing cellKey ${cellKey}:`, error);
+        console.error(`Error processing cell ${cellKey}:`, error);
       }
     }
 
-    self.postMessage({
-      requestId,
-      results,
-    });
+    self.postMessage({ requestId, results });
   } catch (error) {
-    console.error('Error in worker:', error);
+    console.error('Worker error:', error);
     self.postMessage({
       requestId,
       error: error.message,
