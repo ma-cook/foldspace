@@ -219,16 +219,28 @@ const saveCellData = async (cellKey, positions) => {
     const sanitizedKey = cellKey.replace(/[^a-zA-Z0-9_-]/g, '_');
     const baseDocPath = `spheres/${sanitizedKey}`;
 
-    // Split data into smaller chunks with metadata
+    // Ensure baseDocPath is valid
+    if (!baseDocPath) {
+      throw new Error('Invalid baseDocPath');
+    }
+
     const chunks = [];
-    const CHUNK_SIZE = 25; // Reduced chunk size
+    const CHUNK_SIZE = 25;
     let chunkCounter = 0;
 
     Object.entries(positions).forEach(([posType, posData]) => {
       const positionChunks = chunkPositions(posData, CHUNK_SIZE);
       positionChunks.forEach((chunk, index) => {
+        const chunkDocPath = `${baseDocPath}/${posType}/chunk_${index}`;
+
+        // Ensure chunkDocPath is valid
+        if (!chunkDocPath) {
+          console.error('Invalid chunkDocPath:', chunkDocPath);
+          return;
+        }
+
         chunks.push({
-          docPath: `${baseDocPath}/${posType}/chunk_${index}`,
+          docPath: chunkDocPath,
           data: {
             id: `${sanitizedKey}_${posType}_${index}`,
             type: posType,
@@ -245,6 +257,10 @@ const saveCellData = async (cellKey, positions) => {
     const MAX_RETRIES = 3;
     const saveChunk = async (chunk, attempt = 0) => {
       try {
+        if (!chunk.docPath) {
+          throw new Error('Invalid docPath');
+        }
+
         const response = await fetch(
           'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
           {
