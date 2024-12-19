@@ -55,6 +55,12 @@ const serializeVector3Map = (vectorMap) => {
   return result;
 };
 
+const validateCellKey = (cellKey) => {
+  if (typeof cellKey !== 'string') return false;
+  const [x, z] = cellKey.split(',').map(Number);
+  return !isNaN(x) && !isNaN(z);
+};
+
 const fetchCellDataInBatches = async (cellKeys) => {
   const cachedData = {};
   const keysToFetch = [];
@@ -204,39 +210,64 @@ const generateNewPositions = (x, z) => {
 };
 
 const saveCellData = async (cellKey, positions) => {
+  if (!validateCellKey(cellKey)) {
+    throw new Error('Invalid cell key format');
+  }
+
   try {
-    // Create composite key from position data
-    const compressedData = {
-      key: cellKey,
-      chunks: [],
+    // Create document path from cell key
+    const docPath = `cells/${cellKey.replace(',', '_')}`;
+
+    // Chunk position data
+    const chunks = [];
+    const CHUNK_SIZE = 50; // Reduce chunk size
+
+    Object.entries(positions).forEach(([posType, posData]) => {
+      const positionChunks = chunkPositions(posData, CHUNK_SIZE);
+      positionChunks.forEach((chunk, index) => {
+        chunks.push({
+          docPath: `${docPath}/chunks/${posType}_${index}`,
+          data: serializeVector3Map(chunk),
+        });
+      });
+    });
+
+    // Save chunks with retries
+    const MAX_RETRIES = 3;
+    const saveChunk = async (chunk, attempt = 0) => {
+      try {
+        const response = await fetch(
+          'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              docPath: chunk.docPath,
+              data: chunk.data,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        if (attempt < MAX_RETRIES) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          );
+          return saveChunk(chunk, attempt + 1);
+        }
+        throw error;
+      }
     };
 
-    // Process each position type in chunks
-    for (const [posType, posData] of Object.entries(positions)) {
-      const chunks = chunkPositions(posData);
-      compressedData.chunks.push({
-        type: posType,
-        data: chunks.map((chunk) => serializeVector3Map(chunk)),
-      });
-    }
-
-    const response = await fetch(
-      'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(compressedData),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // Save all chunks
+    await Promise.all(chunks.map((chunk) => saveChunk(chunk)));
   } catch (error) {
     console.error('Error saving cell data:', error);
-    // Add to retry queue
     throw error;
   }
 };
