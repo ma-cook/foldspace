@@ -1,14 +1,18 @@
-// SphereRenderer.jsx
-import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  forwardRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import PlaneMesh from '../PlaneMesh';
 import { MemoizedSphere } from '../Sphere';
 import { useStore } from '../store';
 import { useFilteredPositions, useSpherePools } from '../hooks/hooks';
 import { useBVH } from '../hooks/useBVH';
 import { useUpdateGeometry } from '../hooks/useUpdateGeometry';
-import { useClearDetailedSpheres } from '../hooks/useClearDetailedSpheres';
 import { getCachedGeometry, getCachedShader } from '../resourceCache';
-import { DETAIL_DISTANCE, GRID_SIZE } from '../config';
+import { DETAIL_DISTANCE, GRID_SIZE, UNLOAD_DETAIL_DISTANCE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
 
@@ -216,7 +220,48 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     };
   }, []);
 
-  const clearDetailedSpheres = useClearDetailedSpheres(
+  // Move clearDetailedSpheres logic to top level
+  const clearDetailedSpheres = useCallback(() => {
+    if (!cameraRef.current) return;
+
+    const clearPositions = (positions, setPositions) => {
+      if (!positions) return;
+      const clearedPositions = {};
+      const cameraPosition = cameraRef.current.position;
+
+      Object.entries(positions).forEach(([key, pos]) => {
+        if (pos && typeof pos === 'object') {
+          const distance = cameraPosition.distanceTo(pos);
+          if (distance >= UNLOAD_DETAIL_DISTANCE) {
+            clearedPositions[key] = pos;
+          }
+        }
+      });
+
+      setPositions(clearedPositions, activeBuffer);
+    };
+
+    clearPositions(redPositions, useStore.getState().setRedPositions);
+    clearPositions(greenPositions, useStore.getState().setGreenPositions);
+    clearPositions(bluePositions, useStore.getState().setBluePositions);
+    clearPositions(purplePositions, useStore.getState().setPurplePositions);
+    clearPositions(brownPositions, useStore.getState().setBrownPositions);
+    clearPositions(
+      greenMoonPositions,
+      useStore.getState().setGreenMoonPositions
+    );
+    clearPositions(
+      purpleMoonPositions,
+      useStore.getState().setPurpleMoonPositions
+    );
+    clearPositions(gasPositions, useStore.getState().setGasPositions);
+    clearPositions(redMoonPositions, useStore.getState().setRedMoonPositions);
+    clearPositions(gasMoonPositions, useStore.getState().setGasMoonPositions);
+    clearPositions(
+      brownMoonPositions,
+      useStore.getState().setBrownMoonPositions
+    );
+  }, [
     cameraRef,
     redPositions,
     greenPositions,
@@ -229,9 +274,19 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     redMoonPositions,
     gasMoonPositions,
     brownMoonPositions,
-    filteredPositions,
-    activeBuffer
-  );
+    activeBuffer,
+  ]);
+
+  useEffect(() => {
+    if (previousClearFn.current !== clearDetailedSpheres) {
+      previousClearFn.current = clearDetailedSpheres;
+      useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
+    }
+
+    return () => {
+      useStore.setState({ unloadDetailedSpheres: null });
+    };
+  }, [clearDetailedSpheres]);
 
   const { detailedPositions, lessDetailedPositions } = useUpdateGeometry(
     cameraRef,
