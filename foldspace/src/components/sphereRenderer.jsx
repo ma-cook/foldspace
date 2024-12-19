@@ -15,6 +15,8 @@ import { getCachedGeometry, getCachedShader } from '../resourceCache';
 import { DETAIL_DISTANCE, GRID_SIZE, UNLOAD_DETAIL_DISTANCE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
+import { usePositionUpdates } from '../hooks/usePositionUpdates';
+import { useStoreActions } from '../hooks/useStoreActions';
 
 const positionToString = (pos) => {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -42,13 +44,16 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     systemRing: useRef(),
     gasRing: useRef(),
   }).current;
-
+  const activeBuffer = useStore((state) => state.activeBuffer);
+  const updatePositions = usePositionUpdates();
+  const batchUpdate = useStoreActions();
+  const setStore = useStore((state) => state.setState);
   const spherePools = useSpherePools(
     getCachedGeometry('sphere'),
     getCachedGeometry('lessDetailedSphere'),
     getCachedGeometry('torus')
   );
-  const activeBuffer = useStore((state) => state.activeBuffer);
+
   const positions = useStore((state) =>
     Object.values(state.positions[activeBuffer] || {})
   );
@@ -223,46 +228,34 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   // Move clearDetailedSpheres logic to top level
   const clearDetailedSpheres = useCallback(() => {
     if (!cameraRef.current) return;
+    const cameraPosition = cameraRef.current.position;
 
-    const clearPositions = (positions, setPositions) => {
-      if (!positions) return;
-      const clearedPositions = {};
-      const cameraPosition = cameraRef.current.position;
+    const updates = {};
 
-      Object.entries(positions).forEach(([key, pos]) => {
-        if (pos && typeof pos === 'object') {
-          const distance = cameraPosition.distanceTo(pos);
-          if (distance >= UNLOAD_DETAIL_DISTANCE) {
-            clearedPositions[key] = pos;
-          }
-        }
-      });
-
-      setPositions(clearedPositions, activeBuffer);
+    const update = (positions, key) => {
+      const cleared = updatePositions(positions, cameraPosition);
+      if (Object.keys(cleared).length > 0) {
+        updates[key] = cleared;
+      }
     };
 
-    clearPositions(redPositions, useStore.getState().setRedPositions);
-    clearPositions(greenPositions, useStore.getState().setGreenPositions);
-    clearPositions(bluePositions, useStore.getState().setBluePositions);
-    clearPositions(purplePositions, useStore.getState().setPurplePositions);
-    clearPositions(brownPositions, useStore.getState().setBrownPositions);
-    clearPositions(
-      greenMoonPositions,
-      useStore.getState().setGreenMoonPositions
-    );
-    clearPositions(
-      purpleMoonPositions,
-      useStore.getState().setPurpleMoonPositions
-    );
-    clearPositions(gasPositions, useStore.getState().setGasPositions);
-    clearPositions(redMoonPositions, useStore.getState().setRedMoonPositions);
-    clearPositions(gasMoonPositions, useStore.getState().setGasMoonPositions);
-    clearPositions(
-      brownMoonPositions,
-      useStore.getState().setBrownMoonPositions
-    );
+    update(redPositions, 'redPositions');
+    update(greenPositions, 'greenPositions');
+    update(bluePositions, 'bluePositions');
+    update(purplePositions, 'purplePositions');
+    update(brownPositions, 'brownPositions');
+    update(greenMoonPositions, 'greenMoonPositions');
+    update(purpleMoonPositions, 'purpleMoonPositions');
+    update(gasPositions, 'gasPositions');
+    update(redMoonPositions, 'redMoonPositions');
+    update(gasMoonPositions, 'gasMoonPositions');
+    update(brownMoonPositions, 'brownMoonPositions');
+
+    batchUpdate(updates);
   }, [
     cameraRef,
+    updatePositions,
+    batchUpdate,
     redPositions,
     greenPositions,
     bluePositions,
@@ -274,20 +267,21 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     redMoonPositions,
     gasMoonPositions,
     brownMoonPositions,
-    activeBuffer,
   ]);
 
   useEffect(() => {
     if (previousClearFn.current !== clearDetailedSpheres) {
       previousClearFn.current = clearDetailedSpheres;
-      useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
+      batchUpdate({ unloadDetailedSpheres: clearDetailedSpheres });
     }
 
     return () => {
-      useStore.setState({ unloadDetailedSpheres: null });
+      batchUpdate({ unloadDetailedSpheres: null });
+      previousClearFn.current = null;
     };
-  }, [clearDetailedSpheres]);
+  }, [clearDetailedSpheres, batchUpdate]);
 
+  // Call useUpdateGeometry to get detailed and less detailed positions
   const { detailedPositions, lessDetailedPositions } = useUpdateGeometry(
     cameraRef,
     positions,

@@ -32,7 +32,7 @@ const createPositionSetter = (stateKey) => (positions) => {
   });
 };
 
-export const useStore = create((set) => ({
+export const useStore = create((set, get) => ({
   vec: null,
   defaultPosition: new THREE.Vector3(0, 50, 100),
   lookAt: new THREE.Vector3(),
@@ -65,6 +65,62 @@ export const useStore = create((set) => ({
   shipToMove: null,
   colonizeMode: false,
   currentCellKey: null,
+  pendingUpdates: new Map(),
+  isUpdating: false,
+  setState: (updates) => {
+    const state = get();
+    if (state.isUpdating) {
+      // Queue updates if already processing
+      const pendingUpdates = new Map(state.pendingUpdates);
+      Object.entries(updates).forEach(([key, value]) => {
+        pendingUpdates.set(key, value);
+      });
+      set({ pendingUpdates });
+      return;
+    }
+
+    set({ isUpdating: true });
+
+    try {
+      const nextBuffer = (state.activeBuffer + 1) % 2;
+      const positionUpdates = {};
+      const otherUpdates = {};
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (key.endsWith('Positions')) {
+          positionUpdates[key] = value;
+        } else {
+          otherUpdates[key] = value;
+        }
+      });
+
+      if (Object.keys(positionUpdates).length > 0) {
+        set((state) => {
+          const newState = { ...state };
+          Object.entries(positionUpdates).forEach(([key, value]) => {
+            const updatedPositions = [...state[key]];
+            updatedPositions[nextBuffer] = value;
+            newState[key] = updatedPositions;
+          });
+          return newState;
+        });
+      }
+
+      if (Object.keys(otherUpdates).length > 0) {
+        set((state) => ({ ...state, ...otherUpdates }));
+      }
+
+      // Process pending updates
+      const pending = get().pendingUpdates;
+      if (pending.size > 0) {
+        const updates = Object.fromEntries(pending);
+        set({ pendingUpdates: new Map() });
+        state.setState(updates);
+      }
+    } finally {
+      set({ isUpdating: false });
+    }
+  },
   setCurrentCellKey: (cellKey) => set({ currentCellKey: cellKey }),
   setColonizeMode: (value) => set({ colonizeMode: value }),
   setIsSelectingDestination: (value) => set({ isSelectingDestination: value }),
