@@ -215,52 +215,42 @@ const saveCellData = async (cellKey, positions) => {
   }
 
   try {
-    // Sanitize cell key and create valid document path
-    const sanitizedKey = cellKey.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const baseDocPath = `spheres/${sanitizedKey}`;
+    // Validate and prepare positions data
+    const serializedData = {};
 
-    // Ensure baseDocPath is valid
-    if (!baseDocPath) {
-      throw new Error('Invalid baseDocPath');
+    // Process each position type
+    Object.entries(positions.positions).forEach(([type, data]) => {
+      // Only include valid data
+      if (data && Object.keys(data).length > 0) {
+        serializedData[type] = serializeVector3Map(data);
+      }
+    });
+
+    // Ensure we have valid data to save
+    if (Object.keys(serializedData).length === 0) {
+      throw new Error('No valid position data to save');
     }
 
-    const chunks = [];
+    // Save data in chunks
     const CHUNK_SIZE = 25;
-    let chunkCounter = 0;
+    const chunks = [];
 
-    Object.entries(positions).forEach(([posType, posData]) => {
-      const positionChunks = chunkPositions(posData, CHUNK_SIZE);
+    Object.entries(serializedData).forEach(([type, data]) => {
+      const positionChunks = chunkPositions(data, CHUNK_SIZE);
+
       positionChunks.forEach((chunk, index) => {
-        const chunkDocPath = `${baseDocPath}/${posType}/chunk_${index}`;
-
-        // Ensure chunkDocPath is valid
-        if (!chunkDocPath) {
-          console.error('Invalid chunkDocPath:', chunkDocPath);
-          return;
-        }
-
         chunks.push({
-          docPath: chunkDocPath,
-          data: {
-            id: `${sanitizedKey}_${posType}_${index}`,
-            type: posType,
-            index: index,
-            total: positionChunks.length,
-            positions: serializeVector3Map(chunk),
-          },
+          type,
+          index,
+          data: chunk,
         });
-        chunkCounter++;
       });
     });
 
-    // Save chunks with exponential backoff retry
+    // Save chunks with retries
     const MAX_RETRIES = 3;
     const saveChunk = async (chunk, attempt = 0) => {
       try {
-        if (!chunk.docPath) {
-          throw new Error('Invalid docPath');
-        }
-
         const response = await fetch(
           'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
           {
@@ -269,8 +259,12 @@ const saveCellData = async (cellKey, positions) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              cellKey: chunk.docPath.split('/')[1], // Extract cellKey from docPath
-              positions: chunk.data.positions,
+              cellKey,
+              positions: {
+                type: chunk.type,
+                index: chunk.index,
+                data: chunk.data,
+              },
             }),
           }
         );
@@ -279,28 +273,19 @@ const saveCellData = async (cellKey, positions) => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return response.json();
+        return await response.json();
       } catch (error) {
         if (attempt < MAX_RETRIES) {
-          const delay = Math.pow(2, attempt) * 1000;
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          );
           return saveChunk(chunk, attempt + 1);
         }
         throw error;
       }
     };
 
-    // Save metadata first
-    await saveChunk({
-      docPath: baseDocPath,
-      data: {
-        id: sanitizedKey,
-        totalChunks: chunkCounter,
-        timestamp: Date.now(),
-      },
-    });
-
-    // Save chunks in batches
+    // Save all chunks
     const BATCH_SIZE = 5;
     for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
       const batch = chunks.slice(i, i + BATCH_SIZE);
