@@ -269,8 +269,8 @@ const saveCellData = async (cellKey, positions) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              docPath: chunk.docPath,
-              data: chunk.data,
+              cellKey: chunk.docPath.split('/')[1], // Extract cellKey from docPath
+              positions: chunk.data.positions,
             }),
           }
         );
