@@ -1,10 +1,11 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useCallback } from 'react';
 import { buildBVH } from '../BVH';
 import { useStore } from '../store';
 
 export const useBVH = (positions, activeBuffer) => {
   const bvhRef = useRef(null);
   const previousPositionsRef = useRef(null);
+  const setBVH = useStore((state) => state.setBVH);
 
   // Memoize positions to prevent unnecessary rebuilds
   const memoizedPositions = useMemo(() => {
@@ -20,18 +21,35 @@ export const useBVH = (positions, activeBuffer) => {
     );
   }, [positions]);
 
+  // Memoize BVH update function
+  const updateBVH = useCallback(
+    (positions) => {
+      if (positions.length > 0) {
+        const newBVH = buildBVH(positions);
+        if (newBVH !== bvhRef.current) {
+          bvhRef.current = newBVH;
+          // Queue BVH update
+          queueMicrotask(() => {
+            setBVH(newBVH, activeBuffer);
+          });
+        }
+      }
+    },
+    [activeBuffer, setBVH]
+  );
+
   useEffect(() => {
     // Skip if positions haven't changed
     if (previousPositionsRef.current === memoizedPositions) {
       return;
     }
 
-    // Only rebuild BVH if we have valid positions
-    if (memoizedPositions.length > 0) {
-      bvhRef.current = buildBVH(memoizedPositions);
-      useStore.getState().setBVH(bvhRef.current, activeBuffer);
-    }
-
+    updateBVH(memoizedPositions);
     previousPositionsRef.current = memoizedPositions;
-  }, [memoizedPositions, activeBuffer]);
+
+    return () => {
+      // Cleanup on unmount/buffer change
+      bvhRef.current = null;
+    };
+  }, [memoizedPositions, updateBVH]);
 };

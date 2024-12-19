@@ -25,12 +25,20 @@ const deserializeVector3Map = (positions) => {
 };
 
 const updatePositions = (setPositions, newPositions) => {
-  setPositions((prevPositions) => {
-    const nextBuffer = (prevPositions.length + 1) % 2;
-    const updatedPositions = [...prevPositions];
-    updatedPositions[nextBuffer] = newPositions;
-    return updatedPositions;
-  });
+  if (typeof setPositions !== 'function') {
+    console.error('setPositions must be a function');
+    return;
+  }
+
+  // Convert array to map if needed
+  const positionsMap = Array.isArray(newPositions)
+    ? newPositions.reduce((acc, pos, i) => {
+        acc[i] = pos;
+        return acc;
+      }, {})
+    : newPositions;
+
+  setPositions(positionsMap);
 };
 
 const worker = new Worker(new URL('./cellWorker.js', import.meta.url));

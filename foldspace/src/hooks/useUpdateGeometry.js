@@ -1,80 +1,69 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { DETAIL_DISTANCE } from '../config';
+import * as THREE from 'three';
+
+const isValidBVH = (bvh) => {
+  return (
+    bvh &&
+    bvh.root &&
+    bvh.root.boundingBox &&
+    bvh.root.boundingBox instanceof THREE.Box3
+  );
+};
 
 export const useUpdateGeometry = (cameraRef, positions, bvh) => {
   const [detailedPositions, setDetailedPositions] = useState({});
   const [lessDetailedPositions, setLessDetailedPositions] = useState({});
 
   useEffect(() => {
-    const updateGeometry = () => {
-      // Early return if any required data is missing
-      if (!cameraRef?.current?.position || !bvh || !positions) {
-        setDetailedPositions({});
-        setLessDetailedPositions({});
-        return;
-      }
+    if (!cameraRef?.current?.position || !positions) {
+      setDetailedPositions({});
+      setLessDetailedPositions({});
+      return;
+    }
 
+    const updateGeometry = () => {
       const cameraPosition = cameraRef.current.position;
 
-      // Validate camera position
-      if (
-        typeof cameraPosition.x !== 'number' ||
-        typeof cameraPosition.y !== 'number' ||
-        typeof cameraPosition.z !== 'number'
-      ) {
-        return;
-      }
+      // Create detail box around camera
+      const detailBox = new THREE.Box3(
+        new THREE.Vector3(
+          cameraPosition.x - DETAIL_DISTANCE,
+          cameraPosition.y - DETAIL_DISTANCE,
+          cameraPosition.z - DETAIL_DISTANCE
+        ),
+        new THREE.Vector3(
+          cameraPosition.x + DETAIL_DISTANCE,
+          cameraPosition.y + DETAIL_DISTANCE,
+          cameraPosition.z + DETAIL_DISTANCE
+        )
+      );
 
-      const detailBoundingBox = {
-        min: {
-          x: cameraPosition.x - DETAIL_DISTANCE,
-          y: cameraPosition.y - DETAIL_DISTANCE,
-          z: cameraPosition.z - DETAIL_DISTANCE,
-        },
-        max: {
-          x: cameraPosition.x + DETAIL_DISTANCE,
-          y: cameraPosition.y + DETAIL_DISTANCE,
-          z: cameraPosition.z + DETAIL_DISTANCE,
-        },
-      };
+      const newDetailedPositions = {};
+      const newLessDetailedPositions = {};
 
-      try {
-        // Query BVH and create detailed positions map
-        const detailedPositionsArray = bvh.query(detailBoundingBox) || [];
-        const newDetailedPositions = {};
-        const newLessDetailedPositions = {};
+      // Filter positions
+      Object.entries(positions).forEach(([key, pos]) => {
+        if (!pos?.isVector3) return;
 
-        // Process positions with type checking
-        Object.entries(positions).forEach(([key, pos]) => {
-          if (!pos || typeof pos !== 'object') return;
+        const isInDetailRange = detailBox.containsPoint(pos);
 
-          if (
-            typeof pos.x === 'number' &&
-            typeof pos.y === 'number' &&
-            typeof pos.z === 'number'
-          ) {
-            if (detailedPositionsArray.includes(pos)) {
-              newDetailedPositions[key] = pos;
-            } else {
-              newLessDetailedPositions[key] = pos;
-            }
-          }
-        });
+        if (isInDetailRange) {
+          newDetailedPositions[key] = pos;
+        } else {
+          newLessDetailedPositions[key] = pos;
+        }
+      });
 
-        setDetailedPositions(newDetailedPositions);
-        setLessDetailedPositions(newLessDetailedPositions);
-      } catch (error) {
-        console.error('Error in updateGeometry:', error);
-        setDetailedPositions({});
-        setLessDetailedPositions({});
-      }
+      setDetailedPositions(newDetailedPositions);
+      setLessDetailedPositions(newLessDetailedPositions);
     };
 
     updateGeometry();
     const interval = setInterval(updateGeometry, 100);
 
     return () => clearInterval(interval);
-  }, [cameraRef, positions, bvh]);
+  }, [cameraRef, positions]);
 
   return { detailedPositions, lessDetailedPositions };
 };
