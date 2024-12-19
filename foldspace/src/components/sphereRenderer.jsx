@@ -17,6 +17,7 @@ import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
 import { usePositionUpdates } from '../hooks/usePositionUpdates';
 import { useStoreActions } from '../hooks/useStoreActions';
+import { useCellLoading } from '../hooks/useCellLoading';
 
 const positionToString = (pos) => {
   return `${pos.x},${pos.y},${pos.z}`;
@@ -94,6 +95,8 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
   const planetNames = useStore((state) => state.planetNames);
 
   useBVH(positions, activeBuffer);
+
+  useCellLoading(cameraRef);
 
   const filteredPositions = useFilteredPositions(
     positions,
