@@ -215,21 +215,27 @@ const saveCellData = async (cellKey, positions) => {
   }
 
   try {
+    console.log('Step 1 - Input:', {
+      cellKey,
+      positionsType: typeof positions,
+      hasPositions: 'positions' in positions,
+    });
+
     // Validate and prepare positions data
     const serializedData = {};
 
     // Process each position type
     Object.entries(positions.positions).forEach(([type, data]) => {
-      // Only include valid data
+      console.log('Step 2 - Processing:', {
+        type,
+        dataType: typeof data,
+        isEmpty: !data || Object.keys(data).length === 0,
+      });
+
       if (data && Object.keys(data).length > 0) {
         serializedData[type] = serializeVector3Map(data);
       }
     });
-
-    // Ensure we have valid data to save
-    if (Object.keys(serializedData).length === 0) {
-      throw new Error('No valid position data to save');
-    }
 
     // Save data in chunks
     const CHUNK_SIZE = 25;
@@ -237,6 +243,11 @@ const saveCellData = async (cellKey, positions) => {
 
     Object.entries(serializedData).forEach(([type, data]) => {
       const positionChunks = chunkPositions(data, CHUNK_SIZE);
+      console.log('Step 3 - Chunks:', {
+        type,
+        chunkCount: positionChunks.length,
+        firstChunk: positionChunks[0],
+      });
 
       positionChunks.forEach((chunk, index) => {
         chunks.push({
@@ -248,9 +259,19 @@ const saveCellData = async (cellKey, positions) => {
     });
 
     // Save chunks with retries
-    const MAX_RETRIES = 3;
     const saveChunk = async (chunk, attempt = 0) => {
       try {
+        const payload = {
+          cellKey,
+          positions: {
+            type: chunk.type,
+            index: chunk.index,
+            data: chunk.data,
+          },
+        };
+
+        console.log('Step 4 - Payload:', JSON.stringify(payload));
+
         const response = await fetch(
           'https://us-central1-foldspace-6483c.cloudfunctions.net/api/save-sphere-data',
           {
@@ -258,24 +279,25 @@ const saveCellData = async (cellKey, positions) => {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              cellKey,
-              positions: {
-                type: chunk.type,
-                index: chunk.index,
-                data: chunk.data,
-              },
-            }),
+            body: JSON.stringify(payload),
           }
         );
 
+        const responseText = await response.text();
+        console.log('Step 5 - Response:', responseText);
+
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${responseText}`);
         }
 
-        return await response.json();
+        return JSON.parse(responseText);
       } catch (error) {
-        if (attempt < MAX_RETRIES) {
+        console.error('Step 6 - Error:', {
+          attempt,
+          error: error.message,
+          stack: error.stack,
+        });
+        if (attempt < 3) {
           await new Promise((resolve) =>
             setTimeout(resolve, Math.pow(2, attempt) * 1000)
           );
@@ -286,13 +308,15 @@ const saveCellData = async (cellKey, positions) => {
     };
 
     // Save all chunks
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
-      const batch = chunks.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < chunks.length; i += 5) {
+      const batch = chunks.slice(i, i + 5);
       await Promise.all(batch.map((chunk) => saveChunk(chunk)));
     }
   } catch (error) {
-    console.error('Error saving cell data:', error);
+    console.error('Final error:', {
+      error: error.message,
+      stack: error.stack,
+    });
     throw error;
   }
 };
