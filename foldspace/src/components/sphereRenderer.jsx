@@ -12,7 +12,12 @@ import { DETAIL_DISTANCE, GRID_SIZE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
 
+const positionToString = (pos) => {
+  return `${pos.x},${pos.y},${pos.z}`;
+};
+
 const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
+  const previousClearFn = useRef(null);
   const previousYellowPositions = useRef(new Set());
   const planeMeshRef = useRef();
   const sphereRefs = useRef({
@@ -168,12 +173,12 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
 
   useEffect(() => {
     const newYellowPositions = Object.values(flattenedPositions || {}).filter(
-      (pos) => !previousYellowPositions.current.has(pos.toArray().toString())
+      (pos) => !previousYellowPositions.current.has(positionToString(pos))
     );
 
     if (newYellowPositions.length > 0) {
       newYellowPositions.forEach((pos) =>
-        previousYellowPositions.current.add(pos.toArray().toString())
+        previousYellowPositions.current.add(positionToString(pos))
       );
     }
 
@@ -227,10 +232,6 @@ const SphereRenderer = forwardRef(({ flattenedPositions, cameraRef }, ref) => {
     filteredPositions,
     activeBuffer
   );
-
-  useEffect(() => {
-    useStore.setState({ unloadDetailedSpheres: clearDetailedSpheres });
-  }, [clearDetailedSpheres]);
 
   const { detailedPositions, lessDetailedPositions } = useUpdateGeometry(
     cameraRef,

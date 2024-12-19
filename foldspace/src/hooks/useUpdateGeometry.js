@@ -1,18 +1,30 @@
 import { useEffect, useState } from 'react';
 import { DETAIL_DISTANCE } from '../config';
 
-import { useEffect, useState } from 'react';
-import { DETAIL_DISTANCE } from '../config';
-
 export const useUpdateGeometry = (cameraRef, positions, bvh) => {
   const [detailedPositions, setDetailedPositions] = useState({});
   const [lessDetailedPositions, setLessDetailedPositions] = useState({});
 
   useEffect(() => {
     const updateGeometry = () => {
-      if (!cameraRef.current || !bvh || !positions) return;
+      // Early return if any required data is missing
+      if (!cameraRef?.current?.position || !bvh || !positions) {
+        setDetailedPositions({});
+        setLessDetailedPositions({});
+        return;
+      }
 
       const cameraPosition = cameraRef.current.position;
+
+      // Validate camera position
+      if (
+        typeof cameraPosition.x !== 'number' ||
+        typeof cameraPosition.y !== 'number' ||
+        typeof cameraPosition.z !== 'number'
+      ) {
+        return;
+      }
+
       const detailBoundingBox = {
         min: {
           x: cameraPosition.x - DETAIL_DISTANCE,
@@ -26,22 +38,36 @@ export const useUpdateGeometry = (cameraRef, positions, bvh) => {
         },
       };
 
-      // Query BVH and create detailed positions map
-      const detailedPositionsArray = bvh.query(detailBoundingBox);
-      const newDetailedPositions = {};
-      const newLessDetailedPositions = {};
+      try {
+        // Query BVH and create detailed positions map
+        const detailedPositionsArray = bvh.query(detailBoundingBox) || [];
+        const newDetailedPositions = {};
+        const newLessDetailedPositions = {};
 
-      // Process all positions into either detailed or less detailed maps
-      Object.entries(positions).forEach(([key, pos]) => {
-        if (detailedPositionsArray.includes(pos)) {
-          newDetailedPositions[key] = pos;
-        } else {
-          newLessDetailedPositions[key] = pos;
-        }
-      });
+        // Process positions with type checking
+        Object.entries(positions).forEach(([key, pos]) => {
+          if (!pos || typeof pos !== 'object') return;
 
-      setDetailedPositions(newDetailedPositions);
-      setLessDetailedPositions(newLessDetailedPositions);
+          if (
+            typeof pos.x === 'number' &&
+            typeof pos.y === 'number' &&
+            typeof pos.z === 'number'
+          ) {
+            if (detailedPositionsArray.includes(pos)) {
+              newDetailedPositions[key] = pos;
+            } else {
+              newLessDetailedPositions[key] = pos;
+            }
+          }
+        });
+
+        setDetailedPositions(newDetailedPositions);
+        setLessDetailedPositions(newLessDetailedPositions);
+      } catch (error) {
+        console.error('Error in updateGeometry:', error);
+        setDetailedPositions({});
+        setLessDetailedPositions({});
+      }
     };
 
     updateGeometry();
