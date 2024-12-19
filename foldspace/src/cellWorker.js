@@ -215,24 +215,33 @@ const saveCellData = async (cellKey, positions) => {
   }
 
   try {
-    // Create document path from cell key
-    const docPath = `cells/${cellKey.replace(',', '_')}`;
+    // Sanitize cell key and create valid document path
+    const sanitizedKey = cellKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const baseDocPath = `spheres/${sanitizedKey}`;
 
-    // Chunk position data
+    // Split data into smaller chunks with metadata
     const chunks = [];
-    const CHUNK_SIZE = 50; // Reduce chunk size
+    const CHUNK_SIZE = 25; // Reduced chunk size
+    let chunkCounter = 0;
 
     Object.entries(positions).forEach(([posType, posData]) => {
       const positionChunks = chunkPositions(posData, CHUNK_SIZE);
       positionChunks.forEach((chunk, index) => {
         chunks.push({
-          docPath: `${docPath}/chunks/${posType}_${index}`,
-          data: serializeVector3Map(chunk),
+          docPath: `${baseDocPath}/${posType}/chunk_${index}`,
+          data: {
+            id: `${sanitizedKey}_${posType}_${index}`,
+            type: posType,
+            index: index,
+            total: positionChunks.length,
+            positions: serializeVector3Map(chunk),
+          },
         });
+        chunkCounter++;
       });
     });
 
-    // Save chunks with retries
+    // Save chunks with exponential backoff retry
     const MAX_RETRIES = 3;
     const saveChunk = async (chunk, attempt = 0) => {
       try {
@@ -253,19 +262,34 @@ const saveCellData = async (cellKey, positions) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        return response.json();
       } catch (error) {
         if (attempt < MAX_RETRIES) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.pow(2, attempt) * 1000)
-          );
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
           return saveChunk(chunk, attempt + 1);
         }
         throw error;
       }
     };
 
-    // Save all chunks
-    await Promise.all(chunks.map((chunk) => saveChunk(chunk)));
+    // Save metadata first
+    await saveChunk({
+      docPath: baseDocPath,
+      data: {
+        id: sanitizedKey,
+        totalChunks: chunkCounter,
+        timestamp: Date.now(),
+      },
+    });
+
+    // Save chunks in batches
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+      const batch = chunks.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map((chunk) => saveChunk(chunk)));
+    }
   } catch (error) {
     console.error('Error saving cell data:', error);
     throw error;
