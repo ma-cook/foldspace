@@ -29,11 +29,35 @@ const UserPanel = ({
   const setColonizeMode = useStore((state) => state.setColonizeMode);
   const selectedShipRef = useRef(selectedShip);
 
-  const togglePlanetOptions = (planetIndex) => {
-    setPlanetOptionsVisible((prev) => ({
-      ...prev,
-      [planetIndex]: !prev[planetIndex],
-    }));
+  const togglePlanetOptions = (planetIndex, planetPosition) => {
+    // Move the camera to the planet position offset
+    if (planetPosition) {
+      const offsetPosition = {
+        x: planetPosition.x + 100,
+        y: planetPosition.y + 280,
+        z: planetPosition.z + 380,
+      };
+      setTarget(offsetPosition);
+      setLookAt(planetPosition);
+    }
+
+    // If the buildings list is visible, close both lists
+    if (planetBuildVisible[planetIndex]) {
+      setPlanetBuildVisible((prev) => ({
+        ...prev,
+        [planetIndex]: false,
+      }));
+      setPlanetOptionsVisible((prev) => ({
+        ...prev,
+        [planetIndex]: false,
+      }));
+    } else {
+      // Toggle planet options
+      setPlanetOptionsVisible((prev) => ({
+        ...prev,
+        [planetIndex]: !prev[planetIndex],
+      }));
+    }
   };
 
   const toggleDropdown = (shipKey) => {
@@ -125,18 +149,31 @@ const UserPanel = ({
   }, [isSelectingDestination]);
 
   const toggleBuildButton = (planetIndex) => {
-    setPlanetBuildVisible((prev) => ({
-      ...prev,
-      [planetIndex]: !prev[planetIndex],
-    }));
-    const buildings = ownedPlanets[planetIndex]?.buildings;
-    if (buildings) {
-      setBuildingsData((prev) => ({
+    // If the buildings list is visible, close both lists
+    if (planetBuildVisible[planetIndex]) {
+      setPlanetBuildVisible((prev) => ({
         ...prev,
-        [planetIndex]: buildings,
+        [planetIndex]: false,
+      }));
+      setPlanetOptionsVisible((prev) => ({
+        ...prev,
+        [planetIndex]: false,
       }));
     } else {
-      console.error('No buildings data available for this planet.');
+      // Show buildings list
+      setPlanetBuildVisible((prev) => ({
+        ...prev,
+        [planetIndex]: true,
+      }));
+      const buildings = ownedPlanets[planetIndex]?.buildings;
+      if (buildings) {
+        setBuildingsData((prev) => ({
+          ...prev,
+          [planetIndex]: buildings,
+        }));
+      } else {
+        console.error('No buildings data available for this planet.');
+      }
     }
   };
 

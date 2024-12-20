@@ -829,16 +829,27 @@ exports.processConstructionQueue = functions.pubsub
               const cellSphere = greenPositions[planetId];
 
               if (cellSphere) {
-                const updatedCellBuildings = { ...cellSphere.buildings };
-                for (const item of completedBuildings) {
-                  const { buildingName } = item;
-                  updatedCellBuildings[buildingName] =
-                    (updatedCellBuildings[buildingName] || 0) + 1;
-                }
+                // Get existing sphere data
+                const existingSphere = cellSphere;
 
+                // Update only buildings while preserving other data
+                const updatedSphere = {
+                  ...existingSphere,
+                  buildings: {
+                    ...existingSphere.buildings,
+                    // Add new building counts
+                    ...completedBuildings.reduce((acc, item) => {
+                      const count =
+                        (existingSphere.buildings?.[item.buildingName] || 0) +
+                        1;
+                      return { ...acc, [item.buildingName]: count };
+                    }, {}),
+                  },
+                };
+
+                // Update cell with merged data
                 batch.update(cellRef, {
-                  [`positions.greenPositions.${planetId}.buildings`]:
-                    updatedCellBuildings,
+                  [`positions.greenPositions.${planetId}`]: updatedSphere,
                 });
               }
             }
