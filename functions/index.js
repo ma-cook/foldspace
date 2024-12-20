@@ -71,6 +71,22 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+const COLONY_METADATA = {
+  buildings: {
+    'Housing complex': 10,
+    'Power plant': 5,
+    Mine: 5,
+    Laboratory: 1,
+    'Constr. facility': 1,
+    Shipyard: 1,
+    'Space shipyard': 0,
+    'Ground defense': 0,
+    'Planetary shield': 0,
+    'Space defense': 0,
+  },
+  constructionQueue: [],
+};
+
 const deleteDocumentsInBatches = async (collectionRef) => {
   const snapshot = await collectionRef.get();
   const batchSize = 5; // Firestore limits batch size to 500
@@ -640,6 +656,7 @@ exports.updateShipPositions = functions.pubsub
                 planetName: sphereIndex,
                 civilisationName:
                   userData.civilisationName || 'Unnamed Civilization',
+                ...COLONY_METADATA,
               };
 
               // Update the cell with the assigned sphere
@@ -657,11 +674,14 @@ exports.updateShipPositions = functions.pubsub
                   userData.civilisationName || 'Unnamed Civilization',
                 cellId: dest.cellId,
                 instanceId: sphereIndex,
+                ...COLONY_METADATA,
               };
-
+              const newSphereKey = `sphere_${
+                dest.cellId
+              }_${sphereIndex}_${Date.now()}`;
               // Update user's ships and spheres
-              batch.update(userDoc.ref, {
-                spheres: admin.firestore.FieldValue.arrayUnion(newSphere),
+              batch.update(userRef, {
+                [`spheres.${newSphereKey}`]: newSphere,
                 [`ships.${shipKey}.isColonizing`]: false,
                 [`ships.${shipKey}.colonizeStartTime`]: null,
                 [`ships.${shipKey}.destination`]: null,
@@ -832,24 +852,31 @@ exports.processConstructionQueue = functions.pubsub
                 // Get existing sphere data
                 const existingSphere = cellSphere;
 
-                // Update only buildings while preserving other data
-                const updatedSphere = {
-                  ...existingSphere,
-                  buildings: {
-                    ...existingSphere.buildings,
-                    // Add new building counts
-                    ...completedBuildings.reduce((acc, item) => {
-                      const count =
-                        (existingSphere.buildings?.[item.buildingName] || 0) +
-                        1;
-                      return { ...acc, [item.buildingName]: count };
-                    }, {}),
-                  },
+                // Create updated buildings data
+                const updatedBuildings = {
+                  ...existingSphere.buildings,
+                  ...completedBuildings.reduce((acc, item) => {
+                    const count =
+                      (existingSphere.buildings?.[item.buildingName] || 0) + 1;
+                    return { ...acc, [item.buildingName]: count };
+                  }, {}),
                 };
 
-                // Update cell with merged data
+                // Update only buildings field in greenPositions map
+                greenPositions[planetId] = {
+                  ...greenPositions[planetId],
+                  buildings: updatedBuildings,
+                };
+
+                // Write back complete greenPositions map
                 batch.update(cellRef, {
-                  [`positions.greenPositions.${planetId}`]: updatedSphere,
+                  'positions.greenPositions': greenPositions,
+                });
+
+                console.log('Updated cell data:', {
+                  planetId,
+                  updatedBuildings,
+                  fullGreenPositions: greenPositions,
                 });
               }
             }

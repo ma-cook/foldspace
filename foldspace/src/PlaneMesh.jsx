@@ -72,6 +72,11 @@ const PlaneMesh = React.forwardRef(
     const calculateCellKey = (x, z) => {
       const cellX = Math.floor(x / GRID_SIZE);
       const cellZ = Math.floor(z / GRID_SIZE);
+
+      if (cellX === 0 && cellZ === 0) {
+        return '0,0,true';
+      }
+
       return `${cellX},${cellZ},false`;
     };
 
