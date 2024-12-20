@@ -28,6 +28,7 @@ const PlaneMesh = React.forwardRef(
     ref
   ) => {
     const ringRef = useRef();
+    const orbitRingRef = useRef();
     const { raycaster, mouse, camera, gl } = useThree();
     const meshRefs = useRef([]);
     const circleRef = useRef();
@@ -115,7 +116,21 @@ const PlaneMesh = React.forwardRef(
           }
           if (ringRef.current) {
             ringRef.current.position.copy(intersects[0].point);
+            ringRef.current.rotation.x = Math.PI / 2; // Rotate the ring to be horizontal
             ringRef.current.visible = true;
+          }
+          if (orbitRingRef.current) {
+            const centralSpherePosition = new THREE.Vector3(0, 0, 0); // Assuming central sphere is at origin
+            const distanceToCentralSphere = intersects[0].point.distanceTo(
+              centralSpherePosition
+            );
+            orbitRingRef.current.position.copy(centralSpherePosition);
+            orbitRingRef.current.scale.set(
+              distanceToCentralSphere,
+              distanceToCentralSphere,
+              distanceToCentralSphere
+            );
+            orbitRingRef.current.visible = true;
           }
         } else {
           if (circleRef.current) {
@@ -123,6 +138,9 @@ const PlaneMesh = React.forwardRef(
           }
           if (ringRef.current) {
             ringRef.current.visible = false;
+          }
+          if (orbitRingRef.current) {
+            orbitRingRef.current.visible = false;
           }
         }
       },
@@ -438,8 +456,18 @@ const PlaneMesh = React.forwardRef(
             side={THREE.DoubleSide}
           />
         </mesh>
-        <mesh ref={ringRef} visible={false}>
+        <mesh ref={ringRef} visible={false} rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry attach="geometry" args={[79.5, 80, 64]} />
+          <shaderMaterial
+            attach="material"
+            vertexShader={vertexShader}
+            fragmentShader={fragmentShader}
+            side={THREE.DoubleSide}
+            transparent={true}
+          />
+        </mesh>
+        <mesh ref={orbitRingRef} visible={false} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry attach="geometry" args={[1, 1.1, 64]} />
           <shaderMaterial
             attach="material"
             vertexShader={vertexShader}
