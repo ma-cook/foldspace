@@ -27,6 +27,7 @@ const PlaneMesh = React.forwardRef(
     },
     ref
   ) => {
+    const ringRef = useRef();
     const { raycaster, mouse, camera, gl } = useThree();
     const meshRefs = useRef([]);
     const circleRef = useRef();
@@ -112,9 +113,16 @@ const PlaneMesh = React.forwardRef(
             circleRef.current.position.y += 0.01;
             circleRef.current.visible = true;
           }
+          if (ringRef.current) {
+            ringRef.current.position.copy(intersects[0].point);
+            ringRef.current.visible = true;
+          }
         } else {
           if (circleRef.current) {
             circleRef.current.visible = false;
+          }
+          if (ringRef.current) {
+            ringRef.current.visible = false;
           }
         }
       },
@@ -403,6 +411,22 @@ const PlaneMesh = React.forwardRef(
       onMouseUp,
     ]);
 
+    const vertexShader = `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      varying vec3 vNormal;
+      void main() {
+        float intensity = pow(0.5 - dot(vNormal, vec3(0.0, 1.0, 0.0)), 2.0);
+        gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0) * intensity;
+      }
+    `;
+
     return (
       <>
         {/* Add a new mesh for the circle */}
@@ -412,6 +436,16 @@ const PlaneMesh = React.forwardRef(
             attach="material"
             color="red"
             side={THREE.DoubleSide}
+          />
+        </mesh>
+        <mesh ref={ringRef} visible={false}>
+          <ringGeometry attach="geometry" args={[79.5, 80, 64]} />
+          <shaderMaterial
+            attach="material"
+            vertexShader={vertexShader}
+            fragmentShader={fragmentShader}
+            side={THREE.DoubleSide}
+            transparent={true}
           />
         </mesh>
       </>
