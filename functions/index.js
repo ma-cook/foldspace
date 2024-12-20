@@ -73,12 +73,12 @@ const corsOptions = {
 
 const COLONY_METADATA = {
   buildings: {
-    'Housing complex': 10,
-    'Power plant': 5,
-    Mine: 5,
-    Laboratory: 1,
+    'Housing complex': 1,
+    'Power plant': 1,
+    Mine: 0,
+    Laboratory: 0,
     'Constr. facility': 1,
-    Shipyard: 1,
+    Shipyard: 0,
     'Space shipyard': 0,
     'Ground defense': 0,
     'Planetary shield': 0,
@@ -633,7 +633,7 @@ exports.updateShipPositions = functions.pubsub
               const cellData = cellDoc.data();
               const greenPositions = cellData.positions.greenPositions || [];
 
-              // Find the sphere within 100 units of the destination coordinates
+              // Find sphere within 100 units...
               const sphereIndex = greenPositions.findIndex((sphere) => {
                 const dx = sphere.x - dest.x;
                 const dy = sphere.y - dest.y;
@@ -680,11 +680,9 @@ exports.updateShipPositions = functions.pubsub
                 dest.cellId
               }_${sphereIndex}_${Date.now()}`;
               // Update user's ships and spheres
-              batch.update(userRef, {
+              batch.update(userDoc.ref, {
                 [`spheres.${newSphereKey}`]: newSphere,
-                [`ships.${shipKey}.isColonizing`]: false,
-                [`ships.${shipKey}.colonizeStartTime`]: null,
-                [`ships.${shipKey}.destination`]: null,
+                [`ships.${shipKey}`]: admin.firestore.FieldValue.delete(),
               });
             }
           }
