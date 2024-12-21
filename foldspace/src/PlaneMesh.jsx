@@ -471,7 +471,7 @@ const PlaneMesh = React.forwardRef(
           />
         </mesh>
         <mesh ref={orbitRingRef} visible={false} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry attach="geometry" args={[1, 1.1, 64]} />
+          <ringGeometry attach="geometry" args={[1, 1.01, 64]} />
           <shaderMaterial
             attach="material"
             vertexShader={vertexShader}
