@@ -115,33 +115,22 @@ const PlaneMesh = React.forwardRef(
             circleRef.current.visible = true;
           }
           if (ringRef.current) {
-            ringRef.current.position.copy(intersects[0].point);
-            ringRef.current.rotation.x = Math.PI / 2; // Rotate the ring to be horizontal
+            ringRef.current.position.copy(spherePosition);
+            ringRef.current.rotation.x = Math.PI / 2;
             ringRef.current.visible = true;
           }
           if (orbitRingRef.current) {
-            const centralSpherePosition = new THREE.Vector3(0, 0, 0); // Assuming central sphere is at origin
-            const distanceToCentralSphere = intersects[0].point.distanceTo(
-              centralSpherePosition
-            );
+            const centralSpherePosition = new THREE.Vector3(0, 0, 0);
+            const radius = spherePosition.distanceTo(centralSpherePosition);
             orbitRingRef.current.position.copy(centralSpherePosition);
-            orbitRingRef.current.scale.set(
-              distanceToCentralSphere,
-              distanceToCentralSphere,
-              distanceToCentralSphere
-            );
+            orbitRingRef.current.scale.setScalar(radius);
             orbitRingRef.current.visible = true;
           }
         } else {
-          if (circleRef.current) {
-            circleRef.current.visible = false;
-          }
-          if (ringRef.current) {
-            ringRef.current.visible = false;
-          }
-          if (orbitRingRef.current) {
-            orbitRingRef.current.visible = false;
-          }
+          // Hide all indicators if no intersection
+          if (circleRef.current) circleRef.current.visible = false;
+          if (ringRef.current) ringRef.current.visible = false;
+          if (orbitRingRef.current) orbitRingRef.current.visible = false;
         }
       },
       [
