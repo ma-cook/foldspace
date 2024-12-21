@@ -109,6 +109,22 @@ const PlaneMesh = React.forwardRef(
           ].filter(Boolean)
         );
         if (intersects.length > 0) {
+          const { point, object, instanceId } = intersects[0];
+          let spherePosition = point;
+          if (instanceId !== undefined) {
+            const instanceMatrix = new THREE.Matrix4();
+            object.getMatrixAt(instanceId, instanceMatrix);
+            spherePosition = new THREE.Vector3().setFromMatrixPosition(
+              instanceMatrix
+            );
+          }
+
+          const centralInstanceMatrix = new THREE.Matrix4();
+          const centralSpherePosition = new THREE.Vector3();
+          if (instancedMeshRef?.current) {
+            instancedMeshRef.current.getMatrixAt(0, centralInstanceMatrix);
+            centralSpherePosition.setFromMatrixPosition(centralInstanceMatrix);
+          }
           if (circleRef.current) {
             circleRef.current.position.copy(intersects[0].point);
             circleRef.current.position.y += 0.01;
@@ -120,7 +136,6 @@ const PlaneMesh = React.forwardRef(
             ringRef.current.visible = true;
           }
           if (orbitRingRef.current) {
-            const centralSpherePosition = new THREE.Vector3(0, 0, 0);
             const radius = spherePosition.distanceTo(centralSpherePosition);
             orbitRingRef.current.position.copy(centralSpherePosition);
             orbitRingRef.current.scale.setScalar(radius);
