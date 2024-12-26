@@ -29,9 +29,19 @@ const UserPanel = ({
   const setColonizeMode = useStore((state) => state.setColonizeMode);
   const selectedShipRef = useRef(selectedShip);
 
-  const togglePlanetOptions = (planetIndex, planetPosition) => {
+  const togglePlanetOptions = (planetIndex, planet) => {
     // Move the camera to the planet position offset
-    if (planetPosition) {
+    if (
+      planet &&
+      planet.x !== undefined &&
+      planet.y !== undefined &&
+      planet.z !== undefined
+    ) {
+      const planetPosition = {
+        x: planet.x,
+        y: planet.y,
+        z: planet.z,
+      };
       const offsetPosition = {
         x: planetPosition.x + 100,
         y: planetPosition.y + 280,

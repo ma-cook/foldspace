@@ -118,12 +118,19 @@ const PlaneMesh = React.forwardRef(
               instanceMatrix
             );
           }
-
-          const centralInstanceMatrix = new THREE.Matrix4();
+          let centralRef = null;
+          if (object === instancedMeshRef?.current) {
+            centralRef = instancedMeshRef;
+          } else if (object === redInstancedMeshRef?.current) {
+            centralRef = redInstancedMeshRef;
+          } else if (object === greenInstancedMeshRef?.current) {
+            centralRef = greenInstancedMeshRef;
+          }
           const centralSpherePosition = new THREE.Vector3();
-          if (instancedMeshRef?.current) {
-            instancedMeshRef.current.getMatrixAt(0, centralInstanceMatrix);
-            centralSpherePosition.setFromMatrixPosition(centralInstanceMatrix);
+          if (centralRef?.current) {
+            const centralMatrix = new THREE.Matrix4();
+            centralRef.current.getMatrixAt(0, centralMatrix);
+            centralSpherePosition.setFromMatrixPosition(centralMatrix);
           }
           if (circleRef.current) {
             circleRef.current.position.copy(intersects[0].point);
