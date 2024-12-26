@@ -31,7 +31,9 @@ const UserPanel = ({
 
   const togglePlanetOptions = (planetIndex, planetPosition) => {
     // Move the camera to the planet position offset
-    handlePlanetClick(planetPosition);
+    if (planetPosition) {
+      handlePlanetClick(planetPosition);
+    }
 
     // If the buildings list is visible, close both lists
     if (planetBuildVisible[planetIndex]) {
