@@ -119,12 +119,27 @@ const PlaneMesh = React.forwardRef(
             );
           }
           let centralRef = null;
-          if (object === instancedMeshRef?.current) {
+          if (
+            object === instancedMeshRef?.current ||
+            object === lessDetailedMeshRef?.current
+          ) {
             centralRef = instancedMeshRef;
           } else if (object === redInstancedMeshRef?.current) {
             centralRef = redInstancedMeshRef;
           } else if (object === greenInstancedMeshRef?.current) {
             centralRef = greenInstancedMeshRef;
+          } else if (object === blueInstancedMeshRef?.current) {
+            centralRef = blueInstancedMeshRef;
+          } else if (object === purpleInstancedMeshRef?.current) {
+            centralRef = purpleInstancedMeshRef;
+          } else if (object === brownInstancedMeshRef?.current) {
+            centralRef = brownInstancedMeshRef;
+          } else if (object === greenMoonInstancedMeshRef?.current) {
+            centralRef = greenMoonInstancedMeshRef;
+          } else if (object === purpleMoonInstancedMeshRef?.current) {
+            centralRef = purpleMoonInstancedMeshRef;
+          } else if (object === gasInstancedMeshRef?.current) {
+            centralRef = gasInstancedMeshRef;
           }
           const centralSpherePosition = new THREE.Vector3();
           if (centralRef?.current) {
@@ -142,7 +157,7 @@ const PlaneMesh = React.forwardRef(
             ringRef.current.rotation.x = Math.PI / 2;
             ringRef.current.visible = true;
           }
-          if (orbitRingRef.current) {
+          if (orbitRingRef.current && centralRef) {
             const radius = spherePosition.distanceTo(centralSpherePosition);
             orbitRingRef.current.position.copy(centralSpherePosition);
             orbitRingRef.current.scale.setScalar(radius);
