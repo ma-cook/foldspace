@@ -18,6 +18,7 @@ const UserPanel = ({
   const [localPlanets, setLocalPlanets] = useState(ownedPlanets);
   const [planetOptionsVisible, setPlanetOptionsVisible] = useState({});
   const [shipsListVisible, setShipsListVisible] = useState({});
+  const [shipsInConstruction, setShipsInConstruction] = useState({});
 
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
@@ -170,6 +171,22 @@ const UserPanel = ({
     }
   }, [isSelectingDestination]);
 
+  useEffect(() => {
+    if (!localPlanets) return;
+
+    localPlanets.forEach((planet, index) => {
+      const queue = planet.shipConstructionQueue || [];
+      if (queue.length === 0 && shipsInConstruction[index]) {
+        // Clear construction counters when queue is empty
+        setShipsInConstruction((prev) => {
+          const updated = { ...prev };
+          delete updated[index];
+          return updated;
+        });
+      }
+    });
+  }, [localPlanets]);
+
   const toggleBuildButton = (planetIndex) => {
     // If the buildings list is visible, close both lists
     if (planetBuildVisible[planetIndex]) {
@@ -243,12 +260,19 @@ const UserPanel = ({
       }
 
       if (data.success) {
-        console.log(
-          `Added ${shipType} to construction queue on planet ${planet.planetName}`
-        );
+        // Update construction counter
+        setShipsInConstruction((prev) => ({
+          ...prev,
+          [planetIndex]: {
+            ...prev[planetIndex],
+            [shipType]: (prev[planetIndex]?.[shipType] || 0) + 1,
+          },
+        }));
+
+        console.log(`Added ${shipType} to construction queue`);
       }
     } catch (error) {
-      console.error('Error adding ship to construction queue:', error);
+      console.error('Error:', error);
       alert(`Failed to add ship: ${error.message}`);
     }
   };
@@ -367,7 +391,19 @@ const UserPanel = ({
                                 <ul>
                                   {SHIP_TYPES.map((shipType) => (
                                     <li key={shipType}>
-                                      {shipType}: 0{' '}
+                                      {shipType}: 0
+                                      {shipsInConstruction[index]?.[shipType] >
+                                        0 && (
+                                        <span
+                                          style={{
+                                            color: 'red',
+                                            marginLeft: '5px',
+                                          }}
+                                        >
+                                          +
+                                          {shipsInConstruction[index][shipType]}
+                                        </span>
+                                      )}
                                       <button
                                         onClick={() =>
                                           handleAddShip(index, shipType)
