@@ -70,8 +70,23 @@ const UserPanel = ({
   };
 
   const togglePlanetOptions = (planetIndex, planet) => {
+    // Move camera
     moveCameraToPlanet(planet);
-    togglePlanetMenu(planetIndex);
+
+    // Load buildings data
+    const buildings = planet?.buildings;
+    if (buildings) {
+      setBuildingsData((prev) => ({
+        ...prev,
+        [planetIndex]: buildings,
+      }));
+    }
+
+    // Toggle menu
+    setPlanetOptionsVisible((prev) => ({
+      ...prev,
+      [planetIndex]: !prev[planetIndex],
+    }));
   };
 
   const toggleDropdown = (shipKey) => {
@@ -276,9 +291,12 @@ const UserPanel = ({
                   </div>
                   {planetOptionsVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
-                      {buildingsData[index] &&
-                        (buildingsData[index].shipyard > 0 ||
-                          buildingsData[index].spaceShipyard > 0) && (
+                      <button onClick={() => toggleBuildButton(index)}>
+                        Build
+                      </button>
+                      {planet.buildings &&
+                        (planet.buildings.shipyard > 0 ||
+                          planet.buildings.spaceShipyard > 0) && (
                           <button
                             onClick={() => {
                               /* Placeholder for ships button */

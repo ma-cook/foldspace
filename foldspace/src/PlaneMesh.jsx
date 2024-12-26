@@ -141,7 +141,13 @@ const PlaneMesh = React.forwardRef(
           } else if (object === gasInstancedMeshRef?.current) {
             centralRef = gasInstancedMeshRef;
           }
+
           const centralSpherePosition = new THREE.Vector3();
+          if (centralRef?.current) {
+            const centralMatrix = new THREE.Matrix4();
+            centralRef.current.getMatrixAt(0, centralMatrix);
+            centralSpherePosition.setFromMatrixPosition(centralMatrix);
+          }
           if (centralRef?.current) {
             const centralMatrix = new THREE.Matrix4();
             centralRef.current.getMatrixAt(0, centralMatrix);
