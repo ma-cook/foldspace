@@ -85,6 +85,7 @@ const COLONY_METADATA = {
     'Space defense': 0,
   },
   constructionQueue: [],
+  shipConstructionQueue: [],
 };
 
 const deleteDocumentsInBatches = async (collectionRef) => {

@@ -325,6 +325,11 @@ const UserPanel = ({
     return queue.filter((item) => item.shipType === shipType).length;
   };
 
+  const getBuildingsInConstruction = (planet, buildingName) => {
+    const queue = planet?.constructionQueue || [];
+    return queue.filter((item) => item.buildingName === buildingName).length;
+  };
+
   return (
     <div
       style={{
@@ -405,18 +410,30 @@ const UserPanel = ({
                       {buildingsData[index] && (
                         <ul>
                           {Object.entries(buildingsData[index]).map(
-                            ([buildingName, quantity]) => (
-                              <li key={buildingName}>
-                                {buildingName}: {quantity}{' '}
-                                <button
-                                  onClick={() =>
-                                    handleAddBuilding(index, buildingName)
-                                  }
-                                >
-                                  +
-                                </button>
-                              </li>
-                            )
+                            ([buildingName, quantity]) => {
+                              const inConstruction = getBuildingsInConstruction(
+                                planet,
+                                buildingName
+                              );
+                              return (
+                                <li key={buildingName}>
+                                  {buildingName}: {quantity}
+                                  {inConstruction > 0 && (
+                                    <span style={{ color: 'red' }}>
+                                      {' '}
+                                      +{inConstruction}
+                                    </span>
+                                  )}{' '}
+                                  <button
+                                    onClick={() =>
+                                      handleAddBuilding(index, buildingName)
+                                    }
+                                  >
+                                    +
+                                  </button>
+                                </li>
+                              );
+                            }
                           )}
                         </ul>
                       )}
