@@ -199,6 +199,60 @@ const UserPanel = ({
     }
   };
 
+  const handleAddShip = async (planetIndex, shipType) => {
+    try {
+      if (!user) {
+        console.error('User not authenticated.');
+        return;
+      }
+
+      const planet = localPlanets[planetIndex];
+      if (!planet) {
+        console.error('Planet not found.');
+        return;
+      }
+
+      // Validate required fields
+      if (!planet.instanceId || !planet.cellId) {
+        console.error('Missing required planet data:', { planet });
+        return;
+      }
+
+      const payload = {
+        userId: user.uid,
+        planetId: planet.instanceId,
+        cellId: planet.cellId,
+        shipType: shipType,
+      };
+
+      const response = await fetch(
+        'https://us-central1-foldspace-6483c.cloudfunctions.net/api/addShipToQueue',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${data.error || response.statusText}`);
+      }
+
+      if (data.success) {
+        console.log(
+          `Added ${shipType} to construction queue on planet ${planet.planetName}`
+        );
+      }
+    } catch (error) {
+      console.error('Error adding ship to construction queue:', error);
+      alert(`Failed to add ship: ${error.message}`);
+    }
+  };
+
   const handleAddBuilding = async (planetIndex, buildingName) => {
     try {
       if (!user) {
@@ -316,7 +370,7 @@ const UserPanel = ({
                                       {shipType}: 0{' '}
                                       <button
                                         onClick={() =>
-                                          console.log(`Add ${shipType}`)
+                                          handleAddShip(index, shipType)
                                         }
                                       >
                                         +
