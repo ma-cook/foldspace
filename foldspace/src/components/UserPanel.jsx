@@ -245,8 +245,6 @@ const UserPanel = ({
     }
   };
 
-  console.log('Buildings for planetIndex', index, buildingsData[index]);
-
   return (
     <div
       style={{
@@ -275,23 +273,29 @@ const UserPanel = ({
                   <div onClick={() => togglePlanetOptions(index, planet)}>
                     {planet.planetName}
                   </div>
+
                   {planetOptionsVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
                       <button onClick={() => toggleBuildButton(index)}>
                         Build
                       </button>
-
-                      {Number(buildingsData[index]?.shipyard || 0) > 0 ||
-                      Number(buildingsData[index]?.spaceShipyard || 0) > 0 ? (
-                        <button
-                          onClick={() => {
-                            console.log('Ships button clicked');
-                            // ...ships logic...
-                          }}
-                        >
-                          Ships
-                        </button>
-                      ) : null}
+                      {console.log(
+                        'Buildings data for planet',
+                        index,
+                        ':',
+                        buildingsData[index]
+                      )}
+                      {buildingsData[index] &&
+                        (buildingsData[index].shipyard > 0 ||
+                          buildingsData[index].spaceShipyard > 0) && (
+                          <button
+                            onClick={() => {
+                              console.log('Ships button clicked');
+                            }}
+                          >
+                            Ships
+                          </button>
+                        )}
                     </div>
                   )}
                   {planetBuildVisible[index] && (
