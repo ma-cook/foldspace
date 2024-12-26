@@ -32,7 +32,13 @@ const UserPanel = ({
   const togglePlanetOptions = (planetIndex, planetPosition) => {
     // Move the camera to the planet position offset
     if (planetPosition) {
-      handlePlanetClick(planetPosition);
+      const offsetPosition = {
+        x: planetPosition.x + 100,
+        y: planetPosition.y + 280,
+        z: planetPosition.z + 380,
+      };
+      setTarget(offsetPosition);
+      setLookAt(planetPosition);
     }
 
     // If the buildings list is visible, close both lists
@@ -263,9 +269,9 @@ const UserPanel = ({
             <ul>
               {localPlanets.map((planet, index) => (
                 <li key={index} style={{ cursor: 'pointer' }}>
-                  <div onClick={() => togglePlanetOptions(index)}>
+                  <div onClick={() => togglePlanetOptions(index, planet)}>
                     {planet.planetName}: ({planet.x ? planet.x.toFixed(2) : '?'}
-                    ,{planet.y ? planet.y.toFixed(2) : '?'},{' '}
+                    ,{planet.y ? planet.y.toFixed(2) : '?'},
                     {planet.z ? planet.z.toFixed(2) : '?'})
                   </div>
                   {planetOptionsVisible[index] && (
