@@ -17,6 +17,7 @@ const UserPanel = ({
   const [buildQueue, setBuildQueue] = useState({});
   const [localPlanets, setLocalPlanets] = useState(ownedPlanets);
   const [planetOptionsVisible, setPlanetOptionsVisible] = useState({});
+  const [shipsListVisible, setShipsListVisible] = useState({});
 
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
@@ -28,6 +29,19 @@ const UserPanel = ({
   const setShipToMove = useStore((state) => state.setShipToMove);
   const setColonizeMode = useStore((state) => state.setColonizeMode);
   const selectedShipRef = useRef(selectedShip);
+
+  const SHIP_TYPES = [
+    'Scout',
+    'Colony ship',
+    'Troop carrier',
+    'Transporter',
+    'Fighter',
+    'Bomber',
+    'Frigate',
+    'Cruiser',
+    'BattleShip',
+    'StarNova',
+  ];
 
   const moveCameraToPlanet = (planet) => {
     if (
@@ -49,6 +63,13 @@ const UserPanel = ({
       setTarget(offsetPosition);
       setLookAt(planetPosition);
     }
+  };
+
+  const toggleShipsList = (planetIndex) => {
+    setShipsListVisible((prev) => ({
+      ...prev,
+      [planetIndex]: !prev[planetIndex],
+    }));
   };
 
   const togglePlanetOptions = (planetIndex, planet) => {
@@ -279,22 +300,33 @@ const UserPanel = ({
                       <button onClick={() => toggleBuildButton(index)}>
                         Build
                       </button>
-                      {console.log(
-                        'Buildings data for planet',
-                        index,
-                        ':',
-                        buildingsData[index]
-                      )}
                       {buildingsData[index] &&
-                        (buildingsData[index].shipyard > 0 ||
-                          buildingsData[index].spaceShipyard > 0) && (
-                          <button
-                            onClick={() => {
-                              console.log('Ships button clicked');
-                            }}
-                          >
-                            Ships
-                          </button>
+                        (Number(buildingsData[index]['Shipyard'] || 0) > 0 ||
+                          Number(buildingsData[index]['Space shipyard'] || 0) >
+                            0) && (
+                          <>
+                            <button onClick={() => toggleShipsList(index)}>
+                              Ships
+                            </button>
+                            {shipsListVisible[index] && (
+                              <div style={{ marginLeft: '40px' }}>
+                                <ul>
+                                  {SHIP_TYPES.map((shipType) => (
+                                    <li key={shipType}>
+                                      {shipType}: 0{' '}
+                                      <button
+                                        onClick={() =>
+                                          console.log(`Add ${shipType}`)
+                                        }
+                                      >
+                                        +
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </>
                         )}
                     </div>
                   )}
