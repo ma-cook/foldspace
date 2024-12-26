@@ -29,8 +29,7 @@ const UserPanel = ({
   const setColonizeMode = useStore((state) => state.setColonizeMode);
   const selectedShipRef = useRef(selectedShip);
 
-  const togglePlanetOptions = (planetIndex, planet) => {
-    // Move the camera to the planet position offset
+  const moveCameraToPlanet = (planet) => {
     if (
       planet &&
       planet.x !== undefined &&
@@ -50,8 +49,9 @@ const UserPanel = ({
       setTarget(offsetPosition);
       setLookAt(planetPosition);
     }
+  };
 
-    // If the buildings list is visible, close both lists
+  const togglePlanetMenu = (planetIndex) => {
     if (planetBuildVisible[planetIndex]) {
       setPlanetBuildVisible((prev) => ({
         ...prev,
@@ -62,12 +62,16 @@ const UserPanel = ({
         [planetIndex]: false,
       }));
     } else {
-      // Toggle planet options
       setPlanetOptionsVisible((prev) => ({
         ...prev,
         [planetIndex]: !prev[planetIndex],
       }));
     }
+  };
+
+  const togglePlanetOptions = (planetIndex, planet) => {
+    moveCameraToPlanet(planet);
+    togglePlanetMenu(planetIndex);
   };
 
   const toggleDropdown = (shipKey) => {
@@ -111,20 +115,6 @@ const UserPanel = ({
 
   const handleStopClick = (shipKey) => {
     console.log(`Stopping ship: ${shipKey}`);
-  };
-
-  const handlePlanetClick = (planetPosition) => {
-    if (planetPosition) {
-      const offsetPosition = {
-        x: planetPosition.x + 100,
-        y: planetPosition.y + 280,
-        z: planetPosition.z + 380,
-      };
-      setTarget(offsetPosition);
-      setLookAt(planetPosition);
-    } else {
-      console.error('Planet position is undefined.');
-    }
   };
 
   useEffect(() => {
