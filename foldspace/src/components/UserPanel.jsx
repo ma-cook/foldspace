@@ -51,24 +51,6 @@ const UserPanel = ({
     }
   };
 
-  const togglePlanetMenu = (planetIndex) => {
-    if (planetBuildVisible[planetIndex]) {
-      setPlanetBuildVisible((prev) => ({
-        ...prev,
-        [planetIndex]: false,
-      }));
-      setPlanetOptionsVisible((prev) => ({
-        ...prev,
-        [planetIndex]: false,
-      }));
-    } else {
-      setPlanetOptionsVisible((prev) => ({
-        ...prev,
-        [planetIndex]: !prev[planetIndex],
-      }));
-    }
-  };
-
   const togglePlanetOptions = (planetIndex, planet) => {
     // Close all other options and building lists
     setPlanetOptionsVisible({});
@@ -263,6 +245,8 @@ const UserPanel = ({
     }
   };
 
+  console.log('Buildings for planetIndex', index, buildingsData[index]);
+
   return (
     <div
       style={{
@@ -289,15 +273,14 @@ const UserPanel = ({
               {localPlanets.map((planet, index) => (
                 <li key={index} style={{ cursor: 'pointer' }}>
                   <div onClick={() => togglePlanetOptions(index, planet)}>
-                    {planet.planetName}: ({planet.x ? planet.x.toFixed(2) : '?'}
-                    ,{planet.y ? planet.y.toFixed(2) : '?'},
-                    {planet.z ? planet.z.toFixed(2) : '?'})
+                    {planet.planetName}
                   </div>
                   {planetOptionsVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
                       <button onClick={() => toggleBuildButton(index)}>
                         Build
                       </button>
+
                       {Number(buildingsData[index]?.shipyard || 0) > 0 ||
                       Number(buildingsData[index]?.spaceShipyard || 0) > 0 ? (
                         <button
@@ -350,12 +333,7 @@ const UserPanel = ({
                   const handleClick = () => toggleDropdown(shipKey);
                   return (
                     <li key={shipKey} style={{ cursor: 'pointer' }}>
-                      <div onClick={handleClick}>
-                        {shipType} at position (
-                        {shipInfo.position?.x.toFixed(2)},{' '}
-                        {shipInfo.position?.y.toFixed(2)},{' '}
-                        {shipInfo.position?.z.toFixed(2)})
-                      </div>
+                      <div onClick={handleClick}>{shipType}</div>
                       {dropdownVisible[shipKey] && (
                         <div style={{ marginLeft: '20px' }}>
                           <button onClick={() => handleMoveToClick(shipKey)}>
