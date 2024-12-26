@@ -111,48 +111,47 @@ const PlaneMesh = React.forwardRef(
         if (intersects.length > 0) {
           const { point, object, instanceId } = intersects[0];
           let spherePosition = point;
+
           if (instanceId !== undefined) {
             const instanceMatrix = new THREE.Matrix4();
             object.getMatrixAt(instanceId, instanceMatrix);
             spherePosition = new THREE.Vector3().setFromMatrixPosition(
               instanceMatrix
             );
-          }
-          let centralRef = null;
-          if (
-            object === instancedMeshRef?.current ||
-            object === lessDetailedMeshRef?.current
-          ) {
-            centralRef = instancedMeshRef;
-          } else if (object === redInstancedMeshRef?.current) {
-            centralRef = redInstancedMeshRef;
-          } else if (object === greenInstancedMeshRef?.current) {
-            centralRef = greenInstancedMeshRef;
-          } else if (object === blueInstancedMeshRef?.current) {
-            centralRef = blueInstancedMeshRef;
-          } else if (object === purpleInstancedMeshRef?.current) {
-            centralRef = purpleInstancedMeshRef;
-          } else if (object === brownInstancedMeshRef?.current) {
-            centralRef = brownInstancedMeshRef;
-          } else if (object === greenMoonInstancedMeshRef?.current) {
-            centralRef = greenMoonInstancedMeshRef;
-          } else if (object === purpleMoonInstancedMeshRef?.current) {
-            centralRef = purpleMoonInstancedMeshRef;
-          } else if (object === gasInstancedMeshRef?.current) {
-            centralRef = gasInstancedMeshRef;
+
+            if (
+              object !== instancedMeshRef?.current &&
+              instancedMeshRef?.current
+            ) {
+              let closestDistance = 10000;
+              let closestPosition = null;
+
+              // Search all yellow sphere instances
+              for (let i = 0; i < instancedMeshRef.current.count; i++) {
+                const centralMatrix = new THREE.Matrix4();
+                instancedMeshRef.current.getMatrixAt(i, centralMatrix);
+                const centralPos = new THREE.Vector3().setFromMatrixPosition(
+                  centralMatrix
+                );
+
+                const distance = spherePosition.distanceTo(centralPos);
+
+                if (distance < closestDistance) {
+                  closestDistance = distance;
+                  closestPosition = centralPos.clone();
+                }
+              }
+
+              // Position orbit ring at closest yellow sphere
+              if (closestPosition && orbitRingRef.current) {
+                const radius = spherePosition.distanceTo(closestPosition);
+                orbitRingRef.current.position.copy(closestPosition);
+                orbitRingRef.current.scale.setScalar(radius);
+                orbitRingRef.current.visible = true;
+              }
+            }
           }
 
-          const centralSpherePosition = new THREE.Vector3();
-          if (centralRef?.current) {
-            const centralMatrix = new THREE.Matrix4();
-            centralRef.current.getMatrixAt(0, centralMatrix);
-            centralSpherePosition.setFromMatrixPosition(centralMatrix);
-          }
-          if (centralRef?.current) {
-            const centralMatrix = new THREE.Matrix4();
-            centralRef.current.getMatrixAt(0, centralMatrix);
-            centralSpherePosition.setFromMatrixPosition(centralMatrix);
-          }
           if (circleRef.current) {
             circleRef.current.position.copy(intersects[0].point);
             circleRef.current.position.y += 0.01;
