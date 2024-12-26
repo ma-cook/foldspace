@@ -31,15 +31,7 @@ const UserPanel = ({
 
   const togglePlanetOptions = (planetIndex, planetPosition) => {
     // Move the camera to the planet position offset
-    if (planetPosition) {
-      const offsetPosition = {
-        x: planetPosition.x + 100,
-        y: planetPosition.y + 280,
-        z: planetPosition.z + 380,
-      };
-      setTarget(offsetPosition);
-      setLookAt(planetPosition);
-    }
+    handlePlanetClick(planetPosition);
 
     // If the buildings list is visible, close both lists
     if (planetBuildVisible[planetIndex]) {
@@ -276,16 +268,17 @@ const UserPanel = ({
                   </div>
                   {planetOptionsVisible[index] && (
                     <div style={{ marginLeft: '20px' }}>
-                      <button onClick={() => toggleBuildButton(index)}>
-                        Build
-                      </button>
-                      <button
-                        onClick={() => {
-                          /* Placeholder for ships button */
-                        }}
-                      >
-                        Ships
-                      </button>
+                      {buildingsData[index] &&
+                        (buildingsData[index].shipyard > 0 ||
+                          buildingsData[index].spaceShipyard > 0) && (
+                          <button
+                            onClick={() => {
+                              /* Placeholder for ships button */
+                            }}
+                          >
+                            Ships
+                          </button>
+                        )}
                     </div>
                   )}
                   {planetBuildVisible[index] && (
