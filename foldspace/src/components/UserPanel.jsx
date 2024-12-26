@@ -298,9 +298,9 @@ const UserPanel = ({
                       <button onClick={() => toggleBuildButton(index)}>
                         Build
                       </button>
-                      {planet.buildings &&
-                        (planet.buildings.shipyard > 0 ||
-                          planet.buildings.spaceShipyard > 0) && (
+                      {buildingsData[index] &&
+                        (buildingsData[index].shipyard > 0 ||
+                          buildingsData[index].spaceShipyard > 0) && (
                           <button
                             onClick={() => {
                               /* Placeholder for ships button */
