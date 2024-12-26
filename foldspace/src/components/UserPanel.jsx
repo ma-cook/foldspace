@@ -298,24 +298,17 @@ const UserPanel = ({
                       <button onClick={() => toggleBuildButton(index)}>
                         Build
                       </button>
-                      {buildingsData[index] && (
-                        <>
-                          <button onClick={() => toggleBuildButton(index)}>
-                            Build
-                          </button>
-                          {(Number(buildingsData[index].shipyard || 0) > 0 ||
-                            Number(buildingsData[index].spaceShipyard || 0) >
-                              0) && (
-                            <button
-                              onClick={() => {
-                                /* Ships logic */
-                              }}
-                            >
-                              Ships
-                            </button>
-                          )}
-                        </>
-                      )}
+                      {Number(buildingsData[index]?.shipyard || 0) > 0 ||
+                      Number(buildingsData[index]?.spaceShipyard || 0) > 0 ? (
+                        <button
+                          onClick={() => {
+                            console.log('Ships button clicked');
+                            // ...ships logic...
+                          }}
+                        >
+                          Ships
+                        </button>
+                      ) : null}
                     </div>
                   )}
                   {planetBuildVisible[index] && (
