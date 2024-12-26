@@ -18,7 +18,6 @@ const UserPanel = ({
   const [localPlanets, setLocalPlanets] = useState(ownedPlanets);
   const [planetOptionsVisible, setPlanetOptionsVisible] = useState({});
   const [shipsListVisible, setShipsListVisible] = useState({});
-  const [shipsInConstruction, setShipsInConstruction] = useState({});
 
   const isSelectingDestination = useStore(
     (state) => state.isSelectingDestination
@@ -171,22 +170,6 @@ const UserPanel = ({
     }
   }, [isSelectingDestination]);
 
-  useEffect(() => {
-    if (!localPlanets) return;
-
-    localPlanets.forEach((planet, index) => {
-      const queue = planet.shipConstructionQueue || [];
-      if (queue.length === 0 && shipsInConstruction[index]) {
-        // Clear construction counters when queue is empty
-        setShipsInConstruction((prev) => {
-          const updated = { ...prev };
-          delete updated[index];
-          return updated;
-        });
-      }
-    });
-  }, [localPlanets]);
-
   const toggleBuildButton = (planetIndex) => {
     // If the buildings list is visible, close both lists
     if (planetBuildVisible[planetIndex]) {
@@ -260,19 +243,12 @@ const UserPanel = ({
       }
 
       if (data.success) {
-        // Update construction counter
-        setShipsInConstruction((prev) => ({
-          ...prev,
-          [planetIndex]: {
-            ...prev[planetIndex],
-            [shipType]: (prev[planetIndex]?.[shipType] || 0) + 1,
-          },
-        }));
-
-        console.log(`Added ${shipType} to construction queue`);
+        console.log(
+          `Added ${shipType} to construction queue on planet ${planet.planetName}`
+        );
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error adding ship to construction queue:', error);
       alert(`Failed to add ship: ${error.message}`);
     }
   };
@@ -344,6 +320,11 @@ const UserPanel = ({
     }
   };
 
+  const getShipsInConstruction = (planet, shipType) => {
+    const queue = planet?.shipConstructionQueue || [];
+    return queue.filter((item) => item.shipType === shipType).length;
+  };
+
   return (
     <div
       style={{
@@ -389,30 +370,29 @@ const UserPanel = ({
                             {shipsListVisible[index] && (
                               <div style={{ marginLeft: '40px' }}>
                                 <ul>
-                                  {SHIP_TYPES.map((shipType) => (
-                                    <li key={shipType}>
-                                      {shipType}: 0
-                                      {shipsInConstruction[index]?.[shipType] >
-                                        0 && (
-                                        <span
-                                          style={{
-                                            color: 'red',
-                                            marginLeft: '5px',
-                                          }}
+                                  {SHIP_TYPES.map((shipType) => {
+                                    const inConstruction =
+                                      getShipsInConstruction(planet, shipType);
+                                    return (
+                                      <li key={shipType}>
+                                        {shipType}:{' '}
+                                        {inConstruction > 0 ? (
+                                          <span style={{ color: 'red' }}>
+                                            {inConstruction}
+                                          </span>
+                                        ) : (
+                                          0
+                                        )}{' '}
+                                        <button
+                                          onClick={() =>
+                                            handleAddShip(index, shipType)
+                                          }
                                         >
                                           +
-                                          {shipsInConstruction[index][shipType]}
-                                        </span>
-                                      )}
-                                      <button
-                                        onClick={() =>
-                                          handleAddShip(index, shipType)
-                                        }
-                                      >
-                                        +
-                                      </button>
-                                    </li>
-                                  ))}
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
                                 </ul>
                               </div>
                             )}
