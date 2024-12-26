@@ -70,6 +70,10 @@ const UserPanel = ({
   };
 
   const togglePlanetOptions = (planetIndex, planet) => {
+    // Close all other options and building lists
+    setPlanetOptionsVisible({});
+    setPlanetBuildVisible({});
+
     // Move camera
     moveCameraToPlanet(planet);
 
@@ -82,7 +86,7 @@ const UserPanel = ({
       }));
     }
 
-    // Toggle menu
+    // Toggle menu for clicked planet
     setPlanetOptionsVisible((prev) => ({
       ...prev,
       [planetIndex]: !prev[planetIndex],
