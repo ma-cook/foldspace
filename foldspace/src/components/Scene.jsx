@@ -32,6 +32,7 @@ const Scene = ({
   loadingCells,
   setLoadingCells,
   updateShipDestination,
+  civilisationName, // Add this prop
 }) => {
   const loadedCells = useStore((state) => state.loadedCells);
   const positions = useStore((state) => state.positions);
@@ -198,6 +199,7 @@ const Scene = ({
             redMoonPositions={redMoonPositions}
             gasMoonPositions={gasMoonPositions}
             brownMoonPositions={brownMoonPositions}
+            civilisationName={civilisationName} // Add this prop
           />
           <CustomEnvironment />
           <CustomCamera ref={cameraRef} />

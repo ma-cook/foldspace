@@ -37,6 +37,7 @@ const SphereRenderer = forwardRef(
       gasRing: useRef(),
     }).current;
     const civilisationSpriteRef = useRef();
+    const spriteGroupRef = useRef();
 
     const spherePools = useSpherePools(
       getCachedGeometry('sphere'),
@@ -255,44 +256,56 @@ const SphereRenderer = forwardRef(
     }, []);
 
     useEffect(() => {
-      if (!civilisationName || !sphereRefs.centralDetailed.current) return;
+      if (!civilisationName || !cameraRef.current) return;
 
-      const closestPosition = flattenedPositions.reduce((closest, pos) => {
-        const distance = pos.distanceTo(cameraRef.current.position);
-        if (distance < 10000 && (!closest || distance < closest.distance)) {
-          return { pos, distance };
+      // Find the closest position to the camera
+      const cameraPosition = cameraRef.current.position;
+      let closestPos = null;
+      let minDistance = Infinity;
+
+      filteredPositions.forEach((pos) => {
+        const distance = pos.distanceTo(cameraPosition);
+        if (distance < minDistance && distance < 10000) {
+          minDistance = distance;
+          closestPos = pos;
         }
-        return closest;
-      }, null);
+      });
 
-      if (closestPosition) {
-        const texture = createTextTexture(civilisationName);
+      if (closestPos) {
+        // Clear existing sprites
+        while (spriteGroupRef.current?.children.length > 0) {
+          spriteGroupRef.current.remove(spriteGroupRef.current.children[0]);
+        }
+
+        // Create new sprite
+        const texture = createTextTexture(
+          civilisationName,
+          'Arial',
+          64,
+          '#FFFFFF'
+        );
         const spriteMaterial = new SpriteMaterial({
           map: texture,
           transparent: true,
         });
         const sprite = new Sprite(spriteMaterial);
-        sprite.position.set(
-          closestPosition.pos.x,
-          closestPosition.pos.y + 50,
-          closestPosition.pos.z
-        );
-        sprite.scale.set(100, 50, 1); // Adjust size as needed
-        civilisationSpriteRef.current = sprite;
-        sphereRefs.centralDetailed.current.add(sprite);
-      }
 
-      return () => {
-        if (civilisationSpriteRef.current) {
-          sphereRefs.centralDetailed.current.remove(
-            civilisationSpriteRef.current
-          );
-        }
-      };
-    }, [civilisationName, flattenedPositions, cameraRef]);
+        // Position above the sphere
+        sprite.position.set(
+          closestPos.x,
+          closestPos.y + 100, // Increased offset to be more visible
+          closestPos.z
+        );
+        sprite.scale.set(200, 100, 1); // Increased size to be more visible
+
+        // Add to sprite group
+        spriteGroupRef.current?.add(sprite);
+      }
+    }, [civilisationName, filteredPositions, cameraRef]);
 
     return (
       <>
+        <group ref={spriteGroupRef} />
         <PlaneMesh
           key={`plane-`}
           ref={planeMeshRef}
