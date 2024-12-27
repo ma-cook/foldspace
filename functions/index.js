@@ -331,6 +331,11 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
       shipConstructionQueue: [],
     };
 
+    const planetStats = {
+      population: 700, // Starting population
+      populationCapacity: buildingsMetadata.buildings['Housing complex'] * 1000, // Each complex = 1000 capacity
+    };
+
     // Now perform the transaction
     await db.runTransaction(async (transaction) => {
       // Re-fetch the user document within the transaction
@@ -367,7 +372,8 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         civilisationName,
         homePlanetName,
         planetName: homePlanetName,
-        ...buildingsMetadata, // Add buildings metadata
+        planetStats,
+        ...buildingsMetadata,
       };
 
       // Update the cell with the assigned sphere
@@ -384,7 +390,9 @@ app.post('/startingPlanet', cors(corsOptions), async (req, res) => {
         civilisationName,
         cellId: closestSphere.cellId, // Include cellId
         instanceId: closestSphere.instanceId, // Include instanceId
-        ...buildingsMetadata, // Add buildings metadata
+
+        planetStats,
+        ...buildingsMetadata,
       };
 
       // Generate unique ship IDs

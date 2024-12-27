@@ -108,8 +108,17 @@ const processConstructionQueue = async (context) => {
               (updatedBuildings[item.buildingName] || 0) + 1;
           }
 
+          const updatedPlanetStats = { ...sphere.planetStats };
+          if (
+            completedBuildings.some((b) => b.buildingName === 'Housing complex')
+          ) {
+            updatedPlanetStats.populationCapacity =
+              updatedBuildings['Housing complex'] * 1000;
+          }
+
           batch.update(userRef, {
             [`spheres.${sphereKey}.buildings`]: updatedBuildings,
+            [`spheres.${sphereKey}.planetStats`]: updatedPlanetStats,
             [`spheres.${sphereKey}.constructionQueue`]: remainingQueue,
           });
 
