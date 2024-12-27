@@ -31,6 +31,7 @@ const App = React.memo(() => {
   const setShipToMove = useStore((state) => state.setShipToMove);
   const isInitialCameraSet = useRef(false);
   const [economy, setEconomy] = useState(null);
+  const [civilisationName, setCivilisationName] = useState('');
 
   const fetchUserEconomy = useCallback((userId) => {
     const userDocRef = doc(db, 'users', userId);
@@ -193,6 +194,19 @@ const App = React.memo(() => {
     }
   }, [ownedPlanets, setTarget, setLookAt]);
 
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          const userData = doc.data();
+          setCivilisationName(userData.civilisationName || '');
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
+
   const handleShipClick = (shipPosition) => {
     const offsetPosition = {
       x: shipPosition.x + 10,
@@ -264,6 +278,7 @@ const App = React.memo(() => {
         loadingCells={loadingCells}
         setLoadingCells={setLoadingCells}
         updateShipDestination={updateShipDestination}
+        civilisationName={civilisationName} // Pass the civilisation name
       />
       {loadingCells.size > 0 && <LoadingMessage />}
     </div>
