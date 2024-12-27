@@ -12,6 +12,7 @@ import { DETAIL_DISTANCE, GRID_SIZE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
 import { Sprite, SpriteMaterial, TextureLoader } from 'three';
+import { createTextTexture } from '../utils/textTexture'; // Import the utility function
 
 const SphereRenderer = forwardRef(
   ({ flattenedPositions, cameraRef, civilisationName }, ref) => {
