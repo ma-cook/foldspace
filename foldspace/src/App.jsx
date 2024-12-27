@@ -13,6 +13,7 @@ import {
 import UserPanel from './components/UserPanel';
 import Scene from './components/Scene';
 import LoadingMessage from './components/LoadingMessage';
+import EconomyBar from './components/EconomyBar';
 
 const App = React.memo(() => {
   const cameraRef = useRef();
@@ -29,6 +30,24 @@ const App = React.memo(() => {
   );
   const setShipToMove = useStore((state) => state.setShipToMove);
   const isInitialCameraSet = useRef(false);
+  const [economy, setEconomy] = useState(null);
+
+  const fetchUserEconomy = useCallback((userId) => {
+    const userDocRef = doc(db, 'users', userId);
+    return onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data();
+        setEconomy(
+          userData.economy || {
+            credits: 0,
+            crystals: 0,
+            gases: 0,
+            minerals: 0,
+          }
+        );
+      }
+    });
+  }, []);
 
   // Function to set up real-time listener for ships data
   const fetchAllShipsData = useCallback(() => {
@@ -129,6 +148,16 @@ const App = React.memo(() => {
   }, []);
 
   useEffect(() => {
+    let unsubscribeEconomy = null;
+    if (user) {
+      unsubscribeEconomy = fetchUserEconomy(user.uid);
+    }
+    return () => {
+      if (unsubscribeEconomy) unsubscribeEconomy();
+    };
+  }, [user, fetchUserEconomy]);
+
+  useEffect(() => {
     let unsubscribeShips = null;
     let unsubscribePlanets = null;
     if (user) {
@@ -225,6 +254,7 @@ const App = React.memo(() => {
         setLookAt={setLookAt}
         updateShipDestination={updateShipDestination} // Pass the function
       />
+      <EconomyBar economy={economy} />
       <Scene
         backgroundColor={backgroundColor}
         cameraRef={cameraRef}

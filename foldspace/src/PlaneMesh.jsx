@@ -162,12 +162,6 @@ const PlaneMesh = React.forwardRef(
             ringRef.current.rotation.x = Math.PI / 2;
             ringRef.current.visible = true;
           }
-          if (orbitRingRef.current && centralRef) {
-            const radius = spherePosition.distanceTo(centralSpherePosition);
-            orbitRingRef.current.position.copy(centralSpherePosition);
-            orbitRingRef.current.scale.setScalar(radius);
-            orbitRingRef.current.visible = true;
-          }
         } else {
           // Hide all indicators if no intersection
           if (circleRef.current) circleRef.current.visible = false;
