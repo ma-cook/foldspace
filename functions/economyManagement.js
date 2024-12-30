@@ -14,8 +14,9 @@ const processEconomy = functions.pubsub
         const userData = userDoc.data();
         const spheres = userData.spheres || {};
         let totalPopulation = 0;
+        let totalMines = 0;
 
-        // Sum up population from all planets
+        // Calculate totals from all planets
         Object.values(spheres).forEach((sphere) => {
           if (
             sphere.planetStats &&
@@ -23,23 +24,34 @@ const processEconomy = functions.pubsub
           ) {
             totalPopulation += sphere.planetStats.population;
           }
+
+          // Count mines from buildings
+          if (sphere.buildings && typeof sphere.buildings.Mine === 'number') {
+            totalMines += sphere.buildings.Mine;
+          }
         });
 
-        // Calculate credit increase (0.1 credits per population per minute)
+        // Calculate resource increases
         const creditIncrease = totalPopulation * 0.1;
+        const mineralIncrease = totalMines * 10; // 10 minerals per mine per minute
+        const crystalIncrease = totalMines * 5; // 5 crystals per mine per minute
 
-        // Get current economy or create default
-        const currentEconomy = userData.economy || {
-          credits: 0,
-          crystals: 0,
-          gases: 0,
-          minerals: 0,
-        };
-
-        // Update credits
+        // Update user's economy
         batch.update(userDoc.ref, {
           'economy.credits':
             admin.firestore.FieldValue.increment(creditIncrease),
+          'economy.minerals':
+            admin.firestore.FieldValue.increment(mineralIncrease),
+          'economy.crystals':
+            admin.firestore.FieldValue.increment(crystalIncrease),
+        });
+
+        console.log(`User ${userDoc.id} update:`, {
+          totalPopulation,
+          totalMines,
+          creditIncrease,
+          mineralIncrease,
+          crystalIncrease,
         });
       }
 
