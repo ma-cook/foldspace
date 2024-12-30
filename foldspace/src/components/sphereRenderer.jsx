@@ -263,56 +263,52 @@ const SphereRenderer = forwardRef(
         spriteGroupRef.current.remove(spriteGroupRef.current.children[0]);
       }
 
-      // Group positions by system (central spheres within 10000 units)
-      const systems = new Map();
+      // Check all central spheres (positions)
+      memoizedDetailedPositions.forEach((centralPos) => {
+        // Find all owned planets near this central sphere
+        const nearbyOwnedPlanets = filteredGreenPositions.filter((planet) => {
+          if (!planet.owner) return false;
 
-      filteredPositions.forEach((centralPos) => {
-        // Check if any owned planet (green position) is near this central position
-        const ownedPlanets = filteredGreenPositions.filter((pos) => {
-          if (!pos.owner) return false;
-          const dx = pos.x - centralPos.x;
-          const dy = pos.y - centralPos.y;
-          const dz = pos.z - centralPos.z;
-          return Math.sqrt(dx * dx + dy * dy + dz * dz) <= 10000;
+          const dx = planet.x - centralPos.x;
+          const dy = planet.y - centralPos.y;
+          const dz = planet.z - centralPos.z;
+          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          return distance <= 10000;
         });
 
-        if (ownedPlanets.length > 0) {
-          // Add all unique civilization names for this system
-          const systemOwners = new Set();
-          ownedPlanets.forEach((planet) => {
-            if (planet.civilisationName) {
-              systemOwners.add(planet.civilisationName);
-            }
-          });
+        if (nearbyOwnedPlanets.length > 0) {
+          // Collect unique civilization names
+          const civilizationNames = [
+            ...new Set(
+              nearbyOwnedPlanets
+                .map((planet) => planet.civilisationName)
+                .filter(Boolean)
+            ),
+          ];
 
-          if (systemOwners.size > 0) {
-            systems.set(centralPos, Array.from(systemOwners));
-          }
+          // Create sprite for each civilization name
+          civilizationNames.forEach((name, index) => {
+            const texture = createTextTexture(name, 'Arial', 64, '#FFFFFF');
+            const spriteMaterial = new SpriteMaterial({
+              map: texture,
+              transparent: true,
+            });
+            const sprite = new Sprite(spriteMaterial);
+
+            // Position sprite above central sphere, stacked if multiple
+            sprite.position.set(
+              centralPos.x,
+              centralPos.y + 100 + index * 50, // Stack vertically
+              centralPos.z
+            );
+            sprite.scale.set(200, 100, 1);
+
+            spriteGroupRef.current?.add(sprite);
+          });
         }
       });
-
-      // Create sprites for each system
-      systems.forEach((civilisationNames, centralPos) => {
-        civilisationNames.forEach((name, index) => {
-          const texture = createTextTexture(name, 'Arial', 64, '#FFFFFF');
-          const spriteMaterial = new SpriteMaterial({
-            map: texture,
-            transparent: true,
-          });
-          const sprite = new Sprite(spriteMaterial);
-
-          // Stack multiple civilization names vertically if there are multiple owners
-          sprite.position.set(
-            centralPos.x,
-            centralPos.y + 100 + index * 50, // Stack names vertically
-            centralPos.z
-          );
-          sprite.scale.set(200, 100, 1);
-
-          spriteGroupRef.current?.add(sprite);
-        });
-      });
-    }, [filteredPositions, filteredGreenPositions, cameraRef]);
+    }, [memoizedDetailedPositions, filteredGreenPositions, cameraRef]);
 
     return (
       <>
