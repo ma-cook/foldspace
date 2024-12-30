@@ -253,6 +253,70 @@ const SphereRenderer = forwardRef(
       animate();
     }, []);
 
+    useEffect(() => {
+      if (
+        !cameraRef.current ||
+        !memoizedDetailedPositions ||
+        !filteredGreenPositions
+      )
+        return;
+
+      // Clear existing sprites
+      while (spriteGroupRef.current?.children.length > 0) {
+        spriteGroupRef.current.remove(spriteGroupRef.current.children[0]);
+      }
+
+      // For each central sphere (memoizedDetailedPositions)
+      memoizedDetailedPositions.forEach((centralPos) => {
+        if (!centralPos) return;
+
+        // Group all nearby owned planets by civilization
+        const nearbyCivilizations = new Map(); // Map to store civilization names and their count
+
+        filteredGreenPositions.forEach((planet) => {
+          if (!planet || !planet.owner || !planet.civilisationName) return;
+
+          const dx = centralPos.x - planet.x;
+          const dy = centralPos.y - planet.y;
+          const dz = centralPos.z - planet.z;
+          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          if (distance <= 5000) {
+            // Reduced distance to 5000
+            if (!nearbyCivilizations.has(planet.civilisationName)) {
+              nearbyCivilizations.set(planet.civilisationName, 1);
+            } else {
+              nearbyCivilizations.set(
+                planet.civilisationName,
+                nearbyCivilizations.get(planet.civilisationName) + 1
+              );
+            }
+          }
+        });
+
+        // Create sprites for each civilization found
+        Array.from(nearbyCivilizations.keys()).forEach((civName, index) => {
+          const texture = createTextTexture(civName, 'Arial', 64, '#FFFFFF');
+          const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            depthTest: false,
+          });
+          const sprite = new THREE.Sprite(spriteMaterial);
+
+          // Position sprite above central sphere
+          sprite.position.set(
+            centralPos.x,
+            centralPos.y + 100 + index * 50, // Stack vertically if multiple civilizations
+            centralPos.z
+          );
+          sprite.scale.set(200, 100, 1);
+
+          spriteGroupRef.current?.add(sprite);
+        });
+      });
+    }, [memoizedDetailedPositions, filteredGreenPositions, cameraRef]);
+
     return (
       <>
         <group ref={spriteGroupRef} />
