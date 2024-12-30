@@ -18,6 +18,7 @@ const {
   processConstructionQueue,
 } = require('./buildingManagement');
 const { updateShipPositions } = require('./shipMovement');
+const { processEconomy } = require('./economyManagement');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -488,3 +489,4 @@ exports.processConstructionQueue = processConstructionQueue;
 
 app.post('/addShipToQueue', cors(corsOptions), addShipToQueue);
 exports.processShipConstructionQueue = processShipConstructionQueue;
+exports.processEconomy = processEconomy;

@@ -20,6 +20,10 @@ const COLONY_METADATA = {
   },
   constructionQueue: [],
   shipConstructionQueue: [],
+  planetStats: {
+    population: 100,
+    populationCapacity: 1000, // 1 Housing complex * 1000
+  },
 };
 
 const updateShipPositions = async (context) => {
@@ -157,6 +161,11 @@ const updateShipPositions = async (context) => {
               civilisationName:
                 userData.civilisationName || 'Unnamed Civilization',
               ...COLONY_METADATA,
+              planetStats: {
+                population: 100,
+                populationCapacity:
+                  COLONY_METADATA.buildings['Housing complex'] * 1000,
+              },
             };
 
             batch.update(cellRef, {
@@ -173,6 +182,11 @@ const updateShipPositions = async (context) => {
               cellId: dest.cellId,
               instanceId: sphereIndex,
               ...COLONY_METADATA,
+              planetStats: {
+                population: 100,
+                populationCapacity:
+                  COLONY_METADATA.buildings['Housing complex'] * 1000,
+              },
             };
 
             const newSphereKey = `sphere_${

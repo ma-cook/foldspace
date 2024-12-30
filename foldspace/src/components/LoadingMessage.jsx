@@ -1,25 +1,24 @@
 // LoadingMessage.jsx
 import React from 'react';
 
-const LoadingMessage = () => {
+const LoadingMessage = ({ message = 'Loading...' }) => {
   return (
-    <div style={styles.container}>
-      <p>Loading cells...</p>
+    <div
+      style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        padding: '1rem 2rem',
+        borderRadius: '4px',
+        zIndex: 1000,
+      }}
+    >
+      {message}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    color: 'white',
-    padding: '10px 20px',
-    borderRadius: '5px',
-    zIndex: 1000,
-  },
 };
 
 export default LoadingMessage;

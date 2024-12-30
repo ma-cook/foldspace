@@ -32,6 +32,7 @@ const App = React.memo(() => {
   const isInitialCameraSet = useRef(false);
   const [economy, setEconomy] = useState(null);
   const [civilisationName, setCivilisationName] = useState('');
+  const [isAssigningPlanet, setIsAssigningPlanet] = useState(false);
 
   const fetchUserEconomy = useCallback((userId) => {
     const userDocRef = doc(db, 'users', userId);
@@ -120,6 +121,7 @@ const App = React.memo(() => {
   }, []);
 
   const assignGreenSphere = useCallback(async (userId) => {
+    setIsAssigningPlanet(true);
     try {
       const response = await fetch(
         'https://us-central1-foldspace-6483c.cloudfunctions.net/api/startingPlanet',
@@ -145,6 +147,8 @@ const App = React.memo(() => {
       console.log(data.message);
     } catch (error) {
       console.error('Error assigning ownership:', error);
+    } finally {
+      setIsAssigningPlanet(false);
     }
   }, []);
 
@@ -281,6 +285,9 @@ const App = React.memo(() => {
         civilisationName={civilisationName} // Pass the civilisation name
       />
       {loadingCells.size > 0 && <LoadingMessage />}
+      {isAssigningPlanet && (
+        <LoadingMessage message="Assigning your starting planet..." />
+      )}
     </div>
   );
 });
