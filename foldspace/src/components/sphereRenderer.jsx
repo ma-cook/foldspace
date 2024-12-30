@@ -11,8 +11,6 @@ import { getCachedGeometry, getCachedShader } from '../resourceCache';
 import { DETAIL_DISTANCE, GRID_SIZE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup
-import { Sprite, SpriteMaterial, TextureLoader } from 'three';
-import { createTextTexture } from '../utils/textTexture'; // Import the utility function
 
 const SphereRenderer = forwardRef(
   ({ flattenedPositions, cameraRef, civilisationName }, ref) => {
@@ -254,78 +252,6 @@ const SphereRenderer = forwardRef(
       };
       animate();
     }, []);
-
-    useEffect(() => {
-      if (!cameraRef.current) return;
-
-      // Clear existing sprites
-      while (spriteGroupRef.current?.children.length > 0) {
-        spriteGroupRef.current.remove(spriteGroupRef.current.children[0]);
-      }
-
-      // Convert memoizedDetailedPositions to array if it isn't already
-      const centralPositions = Array.isArray(memoizedDetailedPositions)
-        ? memoizedDetailedPositions
-        : [memoizedDetailedPositions];
-
-      // Process each central sphere
-      centralPositions.forEach((centralPos) => {
-        if (!centralPos || typeof centralPos.x === 'undefined') return;
-
-        // Find all nearby owned planets
-        const nearbyPlanets = filteredGreenPositions.filter((planet) => {
-          if (!planet || !planet.owner || !planet.civilisationName)
-            return false;
-
-          // Calculate distance to central sphere
-          const dx = centralPos.x - planet.x;
-          const dy = centralPos.y - planet.y;
-          const dz = centralPos.z - planet.z;
-          const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-          console.log(
-            'Distance to central sphere:',
-            distance,
-            'Planet:',
-            planet.civilisationName
-          );
-          return distance <= 10000;
-        });
-
-        // If we found nearby owned planets, create civilization name sprites
-        if (nearbyPlanets.length > 0) {
-          console.log('Found nearby planets:', nearbyPlanets);
-
-          // Get unique civilization names
-          const uniqueCivNames = [
-            ...new Set(nearbyPlanets.map((planet) => planet.civilisationName)),
-          ].filter(Boolean);
-
-          console.log('Unique civilization names:', uniqueCivNames);
-
-          // Create sprite for each civilization
-          uniqueCivNames.forEach((name, index) => {
-            const texture = createTextTexture(name, 'Arial', 64, '#FFFFFF');
-            const spriteMaterial = new SpriteMaterial({
-              map: texture,
-              transparent: true,
-              depthTest: false, // Make sure text is always visible
-            });
-            const sprite = new Sprite(spriteMaterial);
-
-            // Position above central sphere with vertical stacking
-            sprite.position.set(
-              centralPos.x,
-              centralPos.y + 150 + index * 50,
-              centralPos.z
-            );
-            sprite.scale.set(300, 150, 1); // Increased size for better visibility
-
-            spriteGroupRef.current?.add(sprite);
-          });
-        }
-      });
-    }, [memoizedDetailedPositions, filteredGreenPositions, cameraRef]);
 
     return (
       <>
