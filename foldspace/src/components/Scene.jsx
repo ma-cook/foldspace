@@ -13,8 +13,6 @@ import CustomCamera from '../CustomCamera';
 import SphereRenderer from './sphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
-import ColonyShip from '../modelLoaders/ColonyShip';
-import ScoutShip from '../modelLoaders/ScoutShip';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import * as THREE from 'three';
