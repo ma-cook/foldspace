@@ -10,7 +10,7 @@ import { Canvas } from '@react-three/fiber';
 import { useStore } from '../store';
 import { Stats, Environment, Bvh } from '@react-three/drei';
 import CustomCamera from '../CustomCamera';
-import SphereRenderer from './sphereRenderer';
+import SphereRenderer from './SphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
 import { doc, updateDoc } from 'firebase/firestore';
