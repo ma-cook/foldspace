@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, forwardRef } from 'react';
 import * as THREE from 'three';
 import { Sprite, SpriteMaterial, TextureLoader } from 'three';
-import { createTextTexture } from './utils/textTexture';
+import { createTextTexture } from '../utils/textTexture';
 
 const Sphere = forwardRef(
   (

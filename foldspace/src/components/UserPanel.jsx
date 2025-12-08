@@ -1,6 +1,6 @@
 // UserPanel.jsx
 import React, { useRef, useState, useEffect } from 'react';
-import { useStore } from '../store';
+import { useStore } from '../stores/store';
 
 const UserPanel = ({
   user,

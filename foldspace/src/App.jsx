@@ -1,6 +1,6 @@
 // App.jsx
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { useStore } from './store';
+import { useStore } from './stores/store';
 import { useAuth } from './hooks/useAuth';
 import { db } from './firebase';
 import {

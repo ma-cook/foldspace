@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import SpherePool from '../SpherePool';
-import { createInstancedMesh } from '../utils';
-import { lessDetailedSphereGeometry, torusGeometry } from '../SphereData';
+import SpherePool from '../utils/SpherePool';
+import { createInstancedMesh } from '../utils/utils';
+import { lessDetailedSphereGeometry, torusGeometry } from '../utils/SphereData';
 
 export const useFilteredPositions = (positions, cameraRef, maxDistance) => {
   const [filteredPositions, setFilteredPositions] = useState([]);

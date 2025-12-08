@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
-import cellCache from './cellCache';
+import cellCache from '../utils/cellCache';
 
 // Define the ensureVector3 function
 const ensureVector3 = (pos) => {

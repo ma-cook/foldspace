@@ -1,13 +1,13 @@
 // SphereRenderer.jsx
 import React, { useRef, useEffect, forwardRef, useMemo } from 'react';
-import PlaneMesh from '../PlaneMesh';
-import { MemoizedSphere } from '../Sphere';
-import { useStore } from '../store';
+import PlaneMesh from './PlaneMesh';
+import { MemoizedSphere } from './Sphere';
+import { useStore } from '../stores/store';
 import { useFilteredPositions, useSpherePools } from '../hooks/hooks';
 import { useBVH } from '../hooks/useBVH';
 import { useUpdateGeometry } from '../hooks/useUpdateGeometry';
 import { useClearDetailedSpheres } from '../hooks/useClearDetailedSpheres';
-import { getCachedGeometry, getCachedShader } from '../resourceCache';
+import { getCachedGeometry, getCachedShader } from '../utils/resourceCache';
 import { DETAIL_DISTANCE, GRID_SIZE } from '../config';
 import * as THREE from 'three';
 import SphereGroup from './SphereGroup'; // Import SphereGroup

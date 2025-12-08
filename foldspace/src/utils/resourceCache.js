@@ -5,11 +5,11 @@ import {
   torusGeometry,
 } from './SphereData';
 
-import { sunShader } from './shaders/sunShader';
-import { createPlanetShader } from './shaders/planetShader';
-import { ringShaderMaterial } from './shaders/ringShader';
-import { systemShaderMaterial } from './shaders/systemShader';
-import { atmosGlowShader } from './shaders/atmosGlow';
+import { sunShader } from '../shaders/sunShader';
+import { createPlanetShader } from '../shaders/planetShader';
+import { ringShaderMaterial } from '../shaders/ringShader';
+import { systemShaderMaterial } from '../shaders/systemShader';
+import { atmosGlowShader } from '../shaders/atmosGlow';
 
 const geometryCache = {
   sphere: sphereGeometry,

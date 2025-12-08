@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { useThree } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
-import { useStore } from './store';
+import { useStore } from '../stores/store';
 
 const CustomCamera = forwardRef((props, ref) => {
   const vec = useStore((state) => state.vec);

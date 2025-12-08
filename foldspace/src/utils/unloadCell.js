@@ -1,5 +1,5 @@
 import cellCache from './cellCache';
-import { useStore } from './store';
+import { useStore } from '../stores/store';
 
 export const disposeMaterial = (material) => {
   if (material && typeof material.dispose === 'function') {

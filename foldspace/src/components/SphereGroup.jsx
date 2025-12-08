@@ -1,7 +1,7 @@
 // SphereGroup.jsx
 import React, { useMemo } from 'react';
-import { MemoizedSphere } from '../Sphere';
-import { getCachedGeometry } from '../resourceCache';
+import { MemoizedSphere } from './Sphere';
+import { getCachedGeometry } from '../utils/resourceCache';
 
 const SphereGroup = ({
   color,

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useStore } from '../store';
-import { BVH } from '../BVH';
+import { useStore } from '../stores/store';
+import { BVH } from '../utils/BVH';
 
 export const useBVH = (positions, activeBuffer) => {
   useEffect(() => {

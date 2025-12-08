@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GRID_SIZE } from './config';
+import { GRID_SIZE } from '../config';
 
 class BVHNode {
   constructor(

@@ -7,9 +7,9 @@ import React, {
   useDeferredValue,
 } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useStore } from '../store';
+import { useStore } from '../stores/store';
 import { Stats, Environment, Bvh } from '@react-three/drei';
-import CustomCamera from '../CustomCamera';
+import CustomCamera from './CustomCamera';
 import SphereRenderer from './SphereRenderer';
 import CellLoader from './CellLoader';
 import Loader from './Loader';
@@ -18,8 +18,8 @@ import { db } from '../firebase';
 import * as THREE from 'three';
 import { useAuth } from '../hooks/useAuth';
 import Ship from './Ship';
-import loadCell from '../loadCell';
-import unloadCell from '../unloadCell';
+import loadCell from '../utils/loadCell';
+import unloadCell from '../utils/unloadCell';
 
 const Scene = ({
   backgroundColor,
